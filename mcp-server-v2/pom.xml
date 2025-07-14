@@ -12,6 +12,9 @@
     <artifactId>mcp-server-v2</artifactId>
     <name>MCP Server V2 Example</name>
     <description>MCP Server V2 implementation with Spring AI Alibaba Nacos</description>
+    <properties>
+        <spring-ai-alibaba.version>1.0.0.3-MCP-SNAPSHOT</spring-ai-alibaba.version>
+    </properties>
 
     <dependencies>
         <!-- Spring AI Alibaba Nacos MCP Server -->
@@ -31,20 +34,20 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>3.0.1</version>
+            <version>${nacos.version}</version>
         </dependency>
         
         <!-- Spring Cloud Alibaba Nacos Discovery -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.alibaba.nacos</groupId>
-                    <artifactId>nacos-client</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.alibaba.nacos</groupId>-->
+<!--                    <artifactId>nacos-client</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
         
         <!-- MCP Server WebFlux support -->
         <dependency>
@@ -104,10 +107,10 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-core</artifactId>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>

@@ -11,12 +11,32 @@ server:
 spring:
   application:
     name: mcp-server-v2
-  # 完全禁用Spring Cloud Nacos Discovery
-  cloud:
-    nacos:
-      discovery:
-        enabled: false  # 禁用自动注册
-        register-enabled: false  # 禁用注册功能
+  ai:
+    mcp:
+      server:
+        name: mcp-server-v2-mcp-server
+        version: 1.0.1-SNAPSHOT
+        type: ASYNC  # Recommended for reactive applications
+        instructions: "This reactive server provides time information tools and resources"
+        sse-message-endpoint: /mcp/messages
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+
+    alibaba:
+      mcp:
+        nacos:
+          namespace: public
+          server-addr: 127.0.0.1:8848
+          username: nacos
+          password: nacos
+          registry:
+            enabled: true
+            service-group: mcp-server
+            service-name: mcp-server-v2-mcp-server
+
   # R2DBC Datasource Configuration for MySQL
   r2dbc:
     url: r2dbc:mysql://127.0.0.1:3306/person_demo?useSSL=false&serverTimezone=UTC
@@ -27,38 +47,6 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
-  # Spring AI MCP Server配置 - 按照标准协议配置
-  ai:
-    mcp:
-      server:
-        name: mcp-server-v2
-        version: 1.0.0
-        description: MCP Server V2 Implementation
-        enabled: true
-        type: ASYNC
-        stdio: false  # 使用SSE传输而不是stdio
-        tools-notification: true
-        resources-notification: true
-        prompts-notification: true
-        sse-message-endpoint: /mcp/message
-        # Nacos MCP Server Registration - 按照参考项目配置
-        nacos:
-          enabled: true
-          server-addr: 127.0.0.1:8848
-          username: nacos
-          password: nacos
-          namespace: public
-          registry:
-            service-namespace: public
-            service-group: mcp-server
-          metadata:
-            mcp.type: server
-            mcp.version: 1.0.0
-            tools.names: getAllPersons,addPerson,deletePerson,get_system_info,list_servers
-            scheme: http
-            transport.type: sse
-            endpoints.sse: /sse
-            endpoints.message: /mcp/message
 
 # Logging
 logging:
