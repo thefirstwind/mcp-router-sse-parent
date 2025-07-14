@@ -142,10 +142,10 @@ public class SearchServiceImpl implements SearchService {
                     "Include which servers to use and in what order.",
                     request.getTaskDescription(),
                     results.stream()
-                            .map(server -> String.format("- %s: %s (Score: %.2f)", 
-                                    server.getName(), server.getDescription(), server.getRelevanceScore()))
-                            .collect(Collectors.joining("\n"))
-            );
+                            .map(server -> String.format("%s (Score: %.2f)",
+                                    server.getDescription(),
+                                    server.getRelevanceScore()))
+                            .collect(Collectors.joining(", ")));
 
             // ChatClient temporarily disabled
             return "AI instruction generation temporarily disabled. Please use the servers listed above.";

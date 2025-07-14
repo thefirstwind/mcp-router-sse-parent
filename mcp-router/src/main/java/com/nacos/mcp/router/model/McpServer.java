@@ -14,103 +14,32 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * MCP Server Model
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class McpServer {
-
-    /**
-     * Server name
-     */
     private String name;
-
-    /**
-     * Server version
-     */
     private String version;
-
-    /**
-     * Server description
-     */
     private String description;
-
-    /**
-     * Server provider
-     */
-    private String provider;
-
-    /**
-     * Transport type (e.g., HTTP, gRPC)
-     */
-    private String transportType;
-
-    /**
-     * Server endpoint URL
-     */
     private String endpoint;
-
-    /**
-     * Installation command for the server (optional)
-     */
+    private String transportType;
+    private boolean healthy;
     private String installCommand;
-
-    /**
-     * Server IP
-     */
-    private String ip;
-
-    /**
-     * Server port
-     */
-    private int port;
-
-    /**
-     * Server status
-     */
     private ServerStatus status;
-
-    /**
-     * Last heartbeat time
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    private LocalDateTime lastHeartbeat;
-
-    /**
-     * Available tools
-     */
+    private Map<String, String> metadata;
     private List<McpTool> tools;
+    private Double relevanceScore;
 
-    /**
-     * Server metadata
-     */
-    private Map<String, Object> metadata;
-
-    /**
-     * Registration time
-     */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime registrationTime;
 
-    /**
-     * Last update time
-     */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime lastUpdateTime;
-
-    /**
-     * Relevance score (used in search results)
-     */
-    private Double relevanceScore;
 
     public enum ServerStatus {
         HEALTHY,

@@ -14,8 +14,8 @@ spring:
   ai:
     mcp:
       server:
-        name: mcp-server-v2-mcp-server
-        version: 1.0.1-SNAPSHOT
+        name: mcp-server-v2
+        version: 1.0.1
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides time information tools and resources"
         sse-message-endpoint: /mcp/messages
@@ -24,7 +24,6 @@ spring:
           resource: true
           prompt: true
           completion: true
-
     alibaba:
       mcp:
         nacos:
@@ -35,7 +34,7 @@ spring:
           registry:
             enabled: true
             service-group: mcp-server
-            service-name: mcp-server-v2-mcp-server
+            service-name: mcp-server-v2
 
   # R2DBC Datasource Configuration for MySQL
   r2dbc:

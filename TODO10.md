@@ -82,5 +82,12 @@ mcp-client 不能直接和 mcp-server-v1 , mcp-server-v2, mcp-server-v3 连接�
 
 
 
+## 获取配置接口，不是检查健康度用的，一次注册后续不需要重复注册，如要删除要收工删除
+curl -X GET '127.0.0.1:8848/nacos/v3/client/cs/config?dataId=c37fcc06-f691-429d-856b-b501c4b016ac-mcp-versions.json&groupName=mcp-server-versions'
 
+## 注册接口
+curl -X POST "127.0.0.1:8848/nacos/v3/client/ns/instance" -d "serviceName=mcp-server-v2&ip=127.0.0.1&port=3306"
+
+## 查询指定服务的实例列表，可以用来查询健康度，服务停止，该记录遍没有了
+curl -X GET '127.0.0.1:8848/nacos/v3/client/ns/instance/list?serviceName=mcp-server-v2&groupName=mcp-server'
 

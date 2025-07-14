@@ -4,9 +4,7 @@ import com.nacos.mcp.server.v2.model.Person;
 import com.nacos.mcp.server.v2.repository.PersonRepository;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -19,7 +17,7 @@ import java.util.stream.Collectors;
  * 使用Spring AI的@Tool注解实现MCP工具
  */
 @Slf4j
-@Component
+@Service
 public class PersonManagementTool {
 
     private final PersonRepository personRepository;

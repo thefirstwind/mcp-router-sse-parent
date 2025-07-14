@@ -24,7 +24,7 @@ The Nacos MCP Router is a Spring Boot application that serves as a centralized r
 
 4. **Configuration** (`config/`)
    - `NacosConfig`: Nacos service discovery configuration
-   - `McpRouterProperties`: Application configuration properties
+   - `McpRouterProperties`: com.pajk.mcp.sse.Application configuration properties
    - `SpringAiConfig`: Spring AI integration configuration
 
 ## Key Features
@@ -64,8 +64,8 @@ The Nacos MCP Router is a Spring Boot application that serves as a centralized r
 - `POST /api/search` - Search across registered servers
 
 ### Health Monitoring
-- `GET /actuator/health` - Application health status
-- `GET /actuator/info` - Application information
+- `GET /actuator/health` - com.pajk.mcp.sse.Application health status
+- `GET /actuator/info` - com.pajk.mcp.sse.Application information
 
 ## Technology Stack
 
@@ -95,7 +95,7 @@ The Nacos MCP Router is a Spring Boot application that serves as a centralized r
 
 ## Configuration
 
-### Application Properties
+### com.pajk.mcp.sse.Application Properties
 ```yaml
 server:
   port: 8000
@@ -155,7 +155,7 @@ src/
 │   │   ├── controller/      # REST controllers  
 │   │   ├── model/           # Data models
 │   │   ├── service/         # Business logic
-│   │   └── Application.java # Main class
+│   │   └── com.pajk.mcp.sse.Application.java # Main class
 │   └── resources/
 │       └── application.yml  # Configuration
 └── test/
@@ -169,7 +169,7 @@ src/
 - **End-to-End Tests**: Complete workflow testing
 
 ### Scripts and Tools
-- `run.sh` - Application startup script
+- `run.sh` - com.pajk.mcp.sse.Application startup script
 - `test-app.sh` - End-to-end testing script
 - `demo-register-server.sh` - Demo server registration
 - `test-coverage.sh` - Test coverage analysis

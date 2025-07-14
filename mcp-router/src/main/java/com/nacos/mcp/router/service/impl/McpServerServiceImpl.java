@@ -261,14 +261,36 @@ public class McpServerServiceImpl implements McpServerService {
 
     @Override
     public Mono<McpServer> registerMcpServer(McpServerRegistrationRequest request) {
-        // TODO: 实现服务器注册逻辑
-        return Mono.error(new UnsupportedOperationException("Server registration not implemented"));
+        log.info("Registering MCP server: {}", request.getName());
+        
+        return Mono.fromCallable(() -> {
+            // 创建服务器实例
+            McpServer server = new McpServer();
+            server.setName(request.getName());
+            server.setVersion(request.getVersion());
+            server.setEndpoint(request.getEndpoint());
+            server.setTransportType("sse");
+            server.setDescription(request.getDescription());
+            server.setTools(request.getTools());
+            server.setStatus(McpServer.ServerStatus.CONNECTED);
+            
+            // 缓存服务器信息
+            serverCache.put(server.getName(), server);
+            
+            // 创建MCP客户端
+            getOrCreateMcpClient(server).subscribe(
+                client -> log.info("Successfully created MCP client for server: {}", server.getName()),
+                error -> log.error("Failed to create MCP client for server: {}", server.getName(), error)
+            );
+            
+            log.info("Successfully registered MCP server: {}", server.getName());
+            return server;
+        });
     }
 
     @Override
     public Mono<McpServer> registerMcpServerWithTools(McpServerRegistrationRequest request) {
-        // TODO: 实现带工具的服务器注册逻辑
-        return Mono.error(new UnsupportedOperationException("Server registration with tools not implemented"));
+        return registerMcpServer(request);
     }
 
     @Override

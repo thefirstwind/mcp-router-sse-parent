@@ -46,3 +46,22 @@ SSE 连接问题：CustomMcpClient 在尝试建立 SSE 连接时遇到了多次�
    - 查阅 MCP 协议的官方文档，确保所有实现都符合最新的标准和最佳实践。
 
 接下来，我将帮助你检查和更新项目中的配置文件。请确认是否需要我执行这些操作。
+
+@/mcp-server-v2 使用 
+@https://github.com/alibaba/spring-ai-alibaba  核心代码在
+@/spring-ai-alibaba-mcp 目录下，将mcp相关信息注册到nacos上，深度理解
+
+
+
+
+本项目的初期设计方案，已经完成目标。
+@TODO10.md 
+
+现在修改了 @/mcp-server-v2 ，使用 spring-ai-alibaba-starter-nacos-mcp-server 包，实现自动装载，将mcp-server的配置信息 上送到nacos中，
+
+但是发现 mcp-client调用 mcp-router，再调用 mcp-server-v2这条链路上，如果考虑以上修改，nacos的配置信息的格式，以及 spring-ai-alibaba与nacos的规约有所修改，或者冲突。
+
+现在需要分析 @/spring-ai-alibaba-mcp ，参考@mcp_nacos_analysis.md 分析报告。
+
+主要需要改写 mcp-router
+

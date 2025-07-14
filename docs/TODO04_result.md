@@ -257,7 +257,7 @@ public class PersonTools {
 - 保持PersonTools作为纯Spring Service
 - 确保所有方法都具有清晰的业务语义
 
-**Step 2: 配置MCP Server Application**
+**Step 2: 配置MCP Server com.pajk.mcp.sse.Application**
 - 在 `McpServerApplication` 中添加 `MethodToolCallbackProvider` Bean
 - 通过 `MethodToolCallbackProvider.builder().toolObjects(personQueryTools).build()` 自动发现工具方法
 

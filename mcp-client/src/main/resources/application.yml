@@ -48,7 +48,7 @@ spring:
 # MCP Router 配置
 mcp:
   router:
-    url: http://localhost:8051  # 更新为新的router端口
+    url: http://localhost:8050  # 更新为正确的router端口
     sse-path: /mcp/jsonrpc/sse
     reconnect-delay: 2000
     max-retries: 5

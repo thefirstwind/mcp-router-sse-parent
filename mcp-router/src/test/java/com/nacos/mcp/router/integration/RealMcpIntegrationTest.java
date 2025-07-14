@@ -165,15 +165,11 @@ public class RealMcpIntegrationTest {
         log.info("=== 测试真实MCP服务器注册 ===");
 
         McpServerRegistrationRequest registrationRequest = McpServerRegistrationRequest.builder()
-            .serverName("real-file-server")
-            .ip("127.0.0.1")
-            .port(8080)
+            .name("real-file-server")
             .version("1.0.0")
+            .endpoint("http://127.0.0.1:8080")
             .description("Real File Server for Integration Testing")
-            .transportType("stdio")
-            .enabled(true)
-            .weight(1.0)
-            .cluster("DEFAULT")
+            .transportType("sse")
             .build();
 
         Mono<McpServer> registration = mcpServerService.registerMcpServer(registrationRequest);

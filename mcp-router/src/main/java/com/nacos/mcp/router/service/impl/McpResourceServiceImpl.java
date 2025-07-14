@@ -3,6 +3,8 @@ package com.nacos.mcp.router.service.impl;
 import com.nacos.mcp.router.model.McpResource;
 import com.nacos.mcp.router.service.McpResourceService;
 import com.nacos.mcp.router.service.McpServerService;
+import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * MCP Resource Service Implementation
@@ -27,13 +31,31 @@ public class McpResourceServiceImpl implements McpResourceService {
         
         return mcpServerService.getMcpServer(serverName)
                 .flatMap(server -> {
-                    // TODO: In a real implementation, this would query the actual MCP server via SSE protocol
-                    log.warn("Resource listing not yet implemented for SSE protocol - returning empty list");
-                    return Mono.just(Collections.<McpResource>emptyList());
+                    // 使用MCP SSE协议获取资源列表
+                    return mcpServerService.useTool(serverName, "list_resources", Map.of())
+                            .map(result -> {
+                                if (result instanceof List) {
+                                    return ((List<?>) result).stream()
+                                            .map(item -> {
+                                                if (item instanceof Map) {
+                                                    Map<?, ?> map = (Map<?, ?>) item;
+                                                    return McpResource.builder()
+                                                            .uri(String.valueOf(map.get("uri")))
+                                                            .mimeType(String.valueOf(map.get("type")))
+                                                            .description(String.valueOf(map.get("description")))
+                                                            .build();
+                                                }
+                                                return null;
+                                            })
+                                            .filter(resource -> resource != null)
+                                            .toList();
+                                }
+                                return Collections.<McpResource>emptyList();
+                            });
                 })
                 .onErrorResume(throwable -> {
                     log.error("Failed to list resources for server {}: {}", serverName, throwable.getMessage());
-                    return Mono.just(Collections.<McpResource>emptyList());
+                    return Mono.just(Collections.emptyList());
                 });
     }
 
@@ -43,13 +65,26 @@ public class McpResourceServiceImpl implements McpResourceService {
         
         return mcpServerService.getMcpServer(serverName)
                 .flatMap(server -> {
-                    // TODO: In a real implementation, this would query the actual MCP server via SSE protocol
-                    log.warn("Resource reading not yet implemented for SSE protocol");
-                    return Mono.<McpResource>empty();
+                    // 使用MCP SSE协议读取资源
+                    return mcpServerService.useTool(serverName, "read_resource", Map.of(
+                            "uri", resourceUri
+                    ))
+                    .map(result -> {
+                        if (result instanceof Map) {
+                            Map<?, ?> map = (Map<?, ?>) result;
+                            return McpResource.builder()
+                                    .uri(String.valueOf(map.get("uri")))
+                                    .mimeType(String.valueOf(map.get("type")))
+                                    .description(String.valueOf(map.get("description")))
+                                    .contents(String.valueOf(map.get("content")))
+                                    .build();
+                        }
+                        return null;
+                    });
                 })
                 .onErrorResume(throwable -> {
                     log.error("Failed to read resource {} from server {}: {}", resourceUri, serverName, throwable.getMessage());
-                    return Mono.<McpResource>empty();
+                    return Mono.empty();
                 });
     }
 
@@ -59,13 +94,26 @@ public class McpResourceServiceImpl implements McpResourceService {
         
         return mcpServerService.getMcpServer(serverName)
                 .flatMap(server -> {
-                    // TODO: In a real implementation, this would establish subscription via SSE protocol
-                    log.warn("Resource subscription not yet implemented for SSE protocol");
-                    return Mono.<McpResource>empty();
+                    // 使用MCP SSE协议订阅资源
+                    return mcpServerService.useTool(serverName, "subscribe_resource", Map.of(
+                            "uri", resourceUri
+                    ))
+                    .map(result -> {
+                        if (result instanceof Map) {
+                            Map<?, ?> map = (Map<?, ?>) result;
+                            return McpResource.builder()
+                                    .uri(String.valueOf(map.get("uri")))
+                                    .mimeType(String.valueOf(map.get("type")))
+                                    .description(String.valueOf(map.get("description")))
+                                    .contents(String.valueOf(map.get("content")))
+                                    .build();
+                        }
+                        return null;
+                    });
                 })
                 .onErrorResume(throwable -> {
                     log.error("Failed to subscribe to resource {} from server {}: {}", resourceUri, serverName, throwable.getMessage());
-                    return Mono.<McpResource>empty();
+                    return Mono.empty();
                 });
     }
 
@@ -73,9 +121,36 @@ public class McpResourceServiceImpl implements McpResourceService {
     public Mono<List<McpResource>> searchResources(String pattern, String serverName) {
         log.info("Searching resources with pattern '{}' in server '{}'", pattern, serverName);
         
-        // TODO: In a real implementation, this would search via SSE protocol
-        log.warn("Resource search not yet implemented for SSE protocol - returning empty list");
-        return Mono.just(Collections.<McpResource>emptyList());
+        return mcpServerService.getMcpServer(serverName)
+                .flatMap(server -> {
+                    // 使用MCP SSE协议搜索资源
+                    return mcpServerService.useTool(serverName, "search_resources", Map.of(
+                            "pattern", pattern
+                    ))
+                    .map(result -> {
+                        if (result instanceof List) {
+                            return ((List<?>) result).stream()
+                                    .map(item -> {
+                                        if (item instanceof Map) {
+                                            Map<?, ?> map = (Map<?, ?>) item;
+                                            return McpResource.builder()
+                                                    .uri(String.valueOf(map.get("uri")))
+                                                    .mimeType(String.valueOf(map.get("type")))
+                                                    .description(String.valueOf(map.get("description")))
+                                                    .build();
+                                        }
+                                        return null;
+                                    })
+                                    .filter(resource -> resource != null)
+                                    .toList();
+                        }
+                        return Collections.<McpResource>emptyList();
+                    });
+                })
+                .onErrorResume(throwable -> {
+                    log.error("Failed to search resources: {}", throwable.getMessage());
+                    return Mono.just(Collections.emptyList());
+                });
     }
 
     @Override
@@ -84,13 +159,24 @@ public class McpResourceServiceImpl implements McpResourceService {
         
         return mcpServerService.listAllMcpServers()
                 .flatMap(servers -> {
-                    // TODO: In a real implementation, this would query all actual MCP servers via SSE protocol
-                    log.warn("Resource listing from all servers not yet implemented for SSE protocol - returning empty list");
-                    return Mono.just(Collections.<McpResource>emptyList());
+                    // 从所有服务器获取资源
+                    return Mono.just(servers.stream()
+                            .flatMap(server -> {
+                                try {
+                                    return listResources(server.getName())
+                                            .block()
+                                            .stream();
+                                } catch (Exception e) {
+                                    log.warn("Failed to list resources from server {}: {}", 
+                                            server.getName(), e.getMessage());
+                                    return Stream.empty();
+                                }
+                            })
+                            .toList());
                 })
                 .onErrorResume(throwable -> {
                     log.error("Failed to list all resources: {}", throwable.getMessage());
-                    return Mono.just(Collections.<McpResource>emptyList());
+                    return Mono.just(Collections.emptyList());
                 });
     }
 } 

@@ -12,9 +12,9 @@
     <artifactId>mcp-server-v2</artifactId>
     <name>MCP Server V2 Example</name>
     <description>MCP Server V2 implementation with Spring AI Alibaba Nacos</description>
-    <properties>
-        <spring-ai-alibaba.version>1.0.0.3-MCP-SNAPSHOT</spring-ai-alibaba.version>
-    </properties>
+<!--    <properties>-->
+<!--        <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>-->
+<!--    </properties>-->
 
     <dependencies>
         <!-- Spring AI Alibaba Nacos MCP Server -->
@@ -22,37 +22,25 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-nacos-mcp-server</artifactId>
             <version>${spring-ai-alibaba.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.alibaba.nacos</groupId>
-                    <artifactId>nacos-client</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        
-        <!-- Nacos Client - 指定兼容版本 -->
-        <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-client</artifactId>
-            <version>${nacos.version}</version>
-        </dependency>
-        
-        <!-- Spring Cloud Alibaba Nacos Discovery -->
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba.cloud</groupId>-->
-<!--            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
 <!--            <exclusions>-->
 <!--                <exclusion>-->
 <!--                    <groupId>com.alibaba.nacos</groupId>-->
 <!--                    <artifactId>nacos-client</artifactId>-->
 <!--                </exclusion>-->
 <!--            </exclusions>-->
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.nacos</groupId>-->
+<!--            <artifactId>nacos-client</artifactId>-->
+<!--            <version>${nacos.version}</version>-->
 <!--        </dependency>-->
-        
+
         <!-- MCP Server WebFlux support -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+            <version>${spring-ai.version}</version>
         </dependency>
         
         <!-- Spring Boot Starter Data R2DBC -->
