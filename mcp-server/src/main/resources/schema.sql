@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS person (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    age INTEGER NOT NULL,
+    nationality VARCHAR(50) NOT NULL,
+    gender VARCHAR(10) NOT NULL
+); 

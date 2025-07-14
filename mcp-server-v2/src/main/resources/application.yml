@@ -1,0 +1,78 @@
+# Spring Boot
+server:
+  port: 8061  # 修改端口号，避免与已有服务冲突
+  address: 127.0.0.1  # 明确指定服务器地址
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  application:
+    name: mcp-server-v2
+  # 完全禁用Spring Cloud Nacos Discovery
+  cloud:
+    nacos:
+      discovery:
+        enabled: false  # 禁用自动注册
+        register-enabled: false  # 禁用注册功能
+  # R2DBC Datasource Configuration for MySQL
+  r2dbc:
+    url: r2dbc:mysql://127.0.0.1:3306/person_demo?useSSL=false&serverTimezone=UTC
+    username: root
+    password: hot365fm
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+  # Spring AI MCP Server配置 - 按照标准协议配置
+  ai:
+    mcp:
+      server:
+        name: mcp-server-v2
+        version: 1.0.0
+        description: MCP Server V2 Implementation
+        enabled: true
+        type: ASYNC
+        stdio: false  # 使用SSE传输而不是stdio
+        tools-notification: true
+        resources-notification: true
+        prompts-notification: true
+        sse-message-endpoint: /mcp/message
+        # Nacos MCP Server Registration - 按照参考项目配置
+        nacos:
+          enabled: true
+          server-addr: 127.0.0.1:8848
+          username: nacos
+          password: nacos
+          namespace: public
+          registry:
+            service-namespace: public
+            service-group: mcp-server
+          metadata:
+            mcp.type: server
+            mcp.version: 1.0.0
+            tools.names: getAllPersons,addPerson,deletePerson,get_system_info,list_servers
+            scheme: http
+            transport.type: sse
+            endpoints.sse: /sse
+            endpoints.message: /mcp/message
+
+# Logging
+logging:
+  level:
+    com.nacos.mcp: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.r2dbc: DEBUG
+    com.alibaba.cloud.ai.mcp: DEBUG
+    io.modelcontextprotocol: DEBUG
+    root: INFO
+
+# Management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics 

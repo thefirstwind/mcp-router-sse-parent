@@ -1,0 +1,66 @@
+server:
+  port: 8071  # 修改端口号，避免与已有服务冲突
+  # servlet:
+  #   context-path: /mcp-client
+
+spring:
+  application:
+    name: mcp-client
+  
+  # Nacos配置
+  cloud:
+    nacos:
+      discovery:
+#        server-addr: 127.0.0.1:8848
+#        username: nacos
+#        password: nacos
+#        namespace: public
+#        group: mcp-client
+        enabled: false
+      config:
+        import-check:
+          enabled: false
+    
+  # MCP Client配置
+  ai:
+    mcp:
+      client:
+        enabled: true
+        name: mcp-client
+        version: 1.0.0
+        request-timeout: 30s
+        type: SYNC
+        nacos-enabled: true
+        initialized: true
+        toolcallback:
+          enabled: true
+        root-change-notification: true
+    alibaba:
+      mcp:
+        nacos:
+          enabled: true
+          server-addr: 127.0.0.1:8848
+          username: nacos
+          password: nacos
+          namespace: public
+          group: mcp-server
+
+# MCP Router 配置
+mcp:
+  router:
+    url: http://localhost:8051  # 更新为新的router端口
+    sse-path: /mcp/jsonrpc/sse
+    reconnect-delay: 2000
+    max-retries: 5
+  # server:
+  #   url: http://localhost:8062  # 更新为新的server端口
+  client:
+    request-timeout: 30s  # 30秒超时
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.nacos.mcp.client: DEBUG
+    org.springframework.ai: INFO
+    com.alibaba.cloud.ai.mcp: INFO 
