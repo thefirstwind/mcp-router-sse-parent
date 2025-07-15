@@ -42,6 +42,12 @@
             <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
             <version>${spring-ai.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-spring-context</artifactId>
+            <version>2.1.1</version>
+        </dependency>
         
         <!-- Spring Boot Starter Data R2DBC -->
         <dependency>
