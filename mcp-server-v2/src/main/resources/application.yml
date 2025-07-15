@@ -1,6 +1,6 @@
 # Spring Boot
 server:
-  port: 8061  # 修改端口号，避免与已有服务冲突
+  port: 8062  # 修改端口号，避免与已有服务冲突
   address: 127.0.0.1  # 明确指定服务器地址
   error:
     include-message: always
