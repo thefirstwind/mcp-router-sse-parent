@@ -9,6 +9,13 @@ import com.nacos.mcp.router.v3.model.McpToolsConfig;
 import com.nacos.mcp.router.v3.model.McpVersionConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -17,137 +24,181 @@ import java.util.*;
  * MCP配置服务
  */
 @Slf4j
-// @Service
- @RequiredArgsConstructor
-public class McpConfigServiceCopy {
-    
+@Service
+@RequiredArgsConstructor
+public class McpConfigService{
+
     private final ConfigService configService;
     private final ObjectMapper objectMapper;
+    private final WebClient webClient = WebClient.builder().build();
     
+    @Value("${nacos.config.server-addr:localhost:8848}")
+    private String nacosServerAddr;
+    
+    @Value("${spring.ai.alibaba.mcp.nacos.registry.app-name:${spring.application.name}}")
+    private String appName;
+    
+    @Value("${spring.ai.alibaba.mcp.nacos.registry.src-user:${spring.application.name}}")
+    private String srcUser;
+    
+    /**
+     * 基于服务名生成固定UUID，确保同一服务名总是得到相同的UUID
+     */
+    private String generateFixedUuidFromServiceName(String serviceName) {
+        // 使用服务名的hash作为种子，确保相同服务名产生相同UUID
+        long hash = serviceName.hashCode();
+        // 使用固定的算法生成UUID，确保可重现性
+        return UUID.nameUUIDFromBytes(serviceName.getBytes()).toString();
+    }
+
+    /**
+     * 使用 HTTP 直接调用发布配置，支持 appName 参数
+     */
+    private Mono<Boolean> publishConfigWithAppName(String dataId, String group, String content, String type) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("dataId", dataId);
+        formData.add("group", group);
+        formData.add("content", content);
+        formData.add("type", type);
+        formData.add("appName", this.appName);    // 从配置文件读取
+        formData.add("srcUser", this.srcUser);    // 从配置文件读取
+        
+        String nacosUrl = "http://" + nacosServerAddr + "/nacos/v1/cs/configs";
+        
+        return webClient.post()
+                .uri(nacosUrl)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(String.class)
+                .map("true"::equals)
+                .doOnSuccess(success -> {
+                    if (success) {
+                        log.info("Successfully published config via HTTP with appName: {} for dataId: {}, group: {}", 
+                                appName, dataId, group);
+                    } else {
+                        log.warn("Failed to publish config via HTTP with appName: {} for dataId: {}, group: {}", 
+                                this.appName, dataId, group);
+                    }
+                })
+                .doOnError(error -> {
+                    log.error("Error publishing config via HTTP with appName: {} for dataId: {}, group: {}", 
+                            this.appName, dataId, group, error);
+                })
+                .onErrorReturn(false);
+    }
+
     /**
      * 发布服务器配置
      */
     public Mono<Boolean> publishServerConfig(McpServerInfo serverInfo) {
-        return Mono.fromCallable(() -> {
+        return Mono.defer(() -> {
             try {
                 // 构建服务器配置
                 McpServerConfig serverConfig = buildServerConfig(serverInfo);
-                
+
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(serverConfig);
-                
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
                 String dataId = id + "-" + version + McpNacosConstants.SERVER_CONFIG_SUFFIX;
+
+                // 使用 HTTP 方式发布配置，支持 appName 参数
+                log.info("Publishing server config with dataId: {}, group: {}, type: json, appName: {}", 
+                        dataId, McpNacosConstants.SERVER_GROUP, this.appName);
                 
-                // 发布配置，使用带type的方法
-                log.info("Publishing server config with dataId: {}, group: {}, type: json", dataId, McpNacosConstants.SERVER_GROUP);
-                boolean success = configService.publishConfig(
-                    dataId,
-                    McpNacosConstants.SERVER_GROUP,
-                    configContent,
-                    "json"
+                return publishConfigWithAppName(
+                        dataId,
+                        McpNacosConstants.SERVER_GROUP,
+                        configContent,
+                        "json"
                 );
-                
-                if (success) {
-                    log.info("Successfully published server config for: {} with dataId: {}", serverInfo.getName(), dataId);
-                } else {
-                    log.warn("Failed to publish server config for: {} with dataId: {}", serverInfo.getName(), dataId);
-                }
-                
-                return success;
             } catch (Exception e) {
                 log.error("Error publishing server config for: {}", serverInfo.getName(), e);
-                throw new RuntimeException("Failed to publish server config", e);
+                return Mono.error(new RuntimeException("Failed to publish server config", e));
             }
         });
     }
-    
-    /**
+
+        /**
      * 发布工具配置
      */
     public Mono<Boolean> publishToolsConfig(McpServerInfo serverInfo) {
-        return Mono.fromCallable(() -> {
+        return Mono.defer(() -> {
             try {
                 // 构建工具配置
                 McpToolsConfig toolsConfig = buildToolsConfig(serverInfo);
-                
+
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(toolsConfig);
-                
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
                 String dataId = id + "-" + version + McpNacosConstants.TOOLS_CONFIG_SUFFIX;
-                
-                // 发布配置，使用带type的方法
-                boolean success = configService.publishConfig(
-                    dataId,
-                    McpNacosConstants.TOOLS_GROUP,
-                    configContent,
-                    "json"
+
+                // 使用 HTTP 方式发布工具配置，支持 appName 参数
+                log.info("Publishing tools config with dataId: {}, group: {}, type: json, appName: {}", 
+                        dataId, McpNacosConstants.TOOLS_GROUP, this.appName);
+                        
+                return publishConfigWithAppName(
+                        dataId,
+                        McpNacosConstants.TOOLS_GROUP,
+                        configContent,
+                        "json"
                 );
-                
-                if (success) {
-                    log.info("Successfully published tools config for: {}", serverInfo.getName());
-                } else {
-                    log.warn("Failed to publish tools config for: {}", serverInfo.getName());
-                }
-                
-                return success;
             } catch (Exception e) {
                 log.error("Error publishing tools config for: {}", serverInfo.getName(), e);
-                throw new RuntimeException("Failed to publish tools config", e);
+                return Mono.error(new RuntimeException("Failed to publish tools config", e));
             }
         });
     }
-    
+
     /**
      * 发布版本配置
      */
     public Mono<Boolean> publishVersionConfig(McpServerInfo serverInfo) {
-        return Mono.fromCallable(() -> {
+        return Mono.defer(() -> {
             try {
                 // 构建版本配置
                 McpVersionConfig versionConfig = buildVersionConfig(serverInfo);
-                
+
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(versionConfig);
-                
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String dataId = id + McpNacosConstants.VERSIONS_CONFIG_SUFFIX;
-                
-                // 发布配置，使用带type的方法
-                boolean success = configService.publishConfig(
-                    dataId,
-                    McpNacosConstants.VERSIONS_GROUP,
-                    configContent,
-                    "json"
+
+                // 使用 HTTP 方式发布版本配置，支持 appName 参数
+                log.info("Publishing version config with dataId: {}, group: {}, type: json, appName: {}", 
+                        dataId, McpNacosConstants.VERSIONS_GROUP, this.appName);
+                        
+                return publishConfigWithAppName(
+                        dataId,
+                        McpNacosConstants.VERSIONS_GROUP,
+                        configContent,
+                        "json"
                 );
-                
-                if (success) {
-                    log.info("Successfully published version config for: {}", serverInfo.getName());
-                } else {
-                    log.warn("Failed to publish version config for: {}", serverInfo.getName());
-                }
-                
-                return success;
             } catch (Exception e) {
                 log.error("Error publishing version config for: {}", serverInfo.getName(), e);
-                throw new RuntimeException("Failed to publish version config", e);
+                return Mono.error(new RuntimeException("Failed to publish version config", e));
             }
         });
     }
-    
+
     /**
      * 获取服务器配置
      */
     public Mono<McpServerConfig> getServerConfig(String serverName) {
         return getServerConfig(serverName, "1.0.0");
     }
-    
+
     /**
      * 获取服务器配置（指定版本）
      */
@@ -166,7 +217,7 @@ public class McpConfigServiceCopy {
             }
         });
     }
-    
+
     /**
      * 删除服务器配置（支持指定版本）
      */
@@ -252,7 +303,7 @@ public class McpConfigServiceCopy {
             }
         });
     }
-    
+
     /**
      * 序列化服务器配置为JSON
      */
@@ -272,14 +323,15 @@ public class McpConfigServiceCopy {
         }
         return sb.toString();
     }
-    
+
     /**
      * 构建服务器配置（完全对齐官方结构）
      */
     private McpServerConfig buildServerConfig(McpServerInfo serverInfo) {
-        String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+        String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+        String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
         String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
-        String name = serverInfo.getName();
+        String name = serviceName;
         String groupName = serverInfo.getServiceGroup() != null ? serverInfo.getServiceGroup() : McpNacosConstants.SERVER_GROUP;
         String namespaceId = serverInfo.getNamespaceId() != null ? serverInfo.getNamespaceId() : "public";
         String toolsDataId = id + "-" + version + McpNacosConstants.TOOLS_CONFIG_SUFFIX;
