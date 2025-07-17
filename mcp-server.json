@@ -1,0 +1,18 @@
+{
+  "id": "6eff2b4f-8c15-455e-86a0-302901241482",
+  "name": "mcp-router-v3",
+  "protocol": "mcp-sse",
+  "frontProtocol": "mcp-sse",
+  "description": "mcp-router-v3 服务",
+  "enabled": true,
+  "version": "1.0.1",
+  "remoteServerConfig": {
+    "serviceRef": {
+      "serviceName": "mcp-router-v3",
+      "groupName": "DEFAULT_GROUP",
+      "namespaceId": "public"
+    },
+    "exportPath": "/mcp-router-v3"
+  },
+  "toolsDescriptionRef": "6eff2b4f-8c15-455e-86a0-302901241482-1.0.1-mcp-tools.json"
+}

@@ -1,0 +1,1 @@
+分析 @/mcp-gateway-example-jdk17 @/spring-ai-alibaba-mcp @https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-mcp ，寻找那些接口生成的 nacos配置信息，逐一对比 @nacos-api.md 里的接口和信息。要明确到具体行，和代码段

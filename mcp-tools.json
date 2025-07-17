@@ -1,0 +1,19 @@
+{
+  "tools": [
+    {
+      "name": "getRouterInfo",
+      "description": "获取路由信息",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "routerId": { "type": "string", "description": "路由ID" }
+        },
+        "required": ["routerId"],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "toolsMeta": {
+    "getRouterInfo": { "enabled": true, "labels": ["router", "info"] }
+  }
+}

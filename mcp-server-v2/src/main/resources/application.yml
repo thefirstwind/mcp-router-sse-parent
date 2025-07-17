@@ -1,7 +1,7 @@
 # Spring Boot
 server:
   port: 8062  # 修改端口号，避免与已有服务冲突
-  address: 127.0.0.1  # 明确指定服务器地址
+  address: 0.0.0.0
   error:
     include-message: always
     include-binding-errors: always
@@ -19,6 +19,7 @@ spring:
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides time information tools and resources"
         sse-message-endpoint: /mcp/messages
+        sse-endpoint: /sse
         capabilities:
           tool: true
           resource: true

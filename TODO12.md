@@ -9,3 +9,7 @@ mcp-server-v2: 通过自动注册方法，上报到nacos，该项目无需修改
 1 当有mcp-server-v2住的到nacos时，mcp-router要能感知到，并且将注册信息，实例信息，mcp配置信息保存在本地，
 2 通过nacos的listener检测到mcp-server-v2健康度，如果不可用清除相关的注册信息
 3 mcp-router中提供外部可调用的所有mcp server的列表信息。
+
+
+
+理解@TODO10.md ，@nacos-api-code-anlysis.md ，以及当前项目架构，结合 nacos api 对应的实际代码@nacos-api-code.md ，分析 mcp-router需要改进的地方，总结出可操作的改造方案。分开若干步，每一步都需要从新编译mcp-router项目，并且能启动 可以验证。
