@@ -42,26 +42,31 @@ public class HealthCheckService {
     public void performHealthCheck() {
         log.debug("Starting scheduled health check");
         
-        // 对已缓存的服务进行健康检查
-        if (healthStatusCache.isEmpty()) {
-            log.debug("No services in cache to check");
-            return;
-        }
-        
-        // 遍历已缓存的服务进行健康检查
-        healthStatusCache.values().forEach(cachedStatus -> {
-            try {
-                // 创建一个简化的服务器信息用于健康检查
-                McpServerInfo serverInfo = createServerInfoFromCache(cachedStatus);
-                checkServerHealth(serverInfo)
-                        .doOnNext(this::updateHealthStatus)
-                        .doOnError(error -> log.error("Health check failed for service: {}", 
-                                cachedStatus.getServiceName(), error))
-                        .subscribe();
-            } catch (Exception e) {
-                log.error("Failed to check health for service: {}", cachedStatus.getServiceName(), e);
-            }
-        });
+        // 首先从服务注册中心发现所有已注册的MCP服务
+        discoverAndCheckAllMcpServices()
+                .doOnError(error -> log.error("Failed to discover and check MCP services", error))
+                .subscribe();
+    }
+    
+    /**
+     * 发现并检查所有MCP服务
+     */
+    private Mono<Void> discoverAndCheckAllMcpServices() {
+        // 使用通配符查询所有配置的服务组中的 MCP 服务
+        // "*" 表示查询所有服务名，"*" 表示查询所有配置的服务组
+        return serverRegistry.getAllHealthyServers("*", "*")
+                .cast(McpServerInfo.class)
+                .flatMap(this::checkServerHealth)
+                .doOnNext(this::updateHealthStatus)
+                .doOnError(error -> log.error("Health check failed during discovery", error))
+                .then()
+                .doOnSuccess(unused -> {
+                    if (healthStatusCache.isEmpty()) {
+                        log.debug("No active MCP services found to check");
+                    } else {
+                        log.debug("Health check completed for {} services", healthStatusCache.size());
+                    }
+                });
     }
     
     /**
@@ -75,6 +80,17 @@ public class HealthCheckService {
                 .doOnNext(this::updateHealthStatus)
                 .doOnError(error -> log.error("Health check failed for service: {}", serviceName, error))
                 .then();
+    }
+    
+    /**
+     * 手动触发全量健康检查
+     */
+    public Mono<Void> triggerFullHealthCheck() {
+        log.info("Triggering full health check for all MCP services");
+        
+        return discoverAndCheckAllMcpServices()
+                .doOnSuccess(unused -> log.info("Full health check completed"))
+                .doOnError(error -> log.error("Full health check failed", error));
     }
     
     /**
@@ -101,34 +117,161 @@ public class HealthCheckService {
     }
     
     /**
-     * 执行健康检查
+     * 执行健康检查 - 使用心跳请求到 MCP 服务的 SSE 端点
      */
     private Mono<Boolean> performHealthCheck(McpServerInfo serverInfo) {
-        String healthUrl = buildHealthUrl(serverInfo);
+        String heartbeatUrl = buildHeartbeatUrl(serverInfo);
         
-        return webClient.get()
-                .uri(healthUrl)
+        // 构建 MCP 心跳请求
+        String heartbeatPayload = buildMcpHeartbeatPayload();
+        
+        return webClient.post()
+                .uri(heartbeatUrl)
+                .header("Content-Type", "application/json")
+                .header("Accept", "text/event-stream")
+                .bodyValue(heartbeatPayload)
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(HEALTH_CHECK_TIMEOUT)
-                .map(response -> true)
-                .onErrorReturn(false)
+                .map(response -> {
+                    // 检查 MCP 响应是否有效
+                    if (response != null && (
+                            response.contains("\"jsonrpc\"") || 
+                            response.contains("\"result\"") ||
+                            response.contains("pong") ||
+                            response.contains("success"))) {
+                        return true;
+                    }
+                    return false;
+                })
+                .onErrorResume(error -> {
+                    log.debug("MCP heartbeat failed for {}:{} - {}", 
+                            serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                            serverInfo.getPort(), 
+                            error.getMessage());
+                    
+                    // 如果心跳失败，尝试简单的 SSE 连接检查
+                    return attemptSseConnectivityCheck(serverInfo);
+                })
                 .doOnNext(healthy -> {
                     if (healthy) {
-                        log.debug("Health check passed for {}:{}", serverInfo.getIp(), serverInfo.getPort());
+                        log.debug("✅ Health check passed for {}:{}", 
+                                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                                serverInfo.getPort());
                     } else {
-                        log.warn("Health check failed for {}:{}", serverInfo.getIp(), serverInfo.getPort());
+                        log.debug("❌ Health check failed for {}:{}", 
+                                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                                serverInfo.getPort());
                     }
                 });
     }
     
     /**
-     * 构建健康检查URL
+     * 构建 MCP 心跳请求 payload
      */
-    private String buildHealthUrl(McpServerInfo serverInfo) {
-        // 从元数据获取健康检查端点，默认为 /actuator/health
-        String healthEndpoint = serverInfo.getMetadata().getOrDefault("healthEndpoint", "/actuator/health");
-        return String.format("http://%s:%d%s", serverInfo.getIp(), serverInfo.getPort(), healthEndpoint);
+    private String buildMcpHeartbeatPayload() {
+        return """
+                {
+                    "jsonrpc": "2.0",
+                    "id": "health-check-%d",
+                    "method": "ping"
+                }
+                """.formatted(System.currentTimeMillis());
+    }
+    
+    /**
+     * 尝试简单的 SSE 连接检查
+     */
+    private Mono<Boolean> attemptSseConnectivityCheck(McpServerInfo serverInfo) {
+        String sseUrl = buildSseUrl(serverInfo);
+        
+        return webClient.get()
+                .uri(sseUrl)
+                .header("Accept", "text/event-stream")
+                .header("Cache-Control", "no-cache")
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(5))
+                .map(response -> {
+                    // 检查是否是有效的 SSE 响应
+                    return response != null && (
+                            response.startsWith("data:") || 
+                            response.contains("event:") ||
+                            response.contains("retry:") ||
+                            !response.trim().isEmpty());
+                })
+                .onErrorResume(error -> {
+                    // 最后尝试基础连接检查
+                    return attemptBasicConnectivityCheck(serverInfo);
+                })
+                .doOnNext(connected -> {
+                    if (connected) {
+                        log.debug("🔗 SSE connectivity check passed for {}:{}", 
+                                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                                serverInfo.getPort());
+                    }
+                });
+    }
+    
+    /**
+     * 尝试基础连接检查（最后的回退方案）
+     */
+    private Mono<Boolean> attemptBasicConnectivityCheck(McpServerInfo serverInfo) {
+        // 尝试连接服务器的基础端口
+        String baseUrl = String.format("http://%s:%d/", 
+                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                serverInfo.getPort());
+        
+        return webClient.get()
+                .uri(baseUrl)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(3))
+                .map(response -> true)
+                .onErrorReturn(false)
+                .doOnNext(connected -> {
+                    if (connected) {
+                        log.debug("🔗 Basic connectivity check passed for {}:{}", 
+                                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                                serverInfo.getPort());
+                    }
+                });
+    }
+    
+    /**
+     * 构建心跳检查URL（使用 MCP 服务的 SSE 端点）
+     */
+    private String buildHeartbeatUrl(McpServerInfo serverInfo) {
+        String sseEndpoint = serverInfo.getSseEndpoint();
+        if (sseEndpoint == null || sseEndpoint.trim().isEmpty()) {
+            // 从元数据获取 SSE 端点
+            if (serverInfo.getMetadata() != null && serverInfo.getMetadata().containsKey("sseEndpoint")) {
+                sseEndpoint = serverInfo.getMetadata().get("sseEndpoint");
+            } else {
+                // 默认 SSE 端点
+                sseEndpoint = "/sse";
+            }
+        }
+        
+        // 确保端点以 / 开头
+        if (!sseEndpoint.startsWith("/")) {
+            sseEndpoint = "/" + sseEndpoint;
+        }
+        
+        String baseUrl = String.format("http://%s:%d%s", 
+                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                serverInfo.getPort(), 
+                sseEndpoint);
+        
+        log.debug("Built heartbeat URL for {}: {}", serverInfo.getName(), baseUrl);
+        return baseUrl;
+    }
+    
+    /**
+     * 构建 SSE 连接检查 URL
+     */
+    private String buildSseUrl(McpServerInfo serverInfo) {
+        return buildHeartbeatUrl(serverInfo); // 使用相同的 SSE 端点
     }
     
     /**

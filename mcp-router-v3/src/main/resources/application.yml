@@ -21,6 +21,12 @@ spring:
           password: nacos
           registry:
             enabled: true
+            # 支持多个服务组，用于查询不同组的 MCP 服务实例  暂时只支持一个元素 mcp-server
+            # TODO 后续添加多节点
+            # 服务发现时会遍历这些组来查找 MCP 服务 
+            service-groups: 
+              - mcp-server
+            # 当前服务注册到的组（默认使用第一个组）
             service-group: mcp-server
             service-name: ${spring.application.name}
             app-name: ${spring.application.name}  # 配置应用名称，用于 Nacos 配置发布时的 appName 字段

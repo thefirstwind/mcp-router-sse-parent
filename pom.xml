@@ -18,14 +18,14 @@
     <description>Parent project for MCP Router with Nacos Service Discovery</description>
 
     <modules>
-        <module>mcp-server-sse-v1</module>
+        <!-- <module>mcp-server-sse-v1</module> -->
         <!-- <module>mcp-router</module> -->
-        <module>mcp-router-v2</module>
+       <module>mcp-router-v3</module>
+        <!-- <module>mcp-router-v2</module> -->
 <!--       <module>mcp-client</module>-->
         <!-- <module>mcp-server</module> -->
 <!--        <module>mcp-server-v1</module>-->
         <module>mcp-server-v2</module>
-<!--        <module>mcp-server-v3</module>-->
     </modules>
 
     <properties>

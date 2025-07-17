@@ -76,3 +76,9 @@ curl -X POST "http://localhost:8052/mcp/servers/config/publish" \
   }'
 
 curl -s "http://localhost:8848/nacos/v1/cs/configs?pageNo=1&pageSize=10&search=accurate&dataId=test-success-appname-1.0.0-mcp-server.json&group=mcp-server" | python3 -m json.tool 2>/dev/null
+
+curl -s "http://localhost:8848/nacos/v1/cs/history?search=accurate&dataId=test-success-appname-1.0.0-mcp-server.json&group=mcp-server&pageNo=1&pageSize=10" | python3 -m json.tool 2>/dev/null
+
+
+-------------------
+echo "=== 13. 测试智能工具调用 - getAllPersons ===" && curl -X POST http://localhost:8052/api/v1/tools/call -H "Content-Type: application/json" -d '{"toolName": "getAllPersons", "arguments": {}}' | python3 -m json.tool

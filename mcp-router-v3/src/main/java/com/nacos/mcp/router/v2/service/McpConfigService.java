@@ -40,6 +40,16 @@ public class McpConfigService{
     
     @Value("${spring.ai.alibaba.mcp.nacos.registry.src-user:${spring.application.name}}")
     private String srcUser;
+    
+    /**
+     * 基于服务名生成固定UUID，确保同一服务名总是得到相同的UUID
+     */
+    private String generateFixedUuidFromServiceName(String serviceName) {
+        // 使用服务名的hash作为种子，确保相同服务名产生相同UUID
+        long hash = serviceName.hashCode();
+        // 使用固定的算法生成UUID，确保可重现性
+        return UUID.nameUUIDFromBytes(serviceName.getBytes()).toString();
+    }
 
     /**
      * 使用 HTTP 直接调用发布配置，支持 appName 参数
@@ -90,8 +100,9 @@ public class McpConfigService{
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(serverConfig);
 
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
                 String dataId = id + "-" + version + McpNacosConstants.SERVER_CONFIG_SUFFIX;
 
@@ -124,8 +135,9 @@ public class McpConfigService{
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(toolsConfig);
 
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
                 String dataId = id + "-" + version + McpNacosConstants.TOOLS_CONFIG_SUFFIX;
 
@@ -158,8 +170,9 @@ public class McpConfigService{
                 // 序列化为JSON
                 String configContent = objectMapper.writeValueAsString(versionConfig);
 
-                // 统一dataId生成规则
-                String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+                // 统一dataId生成规则 - 使用固定UUID确保同一服务名总是相同
+                String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+                String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
                 String dataId = id + McpNacosConstants.VERSIONS_CONFIG_SUFFIX;
 
                 // 使用 HTTP 方式发布版本配置，支持 appName 参数
@@ -315,9 +328,10 @@ public class McpConfigService{
      * 构建服务器配置（完全对齐官方结构）
      */
     private McpServerConfig buildServerConfig(McpServerInfo serverInfo) {
-        String id = serverInfo.getId() != null ? serverInfo.getId() : UUID.randomUUID().toString();
+        String serviceName = serverInfo.getName() != null ? serverInfo.getName() : this.appName;
+        String id = serverInfo.getId() != null ? serverInfo.getId() : generateFixedUuidFromServiceName(serviceName);
         String version = serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0";
-        String name = serverInfo.getName();
+        String name = serviceName;
         String groupName = serverInfo.getServiceGroup() != null ? serverInfo.getServiceGroup() : McpNacosConstants.SERVER_GROUP;
         String namespaceId = serverInfo.getNamespaceId() != null ? serverInfo.getNamespaceId() : "public";
         String toolsDataId = id + "-" + version + McpNacosConstants.TOOLS_CONFIG_SUFFIX;

@@ -6,6 +6,7 @@ import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.listener.NamingEvent;
 import com.nacos.mcp.router.v2.model.McpServerInfo;
 import com.nacos.mcp.router.v2.service.McpConfigService;
+import com.nacos.mcp.router.v2.config.NacosMcpRegistryConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,7 @@ public class McpServerRegistry {
     
     private final NamingService namingService;
     private final McpConfigService mcpConfigService;
+    private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
     
     // 本地缓存已注册的服务
     private final Map<String, McpServerInfo> registeredServers = new ConcurrentHashMap<>();
@@ -171,6 +174,11 @@ public class McpServerRegistry {
      * 获取所有健康的MCP服务器实例（优先查本地缓存）
      */
     public Flux<McpServerInfo> getAllHealthyServers(String serviceName, String serviceGroup) {
+        // 支持通配符查询，获取所有MCP服务
+        if ("*".equals(serviceName)) {
+            return getAllMcpServices(serviceGroup);
+        }
+        
         String cacheKey = serviceName + "@" + serviceGroup;
         List<McpServerInfo> cached = healthyInstanceCache.get(cacheKey);
         Long ts = healthyCacheTimestamp.get(cacheKey);
@@ -192,6 +200,77 @@ public class McpServerRegistry {
             } catch (Exception e) {
                 log.error("Failed to get healthy servers for service: {}", serviceName, e);
                 throw new RuntimeException("Failed to get healthy servers", e);
+            }
+        }).flatMapMany(Flux::fromIterable);
+    }
+    
+    /**
+     * 获取所有MCP服务（支持查询多个服务组）
+     */
+    private Flux<McpServerInfo> getAllMcpServices(String serviceGroup) {
+        // 如果指定了特定的服务组，只查询该组
+        if (!"*".equals(serviceGroup)) {
+            return getAllMcpServicesFromGroup(serviceGroup);
+        }
+        
+        // 通配符查询：遍历配置的所有服务组
+        List<String> serviceGroups = registryProperties.getServiceGroups();
+        if (serviceGroups == null || serviceGroups.isEmpty()) {
+            log.warn("⚠️ No service groups configured, falling back to default group");
+            return getAllMcpServicesFromGroup("mcp-server");
+        }
+        
+        log.debug("🔍 Searching MCP services across {} groups: {}", serviceGroups.size(), serviceGroups);
+        
+        return Flux.fromIterable(serviceGroups)
+                .flatMap(this::getAllMcpServicesFromGroup)
+                .distinct(server -> server.getIp() + ":" + server.getPort()) // 去重，避免同一实例在多个组中重复
+                .doOnComplete(() -> log.debug("✅ Completed searching across all configured service groups"));
+    }
+    
+    /**
+     * 从指定服务组获取所有MCP服务
+     */
+    private Flux<McpServerInfo> getAllMcpServicesFromGroup(String serviceGroup) {
+        return Mono.fromCallable(() -> {
+            try {
+                log.debug("🔍 Searching for MCP services in group: {}", serviceGroup);
+                
+                // 获取指定group下的所有服务
+                com.alibaba.nacos.api.naming.pojo.ListView<String> servicesList = 
+                    namingService.getServicesOfServer(1, Integer.MAX_VALUE, serviceGroup);
+                List<McpServerInfo> allServers = new ArrayList<>();
+                
+                if (servicesList == null || servicesList.getData() == null || servicesList.getData().isEmpty()) {
+                    log.debug("📭 No services found in group: {}", serviceGroup);
+                    return allServers;
+                }
+                
+                log.debug("📋 Found {} services in group {}: {}", 
+                    servicesList.getData().size(), serviceGroup, servicesList.getData());
+                
+                for (String service : servicesList.getData()) {
+                    try {
+                        List<Instance> instances = namingService.selectInstances(service, serviceGroup, true);
+                        List<McpServerInfo> serviceServers = instances.stream()
+                                .map(instance -> buildServerInfo(instance, service))
+                                .toList();
+                        allServers.addAll(serviceServers);
+                        
+                        if (!serviceServers.isEmpty()) {
+                            log.debug("✅ Found {} healthy instances for service {} in group {}", 
+                                serviceServers.size(), service, serviceGroup);
+                        }
+                    } catch (Exception e) {
+                        log.warn("⚠️ Failed to get instances for service: {} in group: {}", service, serviceGroup, e);
+                    }
+                }
+                
+                log.debug("📊 Total {} MCP servers found in group: {}", allServers.size(), serviceGroup);
+                return allServers;
+            } catch (Exception e) {
+                log.error("❌ Failed to get all MCP services in group: {}", serviceGroup, e);
+                throw new RuntimeException("Failed to get all MCP services", e);
             }
         }).flatMapMany(Flux::fromIterable);
     }

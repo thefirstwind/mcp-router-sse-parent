@@ -259,4 +259,57 @@ public class HealthCheckController {
             );
         });
     }
+    
+    /**
+     * 手动触发健康检查
+     */
+    @PostMapping("/check/{serviceName}")
+    public Mono<Map<String, Object>> triggerHealthCheck(@PathVariable String serviceName,
+                                                        @RequestParam(defaultValue = "mcp-server") String serviceGroup) {
+        log.info("Manual health check triggered for service: {}", serviceName);
+        
+        return healthCheckService.triggerHealthCheck(serviceName, serviceGroup)
+                .then(Mono.fromCallable(() -> {
+                    HealthCheckService.HealthStatus status = 
+                            healthCheckService.getServiceHealthStatus(serviceName);
+                    
+                    return Map.of(
+                            "serviceName", serviceName,
+                            "triggered", true,
+                            "timestamp", System.currentTimeMillis(),
+                            "currentStatus", status != null ? Map.of(
+                                    "healthy", status.isHealthy(),
+                                    "successCount", status.getSuccessCount(),
+                                    "failureCount", status.getFailureCount()
+                            ) : "No status available"
+                    );
+                }));
+    }
+    
+    /**
+     * 手动触发全量健康检查
+     */
+    @PostMapping("/check-all")
+    public Mono<Map<String, Object>> triggerFullHealthCheck() {
+        log.info("Manual full health check triggered");
+        
+        return healthCheckService.triggerFullHealthCheck()
+                .then(Mono.fromCallable(() -> {
+                    Map<String, HealthCheckService.HealthStatus> allStatuses = 
+                            healthCheckService.getAllHealthStatus();
+                    
+                    long healthyCount = allStatuses.values().stream()
+                            .mapToLong(status -> status.isHealthy() ? 1 : 0)
+                            .sum();
+                    
+                    return Map.of(
+                            "triggered", true,
+                            "timestamp", System.currentTimeMillis(),
+                            "totalServices", allStatuses.size(),
+                            "healthyServices", healthyCount,
+                            "unhealthyServices", allStatuses.size() - healthyCount,
+                            "services", allStatuses.keySet()
+                    );
+                }));
+    }
 } 

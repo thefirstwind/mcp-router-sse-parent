@@ -25,6 +25,7 @@ public class McpToolsConfig {
     /**
      * 工具元数据（必须存在，允许为空对象）
      */
+    @Builder.Default
     private Map<String, Object> toolsMeta = new java.util.HashMap<>();
     
     /**
