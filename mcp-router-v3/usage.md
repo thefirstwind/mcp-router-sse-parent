@@ -223,6 +223,18 @@ curl -X POST http://localhost:8050/mcp/servers/register \
     "healthy": true,
     "weight": 1.0
   }'
+
+curl -X POST http://localhost:8052/mcp/servers/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "demo-server",
+    "version": "v1",
+    "toolsDescriptionRef": "xxx",
+    "remoteServerConfig": { "host": "127.0.0.1", "port": 9000 },
+    "namespaceId": "public",
+    "versionDetail": { "desc": "test version" },
+    "toolsMeta": { "gray": true }
+  }'
 ```
 
 ### 3.5 注销MCP服务器

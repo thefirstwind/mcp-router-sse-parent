@@ -56,7 +56,7 @@ public class NacosMcpRegistryConfig {
     /**
      * 创建Nacos配置服务
      */
-    @Bean
+    @Bean(name = "mcpRouterConfigService")
     public ConfigService configService() {
         try {
             Properties properties = new Properties();
@@ -66,9 +66,17 @@ public class NacosMcpRegistryConfig {
             properties.setProperty("namespace", namespace);
             // 设置appName，这样在配置历史查询时会显示
             properties.setProperty("appName", "mcp-router-v3");
+            // 设置用户名，用于配置历史记录中的srcUser字段
+            properties.setProperty("srcUser", "mcp-router-v3");
+            // 添加应用标识
+            properties.setProperty("app", "mcp-router-v3");
+            properties.setProperty("applicationName", "mcp-router-v3");
+            
+            log.info("Creating Nacos ConfigService with properties: serverAddr={}, namespace={}, appName=mcp-router-v3", 
+                    serverAddr, namespace);
             
             ConfigService configService = ConfigFactory.createConfigService(properties);
-            log.info("Nacos ConfigService created successfully with server: {}", serverAddr);
+            log.info("Nacos ConfigService created successfully with server:{} and appName: mcp-router-v3", serverAddr);
             return configService;
         } catch (Exception e) {
             log.error("Failed to create Nacos ConfigService", e);

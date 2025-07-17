@@ -23,6 +23,8 @@ spring:
             enabled: true
             service-group: mcp-server
             service-name: ${spring.application.name}
+            app-name: ${spring.application.name}  # 配置应用名称，用于 Nacos 配置发布时的 appName 字段
+            src-user: ${spring.application.name}  # 配置源用户，用于 Nacos 配置历史记录
         
 logging:
   file:
