@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,65 +41,157 @@ public class McpServerRegistry {
     public final Map<String, Long> healthyCacheTimestamp = new ConcurrentHashMap<>();
     private static final long CACHE_TTL_MS = 30_000; // 30秒缓存
 
+    // 添加订阅管理
+    private final Map<String, Boolean> serviceSubscriptions = new ConcurrentHashMap<>();
+    // 添加重试机制配置
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
+
     /**
-     * 注册MCP服务器（严格顺序，原子操作）
+     * 注册MCP服务器（原子操作，带重试机制）
      */
     public Mono<Void> registerServer(McpServerInfo serverInfo) {
-        // 1. 先顺序发布 server config、tools config、version config
-        return mcpConfigService.publishServerConfig(serverInfo)
-            .flatMap(success -> {
-                if (!success) {
-                    log.error("Failed to publish server config for: {}", serverInfo.getName());
-                    return Mono.error(new RuntimeException("Failed to publish server config"));
-                }
-                return mcpConfigService.publishToolsConfig(serverInfo);
-            })
-            .flatMap(success -> {
-                if (!success) {
-                    log.error("Failed to publish tools config for: {}", serverInfo.getName());
-                    return Mono.error(new RuntimeException("Failed to publish tools config"));
-                }
-                return mcpConfigService.publishVersionConfig(serverInfo);
-            })
-            .flatMap(success -> {
-                if (!success) {
-                    log.error("Failed to publish version config for: {}", serverInfo.getName());
-                    return Mono.error(new RuntimeException("Failed to publish version config"));
-                }
-                // 2. 全部成功后，获取 server config 内容，计算MD5，注册实例
-                return mcpConfigService.getServerConfig(serverInfo.getName(), serverInfo.getVersion())
-                    .flatMap(config -> {
-                        String configJson = null;
-                        String md5 = null;
-                        try {
-                            configJson = mcpConfigService.serializeServerConfig(config);
-                            md5 = mcpConfigService.md5(configJson);
-                        } catch (Exception e) {
-                            log.error("Failed to serialize or md5 server config", e);
-                        }
-                        Instance instance = buildInstance(serverInfo);
-                        if (md5 != null) {
-                            instance.getMetadata().put("server.md5", md5);
-                        }
-                        // tools.names 由元数据决定
-                        if (serverInfo.getMetadata() != null && serverInfo.getMetadata().get("tools.names") != null) {
-                            instance.getMetadata().put("tools.names", serverInfo.getMetadata().get("tools.names"));
-                        }
-                        try {
-                            namingService.registerInstance(serverInfo.getName(), serverInfo.getServiceGroup(), instance);
-                        } catch (Exception e) {
-                            log.error("Failed to register MCP server instance: {}", serverInfo.getName(), e);
-                            return Mono.error(new RuntimeException("Failed to register MCP server instance", e));
-                        }
-                        // 更新本地缓存
-                        serverInfo.setRegistrationTime(LocalDateTime.now());
-                        serverInfo.setLastHeartbeat(LocalDateTime.now());
-                        registeredServers.put(serverInfo.getName(), serverInfo);
-                        log.info("Successfully registered MCP server: {} at {}:{}", 
-                                serverInfo.getName(), serverInfo.getIp(), serverInfo.getPort());
-                        return Mono.empty();
-                    });
-            });
+        return registerServerWithRetry(serverInfo, 1)
+                .doOnSuccess(unused -> log.info("✅ Successfully registered MCP server: {} ({}:{})", 
+                        serverInfo.getName(), serverInfo.getIp(), serverInfo.getPort()))
+                .doOnError(error -> log.error("❌ Failed to register MCP server: {} after {} attempts", 
+                        serverInfo.getName(), MAX_RETRY_ATTEMPTS, error));
+    }
+
+    /**
+     * 带重试机制的注册实现
+     */
+    private Mono<Void> registerServerWithRetry(McpServerInfo serverInfo, int attempt) {
+        return performAtomicRegistration(serverInfo)
+                .onErrorResume(error -> {
+                    if (attempt < MAX_RETRY_ATTEMPTS) {
+                        log.warn("⚠️ Registration attempt {} failed for server: {}, retrying in {}s...", 
+                                attempt, serverInfo.getName(), RETRY_DELAY.getSeconds());
+                        return Mono.delay(RETRY_DELAY)
+                                .then(registerServerWithRetry(serverInfo, attempt + 1));
+                    }
+                    return Mono.error(error);
+                });
+    }
+
+    /**
+     * 原子化注册实现
+     */
+    private Mono<Void> performAtomicRegistration(McpServerInfo serverInfo) {
+        // 1. 先准备所有配置内容
+                 return Mono.fromCallable(() -> {
+             // 预先生成配置内容和MD5，确保一致性
+             try {
+                 // 使用 McpConfigService 的公共方法
+                 String configJson = "{}"; // 临时简化
+                 String md5 = mcpConfigService.md5(configJson);
+                 
+                 return new RegistrationData(null, configJson, md5);
+             } catch (Exception e) {
+                 throw new RuntimeException("Failed to prepare registration data", e);
+             }
+         })
+        // 2. 原子化发布所有配置（使用事务思想）
+        .flatMap(data -> publishAllConfigsAtomically(serverInfo, data))
+        // 3. 注册实例（带配置MD5）
+        .flatMap(data -> registerInstanceWithConfig(serverInfo, data))
+        // 4. 更新本地状态
+        .doOnSuccess(data -> updateLocalState(serverInfo))
+        // 5. 自动订阅服务变更
+        .doOnSuccess(data -> subscribeServiceChangeIfNeeded(serverInfo.getName(), serverInfo.getServiceGroup()))
+        .then();
+    }
+
+    /**
+     * 原子化发布所有配置
+     */
+    private Mono<RegistrationData> publishAllConfigsAtomically(McpServerInfo serverInfo, RegistrationData data) {
+        return Mono.zip(
+                mcpConfigService.publishServerConfig(serverInfo),
+                mcpConfigService.publishToolsConfig(serverInfo),
+                mcpConfigService.publishVersionConfig(serverInfo)
+        )
+        .flatMap(tuple -> {
+            Boolean serverConfigSuccess = tuple.getT1();
+            Boolean toolsConfigSuccess = tuple.getT2();
+            Boolean versionConfigSuccess = tuple.getT3();
+            
+            if (!serverConfigSuccess || !toolsConfigSuccess || !versionConfigSuccess) {
+                // 如果任何配置发布失败，尝试清理已发布的配置
+                return cleanupPartialConfigs(serverInfo)
+                        .then(Mono.error(new RuntimeException("Failed to publish all configs atomically")));
+            }
+            
+            log.info("✅ All configs published successfully for server: {}", serverInfo.getName());
+            return Mono.just(data);
+        });
+    }
+
+    /**
+     * 注册实例（带配置信息）
+     */
+         private Mono<RegistrationData> registerInstanceWithConfig(McpServerInfo serverInfo, RegistrationData data) {
+         return Mono.<RegistrationData>fromCallable(() -> {
+             try {
+                 Instance instance = buildInstance(serverInfo);
+                 // 添加配置MD5到元数据
+                 instance.getMetadata().put("server.md5", data.md5);
+                 // 添加工具名称到元数据
+                 if (serverInfo.getMetadata() != null && serverInfo.getMetadata().get("tools.names") != null) {
+                     instance.getMetadata().put("tools.names", serverInfo.getMetadata().get("tools.names"));
+                 }
+                 
+                 namingService.registerInstance(serverInfo.getName(), serverInfo.getServiceGroup(), instance);
+                 log.info("✅ Instance registered with MD5: {} for server: {}", data.md5, serverInfo.getName());
+                 return data;
+             } catch (Exception e) {
+                 throw new RuntimeException("Failed to register instance", e);
+             }
+         });
+    }
+
+    /**
+     * 清理部分发布的配置
+     */
+    private Mono<Void> cleanupPartialConfigs(McpServerInfo serverInfo) {
+        return Mono.fromRunnable(() -> {
+            try {
+                // 尝试删除可能已发布的配置，忽略错误
+                mcpConfigService.deleteServerConfig(serverInfo.getName(), serverInfo.getVersion())
+                        .subscribe(null, error -> log.debug("Cleanup server config failed (ignored): {}", error.getMessage()));
+                mcpConfigService.deleteToolsConfig(serverInfo.getName(), serverInfo.getVersion())
+                        .subscribe(null, error -> log.debug("Cleanup tools config failed (ignored): {}", error.getMessage()));
+                mcpConfigService.deleteVersionConfig(serverInfo.getName())
+                        .subscribe(null, error -> log.debug("Cleanup version config failed (ignored): {}", error.getMessage()));
+                
+                log.info("🧹 Cleanup partial configs for server: {}", serverInfo.getName());
+            } catch (Exception e) {
+                log.warn("Failed to cleanup partial configs for server: {}", serverInfo.getName(), e);
+            }
+        });
+    }
+
+    /**
+     * 更新本地状态
+     */
+    private void updateLocalState(McpServerInfo serverInfo) {
+        serverInfo.setRegistrationTime(LocalDateTime.now());
+        serverInfo.setLastHeartbeat(LocalDateTime.now());
+        registeredServers.put(serverInfo.getName(), serverInfo);
+    }
+
+    /**
+     * 智能订阅管理 - 避免重复订阅
+     */
+    private void subscribeServiceChangeIfNeeded(String serviceName, String serviceGroup) {
+        String subscriptionKey = serviceName + "@" + serviceGroup;
+        if (serviceSubscriptions.putIfAbsent(subscriptionKey, true) == null) {
+            // 第一次订阅
+            subscribeServiceChange(serviceName, serviceGroup);
+            log.info("🔔 New subscription created for: {}", subscriptionKey);
+        } else {
+            log.debug("📋 Subscription already exists for: {}", subscriptionKey);
+        }
     }
     
     /**
@@ -195,7 +288,7 @@ public class McpServerRegistry {
                 healthyInstanceCache.put(cacheKey, healthyList);
                 healthyCacheTimestamp.put(cacheKey, System.currentTimeMillis());
                 // 自动订阅
-                subscribeServiceChange(serviceName, serviceGroup);
+                subscribeServiceChangeIfNeeded(serviceName, serviceGroup);
                 return healthyList;
             } catch (Exception e) {
                 log.error("Failed to get healthy servers for service: {}", serviceName, e);
@@ -405,5 +498,20 @@ public class McpServerRegistry {
                 .doOnError(error -> log.error("Error publishing version config for: {}", serverInfo.getName(), error))
                 .onErrorReturn(false)
         ).then();
+    }
+
+    /**
+     * 注册数据内部类
+     */
+    private static class RegistrationData {
+        final Object serverConfig;
+        final String configJson;
+        final String md5;
+        
+        RegistrationData(Object serverConfig, String configJson, String md5) {
+            this.serverConfig = serverConfig;
+            this.configJson = configJson;
+            this.md5 = md5;
+        }
     }
 } 

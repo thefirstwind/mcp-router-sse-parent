@@ -1,0 +1,66 @@
+# Spring Boot
+server:
+  port: 8064  # 修改端口号，避免与已有服务冲突
+  address: 0.0.0.0
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  application:
+    name: mcp-server-v4
+  ai:
+    mcp:
+      server:
+        name: ${spring.application.name}
+        version: 1.0.1
+        type: ASYNC  # Recommended for reactive applications
+        instructions: "This reactive server provides time information tools and resources"
+        sse-message-endpoint: /mcp/messages
+        sse-endpoint: /sse
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+    alibaba:
+      mcp:
+        nacos:
+          namespace: public
+          server-addr: 127.0.0.1:8848
+          username: nacos
+          password: nacos
+          registry:
+            enabled: true
+            service-group: mcp-server
+            service-name: ${spring.application.name}
+
+  # R2DBC Datasource Configuration for MySQL
+  r2dbc:
+    url: r2dbc:mysql://127.0.0.1:3306/person_demo?useSSL=false&serverTimezone=UTC
+    username: root
+    password: hot365fm
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+# Logging
+logging:
+  level:
+    com.nacos.mcp: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.r2dbc: DEBUG
+    com.alibaba.cloud.ai.mcp: DEBUG
+    io.modelcontextprotocol: DEBUG
+    root: INFO
+
+# Management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics 

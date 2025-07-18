@@ -261,12 +261,12 @@ public class HealthCheckController {
     }
     
     /**
-     * 手动触发健康检查
+     * 手动触发指定服务的健康检查
      */
     @PostMapping("/check/{serviceName}")
     public Mono<Map<String, Object>> triggerHealthCheck(@PathVariable String serviceName,
                                                         @RequestParam(defaultValue = "mcp-server") String serviceGroup) {
-        log.info("Manual health check triggered for service: {}", serviceName);
+        log.info("Manual MCP health check triggered for service: {}", serviceName);
         
         return healthCheckService.triggerHealthCheck(serviceName, serviceGroup)
                 .then(Mono.fromCallable(() -> {
@@ -281,7 +281,8 @@ public class HealthCheckController {
                                     "healthy", status.isHealthy(),
                                     "successCount", status.getSuccessCount(),
                                     "failureCount", status.getFailureCount()
-                            ) : "No status available"
+                            ) : "No status available",
+                            "healthCheckType", "MCP_PROTOCOL"
                     );
                 }));
     }
@@ -289,27 +290,41 @@ public class HealthCheckController {
     /**
      * 手动触发全量健康检查
      */
-    @PostMapping("/check-all")
+    @PostMapping("/trigger-full-check")
     public Mono<Map<String, Object>> triggerFullHealthCheck() {
-        log.info("Manual full health check triggered");
+        log.info("Triggering full health check manually");
         
         return healthCheckService.triggerFullHealthCheck()
                 .then(Mono.fromCallable(() -> {
-                    Map<String, HealthCheckService.HealthStatus> allStatuses = 
-                            healthCheckService.getAllHealthStatus();
-                    
-                    long healthyCount = allStatuses.values().stream()
-                            .mapToLong(status -> status.isHealthy() ? 1 : 0)
-                            .sum();
-                    
-                    return Map.of(
-                            "triggered", true,
-                            "timestamp", System.currentTimeMillis(),
-                            "totalServices", allStatuses.size(),
-                            "healthyServices", healthyCount,
-                            "unhealthyServices", allStatuses.size() - healthyCount,
-                            "services", allStatuses.keySet()
-                    );
-                }));
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("message", "Full health check triggered successfully");
+                    result.put("status", "completed");
+                    result.put("timestamp", System.currentTimeMillis());
+                    return result;
+                }))
+                .onErrorResume(error -> {
+                    log.error("Failed to trigger full health check", error);
+                    Map<String, Object> errorResult = new HashMap<>();
+                    errorResult.put("message", "Failed to trigger full health check: " + error.getMessage());
+                    errorResult.put("status", "failed");
+                    errorResult.put("timestamp", System.currentTimeMillis());
+                    return Mono.just(errorResult);
+                });
+    }
+
+    /**
+     * 清理过期的健康状态
+     */
+    @PostMapping("/cleanup")
+    public Mono<Map<String, Object>> cleanupExpiredHealthStatus() {
+        log.info("Cleaning up expired health status");
+        
+        return Mono.fromCallable(() -> {
+            healthCheckService.cleanupExpiredHealthStatus();
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "Expired health status cleaned up successfully");
+            result.put("timestamp", System.currentTimeMillis());
+            return result;
+        });
     }
 } 

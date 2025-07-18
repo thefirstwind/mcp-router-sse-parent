@@ -30,4 +30,4 @@ public class WebFluxConfig implements WebFluxConfigurer {
                 .allowedHeaders("*")
                 .maxAge(3600);
     }
-} 
+}  

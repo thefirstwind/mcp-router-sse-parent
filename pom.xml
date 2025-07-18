@@ -21,7 +21,9 @@
        <module>mcp-router-v3</module>
 <!--       <module>mcp-client</module>-->
 <!--        <module>mcp-server-v1</module>-->
-        <module>mcp-server-v2</module>
+        <module>mcp-server-v3</module>
+        <module>mcp-server-v4</module>
+        <module>mcp-server-v5</module>
     </modules>
 
     <properties>

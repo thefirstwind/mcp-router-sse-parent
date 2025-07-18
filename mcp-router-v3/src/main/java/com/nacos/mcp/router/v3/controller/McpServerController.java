@@ -17,7 +17,7 @@ import javax.validation.Valid;
  */
 @Slf4j
 @RestController
-@RequestMapping("/mcp/servers")
+@RequestMapping("/api/mcp/servers")
 @RequiredArgsConstructor
 @Validated
 public class McpServerController {
@@ -27,14 +27,23 @@ public class McpServerController {
     private final McpServerService mcpServerService;
     
     /**
-     * 获取所有健康的MCP服务器
+     * 获取所有MCP服务器（匹配验证脚本期望的接口）
      */
-    @GetMapping("/healthy")
-    public Flux<McpServerInfo> getHealthyServers(
-            @RequestParam(defaultValue = "mcp-server-v2") String serviceName,
+    @GetMapping
+    public Flux<McpServerInfo> getAllMcpServers(
+            @RequestParam(defaultValue = "*") String serviceName,
             @RequestParam(defaultValue = "mcp-server") String serviceGroup) {
-        log.info("Getting healthy servers for service: {}, group: {}", serviceName, serviceGroup);
+        log.info("Getting all MCP servers for service: {}, group: {}", serviceName, serviceGroup);
         return mcpServerService.getHealthyServers(serviceName, serviceGroup);
+    }
+
+    /**
+     * 按服务组获取MCP服务器
+     */
+    @GetMapping("/group/{serviceGroup}")
+    public Flux<McpServerInfo> getServersByGroup(@PathVariable String serviceGroup) {
+        log.info("Getting servers by group: {}", serviceGroup);
+        return mcpServerService.getHealthyServers("*", serviceGroup);
     }
     
     /**

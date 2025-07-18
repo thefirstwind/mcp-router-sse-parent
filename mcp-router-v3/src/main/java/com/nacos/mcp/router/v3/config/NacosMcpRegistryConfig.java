@@ -50,7 +50,8 @@ public class NacosMcpRegistryConfig {
         /**
          * 服务组列表 - 用于服务发现时查询多个组
          */
-        private List<String> serviceGroups = Arrays.asList("mcp-server", "DEFAULT_GROUP");
+        // private List<String> serviceGroups = Arrays.asList("mcp-server", "DEFAULT_GROUP");
+        private List<String> serviceGroups = Arrays.asList("mcp-server");
         
         /**
          * 当前服务注册到的组
