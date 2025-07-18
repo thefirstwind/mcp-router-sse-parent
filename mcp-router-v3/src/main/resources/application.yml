@@ -26,6 +26,7 @@ spring:
             # 服务发现时会遍历这些组来查找 MCP 服务 
             service-groups: 
               - mcp-server
+              - mcp-endpoints
             # 当前服务注册到的组（默认使用第一个组）
             service-group: mcp-server
             service-name: ${spring.application.name}
@@ -41,6 +42,7 @@ logging:
     com.nacos.mcp.router.v3.service.McpClientManager: INFO
     org.springframework.ai: DEBUG
     com.alibaba.cloud.ai: DEBUG
+    # === 其他相关组件 ===
     # 降低WebFlux SSE传输的日志级别，减少不友好的错误信息
     io.modelcontextprotocol.client.transport.WebFluxSseClientTransport: WARN
     # 降低Reactor错误处理的日志级别

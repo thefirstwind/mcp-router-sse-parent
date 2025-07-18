@@ -250,16 +250,16 @@ public class McpServerRegistry {
                                 .filter(Instance::isEnabled)
                                 .map(instance -> buildServerInfo(instance, serviceName))
                                 .toList();
-                        // 实时刷新本地健康实例缓存
+                        // Refresh local healthy instance cache in real-time
                         healthyInstanceCache.put(cacheKey, healthyList);
                         healthyCacheTimestamp.put(cacheKey, System.currentTimeMillis());
-                        log.info("[订阅] 服务{}@{}变更，健康实例数：{}，本地缓存已刷新", serviceName, serviceGroup, healthyList.size());
+                        log.info("[Subscription] Service {}@{} changed, healthy instances: {}, local cache refreshed", serviceName, serviceGroup, healthyList.size());
                     }
                 }
             });
-            log.info("已订阅Nacos服务变更: {}@{}", serviceName, serviceGroup);
+            log.info("Successfully subscribed to Nacos service changes: {}@{}", serviceName, serviceGroup);
         } catch (Exception e) {
-            log.error("订阅Nacos服务变更失败: {}@{}", serviceName, serviceGroup, e);
+            log.error("Failed to subscribe to Nacos service changes: {}@{}", serviceName, serviceGroup, e);
         }
     }
 
@@ -401,14 +401,14 @@ public class McpServerRegistry {
             List<Instance> instances = namingService.getAllInstances(serviceName, serviceGroup);
             for (Instance instance : instances) {
                 if (instance.getIp().equals(ip) && instance.getPort() == port) {
-                    log.info("[健康同步] 仅日志提示：如需变更Nacos实例健康状态，需注销+注册实例。目标：{}:{} healthy={} enabled={}", ip, port, healthy, enabled);
-                    // 实际生产建议：namingService.deregisterInstance(...) + namingService.registerInstance(...)
+                    log.info("[Health Sync] Log notice: To change Nacos instance health status, need to deregister + register instance. Target: {}:{} healthy={} enabled={}", ip, port, healthy, enabled);
+                    // Production recommendation: namingService.deregisterInstance(...) + namingService.registerInstance(...)
                     return;
                 }
             }
-            log.warn("[健康同步] 未找到待同步的实例({}:{})，service={},group={}", ip, port, serviceName, serviceGroup);
+            log.warn("[Health Sync] Instance to sync not found ({}:{}), service={}, group={}", ip, port, serviceName, serviceGroup);
         } catch (Exception e) {
-            log.error("[健康同步] 同步实例健康状态到Nacos失败: {}@{} {}:{}", serviceName, serviceGroup, ip, port, e);
+            log.error("[Health Sync] Failed to sync instance health status to Nacos: {}@{} {}:{}", serviceName, serviceGroup, ip, port, e);
         }
     }
     

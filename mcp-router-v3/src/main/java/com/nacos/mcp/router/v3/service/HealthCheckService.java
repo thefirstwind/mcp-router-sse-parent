@@ -16,8 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * MCP协议健康检查服务
- * 使用标准MCP协议进行健康检查，而非HTTP请求
+ * 优化的MCP健康检查服务
+ * 实现分层健康检查策略：
+ * - Level 1: Nacos心跳检查（基础存活检查，快速）
+ * - Level 2: MCP协议检查（功能可用检查，深度）
  */
 @Slf4j
 @Service
@@ -33,6 +35,152 @@ public class HealthCheckService {
     
     // MCP健康检查超时时间
     private static final Duration MCP_HEALTH_CHECK_TIMEOUT = Duration.ofSeconds(10);
+    
+    /**
+     * 分层健康检查：结合Nacos心跳和MCP协议检查
+     */
+    public Mono<HealthStatus> checkServerHealthLayered(McpServerInfo serverInfo) {
+        String serverId = buildServerId(serverInfo);
+        HealthStatus status = healthStatusCache.computeIfAbsent(serverId, 
+                id -> new HealthStatus(serverId, serverInfo.getName()));
+        
+        log.debug("🔍 Starting layered health check for server: {} ({}:{})", 
+                serverInfo.getName(),
+                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
+                serverInfo.getPort());
+        
+        // Level 1: Nacos心跳检查（快速基础检查）
+        return checkNacosHealth(serverInfo)
+                .flatMap(nacosHealthy -> {
+                    if (!nacosHealthy) {
+                        // Nacos不健康，直接标记为失败
+                        status.recordFailure();
+                        log.debug("❌ Level 1 (Nacos) health check failed for server: {}", serverInfo.getName());
+                        return Mono.just(status);
+                    }
+                    
+                    log.debug("✅ Level 1 (Nacos) health check passed for server: {}", serverInfo.getName());
+                    
+                    // Level 2: MCP协议检查（深度功能检查）
+                    return checkMcpCapabilities(serverInfo)
+                            .map(mcpHealthy -> {
+                                if (mcpHealthy) {
+                                    status.recordSuccess();
+                                    log.debug("✅ Level 2 (MCP) health check passed for server: {}", serverInfo.getName());
+                                } else {
+                                    status.recordFailure();
+                                    log.debug("❌ Level 2 (MCP) health check failed for server: {}", serverInfo.getName());
+                                }
+                                return status;
+                            });
+                })
+                .onErrorResume(error -> {
+                    status.recordFailure();
+                    log.debug("❌ Health check error for server: {} - {}", 
+                            serverInfo.getName(), error.getMessage());
+                    return Mono.just(status);
+                })
+                .doOnNext(this::updateHealthStatus)
+                .doOnNext(this::updateCircuitBreakerState);
+    }
+
+    /**
+     * Level 1: Nacos心跳健康检查（快速基础检查）
+     */
+    private Mono<Boolean> checkNacosHealth(McpServerInfo serverInfo) {
+        return Mono.fromCallable(() -> {
+            try {
+                // 检查服务是否在Nacos中注册且健康
+                var instances = serverRegistry.getAllInstances(serverInfo.getName(), "mcp-server");
+                
+                return instances.any(instance -> 
+                    instance.getIp().equals(serverInfo.getIp()) && 
+                    instance.getPort() == serverInfo.getPort() &&
+                    instance.isHealthy()
+                ).block(Duration.ofSeconds(5)) != null && 
+                instances.any(instance -> 
+                    instance.getIp().equals(serverInfo.getIp()) && 
+                    instance.getPort() == serverInfo.getPort() &&
+                    instance.isHealthy()
+                ).block(Duration.ofSeconds(5));
+                
+            } catch (Exception e) {
+                log.debug("Nacos health check failed for {}: {}", serverInfo.getName(), e.getMessage());
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Level 2: MCP协议功能检查（深度检查）
+     */
+    private Mono<Boolean> checkMcpCapabilities(McpServerInfo serverInfo) {
+        return mcpClientManager.getOrCreateMcpClient(serverInfo)
+                .flatMap(client -> {
+                    // 方法1: 尝试获取服务器信息（标准MCP能力）
+                    return checkMcpServerInfo(client, serverInfo)
+                            .onErrorResume(error -> {
+                                log.debug("Server info check failed for {}, trying tools list check", 
+                                        serverInfo.getName());
+                                // 方法2: 尝试列出工具（验证服务响应能力）
+                                return checkMcpToolsList(client, serverInfo);
+                            });
+                })
+                .timeout(MCP_HEALTH_CHECK_TIMEOUT)
+                .onErrorReturn(false);
+    }
+
+    /**
+     * 手动触发分层健康检查
+     */
+    public Mono<Void> triggerLayeredHealthCheck(String serviceName, String serviceGroup) {
+        log.info("Triggering layered health check for service: {}", serviceName);
+        
+        return serverRegistry.getAllInstances(serviceName, serviceGroup)
+                .flatMap(this::checkServerHealthLayered)
+                .doOnNext(status -> log.info("Health check result for {}: {}", 
+                        status.getServiceName(), status.isHealthy() ? "HEALTHY" : "UNHEALTHY"))
+                .then();
+    }
+
+    /**
+     * 手动触发全量分层健康检查
+     */
+    public Mono<Void> triggerFullLayeredHealthCheck() {
+        log.info("Triggering full layered health check for all services");
+        
+        return serverRegistry.getAllHealthyServers("*", "*")
+                .cast(McpServerInfo.class)
+                .flatMap(this::checkServerHealthLayered)
+                .doOnNext(status -> log.info("Full health check result for {}: {}", 
+                        status.getServiceName(), status.isHealthy() ? "HEALTHY" : "UNHEALTHY"))
+                .then()
+                .doOnSuccess(unused -> log.info("Full layered health check completed"))
+                .doOnError(error -> log.error("Full layered health check failed", error));
+    }
+
+    /**
+     * 获取健康检查统计信息
+     */
+    public Map<String, Object> getHealthCheckStats() {
+        int totalServers = healthStatusCache.size();
+        long healthyServers = healthStatusCache.values().stream()
+                .mapToLong(status -> status.isHealthy() ? 1 : 0)
+                .sum();
+        long unhealthyServers = totalServers - healthyServers;
+        
+        return Map.of(
+                "total_servers", totalServers,
+                "healthy_servers", healthyServers,
+                "unhealthy_servers", unhealthyServers,
+                "health_rate", totalServers > 0 ? (double) healthyServers / totalServers : 0.0,
+                "check_strategy", "layered",
+                "levels", Map.of(
+                        "level1", "nacos_heartbeat",
+                        "level2", "mcp_capabilities"
+                )
+        );
+    }
     
     /**
      * 定时健康检查 - 已禁用，使用事件驱动机制替代

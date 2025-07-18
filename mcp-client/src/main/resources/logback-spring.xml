@@ -39,10 +39,36 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
+        <!-- Nacos 全套日志配置 -->
+        <logger name="com.alibaba.nacos" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+        <logger name="com.alibaba.cloud.nacos" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+        <logger name="com.alibaba.cloud.ai.mcp.nacos" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
     </springProfile>
     
     <springProfile name="prod">
         <logger name="com.nacos.mcp.client" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+        <!-- Nacos 生产环境日志配置 -->
+        <logger name="com.alibaba.nacos" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+        <logger name="com.alibaba.cloud.nacos" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </logger>
+        <logger name="com.alibaba.cloud.ai.mcp.nacos" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>

@@ -63,4 +63,4 @@ logging:
     root: INFO
     com.nacos.mcp.client: DEBUG
     org.springframework.ai: INFO
-    com.alibaba.cloud.ai.mcp: INFO 
+    com.alibaba.cloud.ai.mcp: INFO

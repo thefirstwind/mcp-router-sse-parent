@@ -19,7 +19,7 @@ import java.util.*;
 @Slf4j
 // @Service
  @RequiredArgsConstructor
-public class McpConfigServiceCopy {
+public class McpConfigService {
     
     private final ConfigService configService;
     private final ObjectMapper objectMapper;

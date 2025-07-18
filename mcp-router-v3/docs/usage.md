@@ -9,7 +9,7 @@
 - **Body**: McpMessage JSON
 - **示例**：
 ```bash
-curl -X POST http://localhost:8050/mcp/router/route/mcp-server-v2 \
+curl -X POST http://localhost:8052/mcp/router/route/mcp-server-v3 \
   -H "Content-Type: application/json" \
   -d '{
     "id": "test-001",
@@ -20,6 +20,18 @@ curl -X POST http://localhost:8050/mcp/router/route/mcp-server-v2 \
     }
   }'
 ```
+curl -X POST http://localhost:8052/mcp/router/smart-route \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "smart-test-001",
+    "method": "tools/call",
+    "params": {
+      "name": "getPersonById",
+      "arguments": {
+        "id": 1
+      }
+    }
+  }'
 
 ### 1.2 广播消息到所有服务实例
 - **POST** `/mcp/router/broadcast/{serviceName}`

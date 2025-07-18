@@ -2,16 +2,18 @@ package com.nacos.mcp.router.v3.controller;
 
 import com.nacos.mcp.router.v3.model.McpMessage;
 import com.nacos.mcp.router.v3.service.McpRouterService;
+import com.nacos.mcp.router.v3.registry.McpServerRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
  * MCP路由控制器
- * 处理MCP消息路由相关的HTTP请求
+ * 处理MCP消息路由相关的HTTP请求，适配智能路由服务
  */
 @Slf4j
 @RestController
@@ -20,6 +22,7 @@ import java.util.Map;
 public class McpRouterController {
     
     private final McpRouterService routerService;
+    private final McpServerRegistry serverRegistry;
     
     /**
      * 路由消息到指定服务
@@ -32,45 +35,49 @@ public class McpRouterController {
     }
     
     /**
-     * 广播消息到所有服务实例
+     * 路由消息到指定服务（带超时）
      */
-    @PostMapping("/broadcast/{serviceName}")
-    public Mono<Void> broadcastMessage(@PathVariable String serviceName,
-                                     @RequestBody McpMessage message) {
-        log.info("Received broadcast request for service: {}", serviceName);
-        return routerService.broadcastMessage(serviceName, message);
+    @PostMapping("/route/{serviceName}/timeout/{timeoutSeconds}")
+    public Mono<McpMessage> routeMessageWithTimeout(@PathVariable String serviceName,
+                                                   @PathVariable int timeoutSeconds,
+                                                   @RequestBody McpMessage message) {
+        log.info("Received route request for service: {} with timeout: {}s", serviceName, timeoutSeconds);
+        return routerService.routeRequest(serviceName, message, Duration.ofSeconds(timeoutSeconds));
     }
     
     /**
-     * 通过SSE发送消息
+     * 智能路由 - 自动发现和路由
      */
-    @PostMapping("/sse/send/{sessionId}")
-    public Mono<Void> sendSseMessage(@PathVariable String sessionId,
-                                   @RequestParam String eventType,
-                                   @RequestBody McpMessage message) {
-        log.info("Sending SSE message to session: {}, event: {}", sessionId, eventType);
-        return routerService.sendSseMessage(sessionId, eventType, message);
+    @PostMapping("/smart-route")
+    public Mono<McpMessage> smartRoute(@RequestBody McpMessage message,
+                                     @RequestParam(defaultValue = "30") int timeoutSeconds) {
+        log.info("Received smart route request");
+        return routerService.smartRoute(message, Duration.ofSeconds(timeoutSeconds));
     }
     
     /**
-     * 通过SSE广播消息
+     * 获取服务的工具列表
      */
-    @PostMapping("/sse/broadcast")
-    public Mono<Void> broadcastSseMessage(@RequestParam String eventType,
-                                        @RequestBody McpMessage message) {
-        log.info("Broadcasting SSE message, event: {}", eventType);
-        return routerService.broadcastSseMessage(eventType, message);
+    @GetMapping("/tools/{serviceName}")
+    public Mono<Object> getServiceTools(@PathVariable String serviceName) {
+        log.info("Getting tools for service: {}", serviceName);
+        return routerService.listServerTools(serviceName);
     }
     
     /**
-     * 路由SSE消息
+     * 检查服务是否有指定工具
      */
-    @PostMapping("/sse/route/{serviceName}/{sessionId}")
-    public Mono<McpMessage> routeSseMessage(@PathVariable String serviceName,
-                                          @PathVariable String sessionId,
-                                          @RequestBody McpMessage message) {
-        log.info("Routing SSE message to service: {}, session: {}", serviceName, sessionId);
-        return routerService.routeSseMessage(serviceName, sessionId, message);
+    @GetMapping("/tools/{serviceName}/has/{toolName}")
+    public Mono<Map<String, Object>> hasServiceTool(@PathVariable String serviceName,
+                                                   @PathVariable String toolName) {
+        log.info("Checking if service: {} has tool: {}", serviceName, toolName);
+        return routerService.hasServerTool(serviceName, toolName)
+                .map(hasTool -> Map.of(
+                        "serviceName", serviceName,
+                        "toolName", toolName,
+                        "hasTool", hasTool,
+                        "timestamp", System.currentTimeMillis()
+                ));
     }
     
     /**
@@ -81,8 +88,8 @@ public class McpRouterController {
         log.info("Checking health for service: {}", serviceName);
         
         return Mono.zip(
-                routerService.isServiceHealthy(serviceName),
-                routerService.getServiceInstanceCount(serviceName)
+                getServiceHealthStatus(serviceName),
+                getServiceInstanceCount(serviceName)
         ).map(tuple -> Map.of(
                 "serviceName", serviceName,
                 "healthy", tuple.getT1(),
@@ -98,10 +105,57 @@ public class McpRouterController {
     public Mono<Map<String, Object>> getRouterStats() {
         log.info("Getting router statistics");
         
-        return Mono.fromCallable(() -> Map.of(
-                "timestamp", System.currentTimeMillis(),
-                "status", "active",
-                "version", "2.0.0"
-        ));
+        Map<String, Object> stats = routerService.getRoutingStats();
+        stats.put("timestamp", System.currentTimeMillis());
+        return Mono.just(stats);
+    }
+    
+    /**
+     * 获取所有可用服务
+     */
+    @GetMapping("/services")
+    public Mono<Map<String, Object>> getAllServices(@RequestParam(defaultValue = "mcp-server") String serviceGroup) {
+        log.info("Getting all services for group: {}", serviceGroup);
+        
+        return serverRegistry.getAllHealthyServers("*", serviceGroup)
+                .collectList()
+                .map(servers -> Map.of(
+                        "serviceGroup", serviceGroup,
+                        "servers", servers,
+                        "count", servers.size(),
+                        "timestamp", System.currentTimeMillis()
+                ));
+    }
+    
+    /**
+     * 获取指定服务的实例列表
+     */
+    @GetMapping("/services/{serviceName}/instances")
+    public Mono<Map<String, Object>> getServiceInstances(@PathVariable String serviceName,
+                                                        @RequestParam(defaultValue = "mcp-server") String serviceGroup) {
+        log.info("Getting instances for service: {}@{}", serviceName, serviceGroup);
+        
+        return serverRegistry.getAllInstances(serviceName, serviceGroup)
+                .collectList()
+                .map(instances -> Map.of(
+                        "serviceName", serviceName,
+                        "serviceGroup", serviceGroup,
+                        "instances", instances,
+                        "count", instances.size(),
+                        "timestamp", System.currentTimeMillis()
+                ));
+    }
+    
+    // 私有辅助方法
+    
+    private Mono<Boolean> getServiceHealthStatus(String serviceName) {
+        return serverRegistry.getAllHealthyServers(serviceName, "mcp-server")
+                .hasElements();
+    }
+    
+    private Mono<Integer> getServiceInstanceCount(String serviceName) {
+        return serverRegistry.getAllInstances(serviceName, "mcp-server")
+                .count()
+                .map(Long::intValue);
     }
 } 
