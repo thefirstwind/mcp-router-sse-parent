@@ -1,5 +1,6 @@
 package com.nacos.mcp.router.v3.controller;
 
+import com.nacos.mcp.router.v3.config.NacosMcpRegistryConfig;
 import com.nacos.mcp.router.v3.model.McpMessage;
 import com.nacos.mcp.router.v3.service.McpRouterService;
 import com.nacos.mcp.router.v3.registry.McpServerRegistry;
@@ -23,6 +24,7 @@ public class McpRouterController {
     
     private final McpRouterService routerService;
     private final McpServerRegistry serverRegistry;
+    private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
     
     /**
      * 路由消息到指定服务
@@ -149,12 +151,15 @@ public class McpRouterController {
     // 私有辅助方法
     
     private Mono<Boolean> getServiceHealthStatus(String serviceName) {
-        return serverRegistry.getAllHealthyServers(serviceName, "mcp-server")
+        return serverRegistry.getAllHealthyServers(serviceName, registryProperties.getServiceGroups())
                 .hasElements();
     }
     
     private Mono<Integer> getServiceInstanceCount(String serviceName) {
-        return serverRegistry.getAllInstances(serviceName, "mcp-server")
+        // 注意：getAllInstances 方法目前只支持单个服务组，这里使用第一个配置的服务组
+        String serviceGroup = registryProperties.getServiceGroups().isEmpty() ? 
+                "mcp-server" : registryProperties.getServiceGroups().get(0);
+        return serverRegistry.getAllInstances(serviceName, serviceGroup)
                 .count()
                 .map(Long::intValue);
     }

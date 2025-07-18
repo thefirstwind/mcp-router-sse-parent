@@ -1,5 +1,6 @@
 package com.nacos.mcp.router.v3.service;
 
+import com.nacos.mcp.router.v3.config.NacosMcpRegistryConfig;
 import com.nacos.mcp.router.v3.model.McpServerInfo;
 import com.nacos.mcp.router.v3.registry.McpServerRegistry;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class SmartMcpRouterService {
     private final McpServerRegistry serverRegistry;
     private final McpClientManager mcpClientManager;
     private final LoadBalancer loadBalancer;
+    private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
 
     /**
      * 智能工具调用 - 只需要工具名称和参数
@@ -95,7 +97,7 @@ public class SmartMcpRouterService {
      * 发现支持指定工具的所有服务器
      */
     private Flux<McpServerInfo> findServersWithTool(String toolName) {
-        return serverRegistry.getAllHealthyServers("*", "mcp-server")
+        return serverRegistry.getAllHealthyServers("*", registryProperties.getServiceGroups())
                 .filterWhen(server -> validateToolSupport(server, toolName))
                 .doOnNext(server -> log.debug("🔍 Found server '{}' supporting tool '{}'", server.getName(), toolName));
     }
@@ -104,7 +106,7 @@ public class SmartMcpRouterService {
      * 根据名称查找服务器
      */
     private Mono<McpServerInfo> findServerByName(String serverName) {
-        return serverRegistry.getAllHealthyServers(serverName, "mcp-server")
+        return serverRegistry.getAllHealthyServers(serverName, registryProperties.getServiceGroups())
                 .next()
                 .switchIfEmpty(Mono.error(new RuntimeException("Server not found: " + serverName)));
     }
@@ -191,7 +193,7 @@ public class SmartMcpRouterService {
      * 获取所有可用工具
      */
     public Mono<List<String>> listAvailableTools() {
-        return serverRegistry.getAllHealthyServers("*", "mcp-server")
+        return serverRegistry.getAllHealthyServers("*", registryProperties.getServiceGroups())
                 .flatMap(server -> mcpClientManager.listTools(server)
                         .map(toolsResult -> toolsResult.tools().stream()
                                 .map(tool -> tool.name())

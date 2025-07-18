@@ -1,6 +1,7 @@
 package com.nacos.mcp.router.v3.service;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.nacos.mcp.router.v3.config.NacosMcpRegistryConfig;
 import com.nacos.mcp.router.v3.model.McpMessage;
 import com.nacos.mcp.router.v3.model.McpServerInfo;
 import com.nacos.mcp.router.v3.registry.McpServerRegistry;
@@ -27,6 +28,7 @@ public class McpRouterService {
     private final McpClientManager mcpClientManager;
     private final HealthCheckService healthCheckService;
     private final LoadBalancer loadBalancer;
+    private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
 
     // 默认超时时间
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -77,8 +79,8 @@ public class McpRouterService {
     private Mono<List<McpServerInfo>> discoverHealthyInstances(String serviceName) {
         log.debug("🔍 Discovering healthy instances for service: {}", serviceName);
         
-        // 使用与智能路由相同的逻辑：直接使用 Nacos 健康状态
-        return serverRegistry.getAllHealthyServers(serviceName, "mcp-server")
+        // 使用与智能路由相同的逻辑：直接使用 Nacos 健康状态，支持多个服务组
+        return serverRegistry.getAllHealthyServers(serviceName, registryProperties.getServiceGroups())
                 .collectList()
                 .doOnNext(healthyServers -> {
                     log.info("✅ Found {} healthy instances for service: {}", healthyServers.size(), serviceName);
@@ -225,7 +227,7 @@ public class McpRouterService {
     private Mono<List<McpServerInfo>> discoverServicesWithTool(String toolName) {
         log.debug("🔍 Discovering services that provide tool: {}", toolName);
         
-        return serverRegistry.getAllHealthyServers("*", "mcp-server")
+        return serverRegistry.getAllHealthyServers("*", registryProperties.getServiceGroups())
                 .cast(McpServerInfo.class)
                 .filterWhen(server -> checkServerHasTool(server, toolName))
                 .collectList()
@@ -248,7 +250,7 @@ public class McpRouterService {
     public Mono<Object> listServerTools(String serviceName) {
         log.info("Listing tools for service: {}", serviceName);
         
-        return serverRegistry.getAllHealthyServers(serviceName, "mcp-server")
+        return serverRegistry.getAllHealthyServers(serviceName, registryProperties.getServiceGroups())
                 .collectList()
                 .flatMap(list -> {
                     if (list == null || list.isEmpty()) {
@@ -268,7 +270,7 @@ public class McpRouterService {
     public Mono<Boolean> hasServerTool(String serviceName, String toolName) {
         log.info("Checking if service '{}' has tool '{}'", serviceName, toolName);
         
-        return serverRegistry.getAllHealthyServers(serviceName, "mcp-server")
+        return serverRegistry.getAllHealthyServers(serviceName, registryProperties.getServiceGroups())
                 .collectList()
                 .flatMap(list -> {
                     if (list == null || list.isEmpty()) {

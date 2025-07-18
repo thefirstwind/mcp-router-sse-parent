@@ -298,6 +298,61 @@ public class McpServerRegistry {
     }
     
     /**
+     * 获取所有健康的MCP服务器实例（支持多个服务组）
+     */
+    public Flux<McpServerInfo> getAllHealthyServers(String serviceName, List<String> serviceGroups) {
+        if (serviceGroups == null || serviceGroups.isEmpty()) {
+            log.warn("⚠️ No service groups provided, falling back to default group");
+            return getAllHealthyServers(serviceName, "mcp-server");
+        }
+        
+        if (serviceGroups.size() == 1) {
+            // 单个服务组，直接使用原有方法
+            return getAllHealthyServers(serviceName, serviceGroups.get(0));
+        }
+        
+        log.debug("🔍 Searching for service '{}' across {} groups: {}", serviceName, serviceGroups.size(), serviceGroups);
+        
+        // 支持通配符查询，获取所有MCP服务
+        if ("*".equals(serviceName)) {
+            return Flux.fromIterable(serviceGroups)
+                    .flatMap(this::getAllMcpServicesFromGroup)
+                    .distinct(server -> server.getIp() + ":" + server.getPort()); // 去重，避免同一实例在多个组中重复
+        }
+        
+        // 具体服务名查询，遍历所有服务组
+        return Flux.fromIterable(serviceGroups)
+                .flatMap(serviceGroup -> {
+                    String cacheKey = serviceName + "@" + serviceGroup;
+                    List<McpServerInfo> cached = healthyInstanceCache.get(cacheKey);
+                    Long ts = healthyCacheTimestamp.get(cacheKey);
+                    if (cached != null && ts != null && (System.currentTimeMillis() - ts < CACHE_TTL_MS)) {
+                        return Flux.fromIterable(cached);
+                    }
+                    
+                    // 首次或缓存过期，主动查Nacos并刷新缓存
+                    return Mono.fromCallable(() -> {
+                        try {
+                            List<Instance> instances = namingService.selectInstances(serviceName, serviceGroup, true);
+                            List<McpServerInfo> healthyList = instances.stream()
+                                    .map(instance -> buildServerInfo(instance, serviceName))
+                                    .toList();
+                            healthyInstanceCache.put(cacheKey, healthyList);
+                            healthyCacheTimestamp.put(cacheKey, System.currentTimeMillis());
+                            // 自动订阅
+                            subscribeServiceChangeIfNeeded(serviceName, serviceGroup);
+                            return healthyList;
+                        } catch (Exception e) {
+                            log.warn("⚠️ Failed to get instances for service: {} in group: {}", serviceName, serviceGroup, e);
+                            return List.<McpServerInfo>of(); // 返回空列表继续处理其他组
+                        }
+                    }).flatMapMany(Flux::fromIterable);
+                })
+                .distinct(server -> server.getIp() + ":" + server.getPort()) // 去重，避免同一实例在多个组中重复
+                .doOnComplete(() -> log.debug("✅ Completed searching for service '{}' across all groups", serviceName));
+    }
+    
+    /**
      * 获取所有MCP服务（支持查询多个服务组）
      */
     private Flux<McpServerInfo> getAllMcpServices(String serviceGroup) {
