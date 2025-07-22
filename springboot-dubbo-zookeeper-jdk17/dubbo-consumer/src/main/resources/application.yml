@@ -1,0 +1,40 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: dubbo-consumer
+
+# Dubbo配置
+dubbo:
+  application:
+    name: dubbo-consumer
+    logger: slf4j
+    qos-enable: false  # 禁用QoS管理端口
+  
+  # 注册中心配置
+  registry:
+    address: zookeeper://127.0.0.1:2181
+    timeout: 5000
+  
+  # 协议配置 - Consumer不需要启动服务端
+  protocol:
+    port: -1  # 禁用协议端口，Consumer不提供服务
+  
+  # 消费者配置
+  consumer:
+    timeout: 5000
+    retries: 0
+    check: false  # 启动时不检查提供者是否存在
+  
+  # 元数据配置
+  metadata-report:
+    address: zookeeper://127.0.0.1:2181
+
+# 日志配置
+logging:
+  level:
+    com.example.dubbo: DEBUG
+    org.apache.dubbo: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" 
