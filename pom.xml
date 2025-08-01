@@ -31,7 +31,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <spring-boot.version>3.4.0</spring-boot.version>
-        <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.0.0.3.250728</spring-ai-alibaba.version>
         <spring-ai.version>1.0.0</spring-ai.version>
         <nacos.version>3.0.1</nacos.version>
         <lombok.version>1.18.30</lombok.version>
@@ -68,13 +68,13 @@
 <!--                <type>pom</type>-->
 <!--                <scope>import</scope>-->
 <!--            </dependency>-->
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bom</artifactId>
-                <version>${spring-ai.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-bom</artifactId>-->
+<!--                <version>${spring-ai.version}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
             
             <!-- Jackson Version Management for Nacos Compatibility -->
             <dependency>
@@ -85,22 +85,22 @@
                 <scope>import</scope>
             </dependency>
             
-            <!-- Project modules -->
-            <dependency>
-                <groupId>com.nacos.mcp</groupId>
-                <artifactId>nacos-mcp-router</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.nacos.mcp</groupId>
-                <artifactId>mcp-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.nacos.mcp</groupId>
-                <artifactId>mcp-server-v2</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+<!--            &lt;!&ndash; Project modules &ndash;&gt;-->
+<!--            <dependency>-->
+<!--                <groupId>com.nacos.mcp</groupId>-->
+<!--                <artifactId>nacos-mcp-router</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.nacos.mcp</groupId>-->
+<!--                <artifactId>mcp-client</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.nacos.mcp</groupId>-->
+<!--                <artifactId>mcp-server-v2</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
         </dependencies>
     </dependencyManagement>
 
