@@ -33,27 +33,10 @@ spring:
             app-name: ${spring.application.name}  # 配置应用名称，用于 Nacos 配置发布时的 appName 字段
             src-user: ${spring.application.name}  # 配置源用户，用于 Nacos 配置历史记录
         
+# 日志配置现在由 logback-spring.xml 管理
+# 这里只保留必要的 Spring Boot 日志配置
 logging:
-  file:
-    name: ./logs/mcp-router-v3.log
-  level:
-    root: INFO
-    com.nacos.mcp.router.v3: DEBUG
-    com.nacos.mcp.router.v3.service.McpClientManager: INFO
-    org.springframework.ai: DEBUG
-    com.alibaba.cloud.ai: DEBUG
-    # === 其他相关组件 ===
-    # 降低WebFlux SSE传输的日志级别，减少不友好的错误信息
-    io.modelcontextprotocol.client.transport.WebFluxSseClientTransport: WARN
-    # 降低Reactor错误处理的日志级别
-    reactor.core.publisher.Operators: WARN
-    # 降低WebClient的日志级别，减少HTTP连接错误
-    org.springframework.web.reactive.function.client: WARN
-    # 降低Netty相关的连接错误日志
-    io.netty: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p --- [%15.15t] %-40.40logger{39} : %m%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p --- [%15.15t] %-40.40logger{39} : %m%n"
+  config: classpath:logback-spring.xml
     
 management:
   endpoints:

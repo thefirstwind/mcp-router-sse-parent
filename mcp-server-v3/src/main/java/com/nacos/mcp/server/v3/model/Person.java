@@ -1,18 +1,19 @@
 package com.nacos.mcp.server.v3.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import lombok.NoArgsConstructor;
 
 @Data
-@Table("person")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Person {
+
 
     public enum Gender {
         MALE, FEMALE, OTHER
     }
 
-    @Id
     private Long id;
     private String firstName;
     private String lastName;

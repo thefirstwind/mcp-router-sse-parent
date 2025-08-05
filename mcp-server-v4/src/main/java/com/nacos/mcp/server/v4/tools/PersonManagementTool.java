@@ -1,7 +1,6 @@
 package com.nacos.mcp.server.v4.tools;
 
 import com.nacos.mcp.server.v4.model.Person;
-import com.nacos.mcp.server.v4.repository.PersonRepository;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
@@ -9,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -20,10 +20,126 @@ import java.util.stream.Collectors;
 @Service
 public class PersonManagementTool {
 
-    private final PersonRepository personRepository;
 
-    public PersonManagementTool(PersonRepository personRepository) {
-        this.personRepository = personRepository;
+    private static final List<Person> MOCK_USER = new ArrayList<>();
+
+    static {
+        Person person1 = new Person();
+        person1.setId(1L);
+        person1.setFirstName("John");
+        person1.setLastName("Doe");
+        person1.setAge(30);
+        person1.setNationality("American");
+        person1.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person1);
+
+        Person person2 = new Person();
+        person2.setId(2L);
+        person2.setFirstName("Jane");
+        person2.setLastName("Smith");
+        person2.setAge(25);
+        person2.setNationality("British");
+        person2.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person2);
+
+        Person person3 = new Person();
+        person3.setId(3L);
+        person3.setFirstName("Hans");
+        person3.setLastName("Mueller");
+        person3.setAge(35);
+        person3.setNationality("German");
+        person3.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person3);
+
+        Person person4 = new Person();
+        person4.setId(4L);
+        person4.setFirstName("Maria");
+        person4.setLastName("Schmidt");
+        person4.setAge(28);
+        person4.setNationality("German");
+        person4.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person4);
+
+        Person person5 = new Person();
+        person5.setId(5L);
+        person5.setFirstName("Pierre");
+        person5.setLastName("Dubois");
+        person5.setAge(40);
+        person5.setNationality("French");
+        person5.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person5);
+
+        Person person6 = new Person();
+        person6.setId(6L);
+        person6.setFirstName("Sophie");
+        person6.setLastName("Martin");
+        person6.setAge(32);
+        person6.setNationality("French");
+        person6.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person6);
+
+        Person person7 = new Person();
+        person7.setId(7L);
+        person7.setFirstName("Akira");
+        person7.setLastName("Tanaka");
+        person7.setAge(29);
+        person7.setNationality("Japanese");
+        person7.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person7);
+
+        Person person8 = new Person();
+        person8.setId(8L);
+        person8.setFirstName("Yuki");
+        person8.setLastName("Sato");
+        person8.setAge(26);
+        person8.setNationality("Japanese");
+        person8.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person8);
+
+        Person person9 = new Person();
+        person9.setId(9L);
+        person9.setFirstName("Marco");
+        person9.setLastName("Rossi");
+        person9.setAge(33);
+        person9.setNationality("Italian");
+        person9.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person9);
+
+        Person person10 = new Person();
+        person10.setId(10L);
+        person10.setFirstName("Elena");
+        person10.setLastName("Garcia");
+        person10.setAge(27);
+        person10.setNationality("Spanish");
+        person10.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person10);
+
+        Person person11 = new Person();
+        person11.setId(11L);
+        person11.setFirstName("Tomas");
+        person11.setLastName("Hernandez");
+        person11.setAge(31);
+        person11.setNationality("Spanish");
+        person11.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person11);
+
+        Person person12 = new Person();
+        person12.setId(12L);
+        person12.setFirstName("Li");
+        person12.setLastName("Wang");
+        person12.setAge(24);
+        person12.setNationality("Chinese");
+        person12.setGender(Person.Gender.MALE);
+        MOCK_USER.add(person12);
+
+        Person person13 = new Person();
+        person13.setId(13L);
+        person13.setFirstName("Zhang");
+        person13.setLastName("Li");
+        person13.setAge(28);
+        person13.setNationality("Chinese");
+        person13.setGender(Person.Gender.FEMALE);
+        MOCK_USER.add(person13);
     }
 
     /**
@@ -32,7 +148,7 @@ public class PersonManagementTool {
     @Tool(name = "getAllPersons", description = "Get all persons from the database")
     public List<Map<String, Object>> getAllPersons() {
         log.info("PersonManagementTool#getAllPersons");
-        List<Person> persons = personRepository.findAll().collectList().block();
+        List<Person> persons = MOCK_USER;
         log.info("PersonManagementTool#getAllPersons found {} persons", persons != null ? persons.size() : 0);
 
         if (persons == null || persons.isEmpty()) {
@@ -61,7 +177,7 @@ public class PersonManagementTool {
             @ToolParam(description = "Person's ID") Long id) {
         log.info("PersonManagementTool#getPersonById id: {}", id);
         try {
-            Person person = personRepository.findById(id).block();
+            Person person = MOCK_USER.stream().filter(p -> p.getId() == id).findAny().get();
             if (person != null) {
                 Map<String, Object> result = new HashMap<>();
                 result.put("id", person.getId());
@@ -113,72 +229,25 @@ public class PersonManagementTool {
             person.setNationality(nationality);
             person.setGender(Person.Gender.valueOf(gender.toUpperCase()));
 
-            Person savedPerson = personRepository.save(person).block();
-            log.info("PersonManagementTool#addPerson saved person: {}", savedPerson);
+            person.setId(System.currentTimeMillis()); // 使用时间戳作为临时ID
+            MOCK_USER.add(person);
+            log.info("PersonManagementTool#addPerson saved person: {}", person);
 
-            if (savedPerson != null) {
-                Map<String, Object> result = new HashMap<>();
-                result.put("success", true);
-                result.put("id", savedPerson.getId());
-                result.put("firstName", savedPerson.getFirstName());
-                result.put("lastName", savedPerson.getLastName());
-                result.put("age", savedPerson.getAge());
-                result.put("nationality", savedPerson.getNationality());
-                result.put("gender", savedPerson.getGender().toString());
-                result.put("message", "Person added successfully");
-                return result;
-            } else {
-                Map<String, Object> result = new HashMap<>();
-                result.put("success", false);
-                result.put("message", "Failed to add person");
-                return result;
-            }
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("id", person.getId());
+            result.put("firstName", person.getFirstName());
+            result.put("lastName", person.getLastName());
+            result.put("age", person.getAge());
+            result.put("nationality", person.getNationality());
+            result.put("gender", person.getGender().toString());
+            result.put("message", "Person added successfully");
+            return result;
         } catch (Exception e) {
             Map<String, Object> result = new HashMap<>();
             result.put("success", false);
             result.put("error", "Error adding person: " + e.getMessage());
             log.error("PersonManagementTool#addPerson error: ", e);
-            return result;
-        }
-    }
-
-    /**
-     * 删除人员
-     */
-    @Tool(name = "deletePerson", description = "Delete a person from the database")
-    public Map<String, Object> deletePerson(
-            @ToolParam(description = "Person's ID") Long id) {
-        log.info("PersonManagementTool#deletePerson id: {}", id);
-
-        try {
-            // First check if person exists
-            Person existingPerson = personRepository.findById(id).block();
-            if (existingPerson == null) {
-                Map<String, Object> result = new HashMap<>();
-                result.put("success", false);
-                result.put("message", "Person not found with id: " + id);
-                log.info("PersonManagementTool#deletePerson person not found with id: {}", id);
-                return result;
-            }
-
-            // Delete the person
-            personRepository.deleteById(id).block();
-            log.info("PersonManagementTool#deletePerson deleted person with id: {}", id);
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("message", "Person deleted successfully");
-            result.put("deletedId", id);
-            result.put("deletedPerson", Map.of(
-                    "firstName", existingPerson.getFirstName(),
-                    "lastName", existingPerson.getLastName()
-            ));
-            return result;
-        } catch (Exception e) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", false);
-            result.put("error", "Error deleting person: " + e.getMessage());
-            log.error("PersonManagementTool#deletePerson error: ", e);
             return result;
         }
     }

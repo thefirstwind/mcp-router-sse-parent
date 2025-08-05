@@ -37,16 +37,7 @@ spring:
             service-group: mcp-server
             service-name: ${spring.application.name}
 
-  # R2DBC Datasource Configuration for MySQL
-  r2dbc:
-    url: r2dbc:mysql://127.0.0.1:3306/person_demo?useSSL=false&serverTimezone=UTC
-    username: root
-    password: hot365fm
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
+
 
 # Logging
 logging:

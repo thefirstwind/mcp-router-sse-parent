@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,11 +29,14 @@ public class McpServerConfig {
     @Autowired
     private Environment environment;
 
+    @Value("${server.port}")
+    private String serverPort;
+
     /**
      * 获取服务器端口
      */
     private int getServerPort() {
-        String port = environment.getProperty("server.port", "8062");
+        String port = environment.getProperty("server.port", serverPort);
         return Integer.parseInt(port);
     }
 
