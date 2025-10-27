@@ -1,89 +1,124 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
-        <groupId>com.nacos.mcp</groupId>
-        <artifactId>mcp-router-parent</artifactId>
-        <version>1.0.0</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
     </parent>
 
+    <groupId>com.nacos.mcp</groupId>
     <artifactId>mcp-server-v5</artifactId>
+    <version>1.0.0</version>
     <name>MCP Server V5 Example</name>
-    <description>MCP Server V5 implementation with Spring AI Alibaba Nacos</description>
-<!--    <properties>-->
-<!--        <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>-->
-<!--    </properties>-->
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <spring-ai-alibaba.version>1.0.0.3.250728</spring-ai-alibaba.version>
+        <nacos.version>2.2.0</nacos.version>
+        <lombok.version>1.18.30</lombok.version>
+        <jackson.version>2.15.3</jackson.version>
+    </properties>
 
     <dependencies>
-        <!-- Spring AI Alibaba Nacos MCP Server -->
+        <!-- Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Spring AI Alibaba -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-bom</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+            <type>pom</type>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/spring-ai-alibaba-bom/target/spring-ai-alibaba-bom-${spring-ai-alibaba.version}.pom</systemPath>
+        </dependency>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-nacos-mcp-server</artifactId>
             <version>${spring-ai-alibaba.version}</version>
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>com.alibaba.nacos</groupId>-->
-<!--                    <artifactId>nacos-client</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server/target/spring-ai-alibaba-starter-nacos-mcp-server-${spring-ai-alibaba.version}.jar</systemPath>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba.nacos</groupId>-->
-<!--            <artifactId>nacos-client</artifactId>-->
-<!--            <version>${nacos.version}</version>-->
-<!--        </dependency>-->
-
-        <!-- MCP Server WebFlux support -->
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
-            <version>${spring-ai.version}</version>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/models/spring-ai-alibaba-mcp-nacos/target/spring-ai-alibaba-mcp-nacos-${spring-ai-alibaba.version}.jar</systemPath>
         </dependency>
-
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-spring-context</artifactId>
-            <version>2.1.1</version>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/models/spring-ai-alibaba-mcp-nacos-common/target/spring-ai-alibaba-mcp-nacos-common-${spring-ai-alibaba.version}.jar</systemPath>
         </dependency>
-
-        <!-- Lombok for reducing boilerplate -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-server</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server/target/spring-ai-alibaba-autoconfigure-nacos-mcp-server-${spring-ai-alibaba.version}.jar</systemPath>
         </dependency>
-
-        <!-- Spring Boot Test -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-core</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../spring-ai-alibaba/models/spring-ai-alibaba-core/target/spring-ai-alibaba-core-${spring-ai-alibaba.version}.jar</systemPath>
         </dependency>
 
-        <!-- Spring Boot Starter Actuator for health checks and metrics -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <!-- Spring Retry for robust registration -->
+        <!-- Spring Retry -->
         <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
+
+        <!-- Nacos -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos.version}</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.ai</groupId>-->
-<!--            <artifactId>spring-ai-core</artifactId>-->
-<!--        </dependency>-->
+        <!-- Jackson -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Jackson BOM -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -91,26 +126,62 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.nacos.mcp.server.v5.McpServerV5Application</mainClass>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                    <annotationProcessorPaths>
-                        <path>
+                    <excludes>
+                        <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
+    <repositories>
+        <!-- Spring Milestones -->
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <!-- Spring Snapshots -->
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+
+        <!-- Aliyun Maven -->
+        <repository>
+            <id>aliyunmaven</id>
+            <name>Aliyun Maven</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <!-- Model Context Protocol -->
+        <repository>
+            <id>modelcontextprotocol</id>
+            <name>Model Context Protocol</name>
+            <url>https://maven.pkg.github.com/modelcontextprotocol/mcp</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project> 

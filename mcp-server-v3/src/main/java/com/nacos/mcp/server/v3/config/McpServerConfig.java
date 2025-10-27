@@ -32,6 +32,13 @@ public class McpServerConfig {
     @Value("${server.port}")
     private String serverPort;
 
+
+    @Value("${spring.ai.mcp.server.sse-message-endpoint}")
+    private String sseMessageEndpoint;
+
+    @Value("${spring.ai.mcp.server.sse-endpoint}")
+    private String sseEndpoint;
+
     /**
      * 获取服务器端口
      */
@@ -44,8 +51,19 @@ public class McpServerConfig {
      * 获取服务器IP地址
      */
     private String getServerIp() {
-        // 从环境变量或配置中获取IP，默认使用本地IP
-        return environment.getProperty("server.address", "127.0.0.1");
+        String address = environment.getProperty("server.address", "127.0.0.1");
+        // 如果配置的是 0.0.0.0（绑定所有接口），获取实际IP
+        if ("0.0.0.0".equals(address)) {
+            try {
+                // 获取本机实际IP地址
+                return java.net.InetAddress.getLocalHost().getHostAddress();
+            } catch (Exception e) {
+                log.warn("Failed to get local IP, using 127.0.0.1", e);
+                return "127.0.0.1";
+            }
+        }
+        return address;
+
     }
 
     /**
@@ -83,13 +101,13 @@ public class McpServerConfig {
         WebFluxSseServerTransportProvider provider = new WebFluxSseServerTransportProvider(
                 objectMapper,
                 baseUrl,
-                "/mcp/message",  // 消息端点
-                "/sse"          // SSE端点
+                sseMessageEndpoint,  // 消息端点
+                sseEndpoint  // SSE端点
         );
 
         log.info("✅ MCP Server Transport Provider created successfully");
-        log.info("📡 SSE endpoint: {}/sse", baseUrl);
-        log.info("📨 Message endpoint: {}/mcp/message", baseUrl);
+        log.info("📡 SSE endpoint: {}{}", baseUrl,sseEndpoint);
+        log.info("📨 Message endpoint: {}{}", baseUrl,sseMessageEndpoint);
 
         return provider;
     }

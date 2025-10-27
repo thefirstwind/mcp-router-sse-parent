@@ -22,9 +22,9 @@
 原错误信息：
 ```
 Ambiguous mapping. Cannot map 'healthController' method
-com.nacos.mcp.router.v3.controller.HealthController#getHealthStats()
+controller.com.pajk.mcpbridge.core.HealthController#getHealthStats()
 to {GET /mcp/health/stats}: There is already 'healthCheckController' bean method
-com.nacos.mcp.router.v3.controller.HealthCheckController#getHealthCheckStats() mapped.
+controller.com.pajk.mcpbridge.core.HealthCheckController#getHealthCheckStats() mapped.
 ```
 
 ### ✅ 修复方案实施

@@ -259,8 +259,9 @@ public class PersonManagementTool {
     public Map<String, Object> getSystemInfo() {
         log.info("PersonManagementTool#getSystemInfo");
         return Map.of(
-                "server", "mcp-server-v2",
+                "server", "mcp-server-v5",
                 "version", "1.0.0",
+                "springBootVersion", "2.7.18",
                 "timestamp", System.currentTimeMillis(),
                 "javaVersion", System.getProperty("java.version"),
                 "osName", System.getProperty("os.name")
@@ -275,7 +276,7 @@ public class PersonManagementTool {
         log.info("PersonManagementTool#listServers");
         return Map.of(
                 "servers", List.of(
-                        Map.of("name", "mcp-server-v2", "port", 8061, "status", "active")
+                        Map.of("name", "mcp-server-v5", "port", 8065, "status", "active")
                 )
         );
     }

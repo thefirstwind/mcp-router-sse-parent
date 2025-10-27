@@ -1,0 +1,74 @@
+server:
+  port: 20881
+
+spring:
+  application:
+    name: dubbo-provider
+  profiles:
+    active: dev
+
+# Dubbo 配置
+dubbo:
+  application:
+    name: ${spring.application.name}
+    qos-enable: false
+    qos-accept-foreign-ip: false
+  protocol:
+    name: dubbo
+    port: 20880
+    threads: 200
+    queues: 1000
+    heartbeat: 60000
+    accepts: 1000
+    dispatcher: message
+    serialization: hessian2
+  registry:
+    address: zookeeper://localhost:2181
+    timeout: 10000
+    check: true
+  provider:
+    timeout: 10000
+    retries: 2
+    loadbalance: roundrobin
+    cluster: failover
+    filter: -exception
+  consumer:
+    check: false
+    timeout: 10000
+    retries: 2
+    loadbalance: roundrobin
+    cluster: failover
+    filter: -exception
+
+# 日志配置
+logging:
+  level:
+    com.example: DEBUG
+    org.apache.dubbo: INFO
+    org.apache.zookeeper: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/provider.log
+    max-size: 100MB
+    max-history: 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: false
+
+# 自定义配置
+app:
+  version: 1.0.0
+  description: Dubbo2 Provider Service 

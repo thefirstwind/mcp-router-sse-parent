@@ -2,11 +2,11 @@ package com.nacos.mcp.router.v3.service;
 
 import com.alibaba.nacos.api.config.ConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nacos.mcp.router.v3.config.McpNacosConstants;
-import com.nacos.mcp.router.v3.model.McpServerConfig;
-import com.nacos.mcp.router.v3.model.McpServerInfo;
-import com.nacos.mcp.router.v3.model.McpToolsConfig;
-import com.nacos.mcp.router.v3.model.McpVersionConfig;
+import com.pajk.mcpbridge.core.config.McpNacosConstants;
+import com.pajk.mcpbridge.core.model.McpServerConfig;
+import com.pajk.mcpbridge.core.model.McpServerInfo;
+import com.pajk.mcpbridge.core.model.McpToolsConfig;
+import com.pajk.mcpbridge.core.model.McpVersionConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;

@@ -18,8 +18,8 @@ spring:
         version: 1.0.1
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides time information tools and resources"
-        sse-message-endpoint: /mcp/messages
-        sse-endpoint: /sse
+        sse-message-endpoint: /xxxxxxx/msg
+        sse-endpoint: /sse-node4
         capabilities:
           tool: true
           resource: true

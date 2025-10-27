@@ -1,0 +1,50 @@
+server:
+  port: 18081
+
+spring:
+  application:
+    name: dubbo-consumer
+  profiles:
+    active: dev
+
+# Dubbo2.5 配置
+dubbo:
+  application:
+    name: ${spring.application.name}
+  registry:
+    address: zookeeper://127.0.0.1:2181
+  consumer:
+    timeout: 10000
+    retries: 2
+    check: false
+
+# 日志配置
+logging:
+  level:
+    com.example: DEBUG
+    com.alibaba.dubbo: INFO
+    org.apache.zookeeper: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/consumer.log
+
+# 监控配置 - Spring Boot 3.x 兼容
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 自定义配置
+app:
+  version: 1.0.0
+  description: Dubbo2 Consumer Service with Spring Boot 3.5.2 

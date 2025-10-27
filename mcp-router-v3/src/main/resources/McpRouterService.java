@@ -1,8 +1,10 @@
 package com.nacos.mcp.router.v3.service;
 
-import com.nacos.mcp.router.v3.model.McpMessage;
-import com.nacos.mcp.router.v3.model.McpServerInfo;
-import com.nacos.mcp.router.v3.registry.McpServerRegistry;
+import com.pajk.mcpbridge.core.model.McpMessage;
+import com.pajk.mcpbridge.core.model.McpServerInfo;
+import com.pajk.mcpbridge.core.registry.McpServerRegistry;
+import com.pajk.mcpbridge.core.service.HealthCheckService;
+import com.pajk.mcpbridge.core.service.McpClientManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

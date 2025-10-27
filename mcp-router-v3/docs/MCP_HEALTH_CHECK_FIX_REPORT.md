@@ -159,7 +159,7 @@ curl "http://localhost:8052/mcp/health/status"
 # application.yml 中添加MCP健康检查日志
 logging:
   level:
-    com.nacos.mcp.router.v3.service.HealthCheckService: DEBUG
+    service.com.pajk.mcpbridge.core.HealthCheckService: DEBUG
     io.modelcontextprotocol: DEBUG
 ```
 

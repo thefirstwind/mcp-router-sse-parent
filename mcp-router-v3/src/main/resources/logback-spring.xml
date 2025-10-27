@@ -97,7 +97,7 @@
         </logger>
         
         <!-- MCP Client Manager 特殊配置 -->
-        <logger name="com.nacos.mcp.router.v3.service.McpClientManager" level="INFO" additivity="false">
+        <logger name="com.pajk.mcpbridge.core.service.McpClientManager" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
             <appender-ref ref="ERROR_FILE"/>

@@ -1,24 +1,26 @@
 # Spring Boot
 server:
   port: 8065  # 修改端口号，避免与已有服务冲突
-  address: 0.0.0.0
+  address: 127.0.0.1
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
     include-exception: false
 
+# Spring Cloud 配置
 spring:
   application:
     name: mcp-server-v5
   ai:
     mcp:
       server:
+        enabled: true  # 启用 MCP Server
         name: ${spring.application.name}
         version: 1.0.1
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides time information tools and resources"
-        sse-message-endpoint: /mcp/messages
+        sse-message-endpoint: /mcp/message
         sse-endpoint: /sse
         capabilities:
           tool: true
@@ -32,10 +34,14 @@ spring:
           server-addr: 127.0.0.1:8848
           username: nacos
           password: nacos
+          ip: 127.0.0.1  # 显式设置IP地址
           registry:
             enabled: true
             service-group: mcp-server
             service-name: ${spring.application.name}
+            service-register: true  # 明确启用服务注册
+            service-ephemeral: true  # 设置为临时实例
+            sse-export-context-path: ""  # SSE 导出上下文路径
 
 
 # Logging
@@ -53,4 +59,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics 
+        include: health,info
+  endpoint:
+    health:
+      show-details: always 

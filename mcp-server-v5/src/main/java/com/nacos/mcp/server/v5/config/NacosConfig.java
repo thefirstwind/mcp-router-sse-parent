@@ -1,6 +1,7 @@
 package com.nacos.mcp.server.v5.config;
 
 import com.alibaba.nacos.api.NacosFactory;
+import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import org.slf4j.Logger;
@@ -21,35 +22,58 @@ public class NacosConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(NacosConfig.class);
 
-    @Value("${spring.ai.alibaba.mcp.nacos.server-addr:127.0.0.1:8848}")
+    @Value("${spring.ai.alibaba.mcp.nacos.server-addr}")
     private String serverAddr;
 
-    @Value("${spring.ai.alibaba.mcp.nacos.namespace:public}")
+    @Value("${spring.ai.alibaba.mcp.nacos.namespace}")
     private String namespace;
 
-    @Value("${spring.ai.alibaba.mcp.nacos.username:nacos}")
+    @Value("${spring.ai.alibaba.mcp.nacos.username}")
     private String username;
 
-    @Value("${spring.ai.alibaba.mcp.nacos.password:nacos}")
+    @Value("${spring.ai.alibaba.mcp.nacos.password}")
     private String password;
 
     /**
-     * 创建NamingService Bean
+     * 创建 Nacos 配置属性
      */
-    @Bean
-    public NamingService namingService() throws NacosException {
+    private Properties createNacosProperties() {
         Properties properties = new Properties();
         properties.setProperty("serverAddr", serverAddr);
         properties.setProperty("namespace", namespace);
         properties.setProperty("username", username);
         properties.setProperty("password", password);
+        return properties;
+    }
 
-        logger.info("Initializing Nacos NamingService with serverAddr: {}, namespace: {}, username: {}", 
+    /**
+     * 创建 NamingService Bean
+     */
+    @Bean
+    public NamingService namingService() throws NacosException {
+        Properties properties = createNacosProperties();
+
+        logger.info("Initializing Nacos NamingService with serverAddr: {}, namespace: {}, username: {}",
                 serverAddr, namespace, username);
         
         NamingService namingService = NacosFactory.createNamingService(properties);
         logger.info("✅ Nacos NamingService created successfully");
         return namingService;
+    }
+
+    /**
+     * 创建 ConfigService Bean
+     */
+    @Bean
+    public ConfigService configService() throws NacosException {
+        Properties properties = createNacosProperties();
+
+        logger.info("Initializing Nacos ConfigService with serverAddr: {}, namespace: {}, username: {}",
+                serverAddr, namespace, username);
+
+        ConfigService configService = NacosFactory.createConfigService(properties);
+        logger.info("✅ Nacos ConfigService created successfully");
+        return configService;
     }
 
     /**
