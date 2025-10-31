@@ -7,12 +7,15 @@ import com.alibaba.nacos.api.naming.listener.NamingEvent;
 import com.pajk.mcpbridge.core.model.McpServerInfo;
 import com.pajk.mcpbridge.core.service.McpConfigService;
 import com.pajk.mcpbridge.core.config.NacosMcpRegistryConfig;
+import com.pajk.mcpbridge.persistence.service.McpServerPersistenceService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -34,6 +37,10 @@ public class McpServerRegistry {
     private final NamingService namingService;
     private final McpConfigService mcpConfigService;
     private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
+    
+    // 持久化服务（可选依赖）
+    @Autowired(required = false)
+    private McpServerPersistenceService persistenceService;
     
     // 本地缓存已注册的服务
     private final Map<String, McpServerInfo> registeredServers = new ConcurrentHashMap<>();
@@ -97,9 +104,11 @@ public class McpServerRegistry {
         .flatMap(data -> publishAllConfigsAtomically(serverInfo, data))
         // 3. 注册实例（带配置MD5）
         .flatMap(data -> registerInstanceWithConfig(serverInfo, data))
-        // 4. 更新本地状态
+        // 4. 持久化注册信息（并行执行，不阻塞主流程）
+        .doOnSuccess(data -> persistServerRegistrationAsync(serverInfo))
+        // 5. 更新本地状态
         .doOnSuccess(data -> updateLocalState(serverInfo))
-        // 5. 自动订阅服务变更
+        // 6. 自动订阅服务变更
         .doOnSuccess(data -> subscribeServiceChangeIfNeeded(serverInfo.getName(), serverInfo.getServiceGroup()))
         .then();
     }
@@ -223,6 +232,10 @@ public class McpServerRegistry {
                 try {
                     McpServerInfo serverInfo = registeredServers.get(serviceName);
                     if (serverInfo != null) {
+                        // 持久化注销信息
+                        String serverKey = buildServerKey(serverInfo);
+                        persistServerDeregistrationAsync(serverKey);
+                        
                         namingService.deregisterInstance(serviceName, serviceGroup,
                                 serverInfo.getIp(), serverInfo.getPort());
                         registeredServers.remove(serviceName);
@@ -557,6 +570,49 @@ public class McpServerRegistry {
         ).then();
     }
 
+    /**
+     * 异步持久化服务器注册信息
+     */
+    private void persistServerRegistrationAsync(McpServerInfo serverInfo) {
+        if (persistenceService == null) {
+            return;
+        }
+        
+        Mono.fromRunnable(() -> persistenceService.persistServerRegistration(serverInfo))
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe(
+                null,
+                error -> log.debug("Failed to persist server registration: {} - {}", 
+                    serverInfo.getName(), error.getMessage())
+            );
+    }
+    
+    /**
+     * 异步持久化服务器注销信息
+     */
+    private void persistServerDeregistrationAsync(String serverKey) {
+        if (persistenceService == null) {
+            return;
+        }
+        
+        Mono.fromRunnable(() -> persistenceService.persistServerDeregistration(serverKey))
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe(
+                null,
+                error -> log.debug("Failed to persist server deregistration: {} - {}", 
+                    serverKey, error.getMessage())
+            );
+    }
+    
+    /**
+     * 构建服务器唯一标识
+     */
+    private String buildServerKey(McpServerInfo serverInfo) {
+        String host = serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp();
+        return String.format("%s:%s:%d", 
+            serverInfo.getName(), host, serverInfo.getPort());
+    }
+    
     /**
      * 注册数据内部类
      */

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.pajk.mcpbridge.persistence.mapper.McpServerMapper">
+
+    <!-- ResultMap定义 -->
+    <resultMap id="McpServerResultMap" type="com.pajk.mcpbridge.persistence.entity.McpServer">
+        <id property="id" column="id"/>
+        <result property="serverKey" column="server_key"/>
+        <result property="serverName" column="server_name"/>
+        <result property="serverGroup" column="server_group"/>
+        <result property="namespaceId" column="namespace_id"/>
+        <result property="host" column="host"/>
+        <result property="port" column="port"/>
+        <result property="sseEndpoint" column="sse_endpoint"/>
+        <result property="healthEndpoint" column="health_endpoint"/>
+        <result property="healthy" column="healthy"/>
+        <result property="enabled" column="enabled"/>
+        <result property="weight" column="weight"/>
+        <result property="ephemeral" column="ephemeral"/>
+        <result property="clusterName" column="cluster_name"/>
+        <result property="version" column="version"/>
+        <result property="protocol" column="protocol"/>
+        <result property="metadata" column="metadata"/>
+        <result property="tags" column="tags"/>
+        <result property="totalRequests" column="total_requests"/>
+        <result property="totalErrors" column="total_errors"/>
+        <result property="lastRequestTime" column="last_request_time"/>
+        <result property="lastHealthCheck" column="last_health_check"/>
+        <result property="registeredAt" column="registered_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!-- 插入或更新服务器注册信息 -->
+    <insert id="insertOrUpdate" parameterType="com.pajk.mcpbridge.persistence.entity.McpServer">
+        INSERT INTO mcp_servers (
+            server_key, server_name, server_group, namespace_id, host, port,
+            sse_endpoint, health_endpoint, healthy, enabled, weight,
+            ephemeral, cluster_name, version, protocol, metadata, tags,
+            total_requests, total_errors, last_health_check, registered_at
+        ) VALUES (
+            #{serverKey}, #{serverName}, #{serverGroup}, #{namespaceId}, #{host}, #{port},
+            #{sseEndpoint}, #{healthEndpoint}, #{healthy}, #{enabled}, #{weight},
+            #{ephemeral}, #{clusterName}, #{version}, #{protocol}, #{metadata}, #{tags},
+            #{totalRequests}, #{totalErrors}, #{lastHealthCheck}, #{registeredAt}
+        )
+        ON DUPLICATE KEY UPDATE
+            server_name = VALUES(server_name),
+            server_group = VALUES(server_group),
+            namespace_id = VALUES(namespace_id),
+            host = VALUES(host),
+            port = VALUES(port),
+            sse_endpoint = VALUES(sse_endpoint),
+            health_endpoint = VALUES(health_endpoint),
+            healthy = VALUES(healthy),
+            enabled = VALUES(enabled),
+            weight = VALUES(weight),
+            ephemeral = VALUES(ephemeral),
+            cluster_name = VALUES(cluster_name),
+            version = VALUES(version),
+            protocol = VALUES(protocol),
+            metadata = VALUES(metadata),
+            tags = VALUES(tags),
+            -- last_health_check = VALUES(last_health_check),  -- ❌ 修复: 启动时不更新健康检查时间
+            updated_at = NOW()
+    </insert>
+
+    <!-- 根据serverKey查询 -->
+    <select id="selectByServerKey" resultMap="McpServerResultMap">
+        SELECT * FROM mcp_servers
+        WHERE server_key = #{serverKey}
+        AND deleted_at IS NULL
+        LIMIT 1
+    </select>
+
+    <!-- 根据服务名称和分组查询 -->
+    <select id="selectByServiceNameAndGroup" resultMap="McpServerResultMap">
+        SELECT * FROM mcp_servers
+        WHERE server_name = #{serverName}
+        <if test="serviceGroup != null">
+            AND server_group = #{serviceGroup}
+        </if>
+        AND deleted_at IS NULL
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 查询所有在线服务器 -->
+    <select id="selectAllOnlineServers" resultMap="McpServerResultMap">
+        SELECT * FROM mcp_servers
+        WHERE enabled = true
+        AND deleted_at IS NULL
+        ORDER BY last_health_check DESC
+    </select>
+
+    <!-- 查询所有健康服务器 -->
+    <select id="selectAllHealthyServers" resultMap="McpServerResultMap">
+        SELECT * FROM mcp_servers
+        WHERE healthy = true
+        AND enabled = true
+        AND deleted_at IS NULL
+        ORDER BY weight DESC, last_health_check DESC
+    </select>
+
+    <!-- 更新健康状态 -->
+    <update id="updateHealthStatus">
+        UPDATE mcp_servers
+        SET healthy = #{healthy},
+            last_health_check = #{lastHealthCheck},
+            updated_at = NOW()
+        WHERE server_key = #{serverKey}
+        AND deleted_at IS NULL
+    </update>
+
+    <!-- 更新健康检查时间 -->
+    <update id="updateHealthCheck">
+        UPDATE mcp_servers
+        SET last_health_check = #{lastHealthCheck},
+            healthy = true,
+            updated_at = NOW()
+        WHERE server_key = #{serverKey}
+        AND deleted_at IS NULL
+    </update>
+
+    <!-- 标记为离线（软删除） -->
+    <update id="markOffline">
+        UPDATE mcp_servers
+        SET healthy = false,
+            enabled = false,
+            deleted_at = #{deletedAt},
+            updated_at = NOW()
+        WHERE server_key = #{serverKey}
+    </update>
+
+    <!-- 批量标记为离线 -->
+    <update id="batchMarkOffline">
+        UPDATE mcp_servers
+        SET healthy = false,
+            enabled = false,
+            deleted_at = #{deletedAt},
+            updated_at = NOW()
+        WHERE server_key IN
+        <foreach collection="serverKeys" item="key" open="(" separator="," close=")">
+            #{key}
+        </foreach>
+    </update>
+
+    <!-- 查询健康检查超时的服务器 -->
+    <select id="selectServersByHealthCheckTimeout" resultMap="McpServerResultMap">
+        SELECT * FROM mcp_servers
+        WHERE enabled = true
+        AND deleted_at IS NULL
+        AND last_health_check &lt; DATE_SUB(NOW(), INTERVAL #{timeoutMinutes} MINUTE)
+        ORDER BY last_health_check ASC
+    </select>
+
+    <!-- 删除过期的离线服务器记录 -->
+    <delete id="deleteOfflineServersBefore">
+        DELETE FROM mcp_servers
+        WHERE deleted_at IS NOT NULL
+        AND deleted_at &lt; #{beforeTime}
+    </delete>
+
+    <!-- 统计在线服务器数量 -->
+    <select id="countOnlineServers" resultType="int">
+        SELECT COUNT(*) FROM mcp_servers
+        WHERE enabled = true
+        AND deleted_at IS NULL
+    </select>
+
+    <!-- 统计健康服务器数量 -->
+    <select id="countHealthyServers" resultType="int">
+        SELECT COUNT(*) FROM mcp_servers
+        WHERE healthy = true
+        AND enabled = true
+        AND deleted_at IS NULL
+    </select>
+
+    <!-- 标记指定服务名的所有临时节点为不健康 -->
+    <update id="markEphemeralInstancesUnhealthyByService">
+        UPDATE mcp_servers
+        SET healthy = false,
+            last_health_check = #{lastHealthCheck},
+            updated_at = NOW()
+        WHERE server_name = #{serverName}
+        AND ephemeral = true
+        AND deleted_at IS NULL
+    </update>
+
+    <!-- 标记过期的临时节点为不健康 -->
+    <update id="markStaleEphemeralInstancesUnhealthy">
+        UPDATE mcp_servers
+        SET healthy = false,
+            last_health_check = #{lastHealthCheck},
+            updated_at = NOW()
+        WHERE healthy = true
+        AND ephemeral = true
+        AND deleted_at IS NULL
+        AND updated_at &lt; DATE_SUB(NOW(), INTERVAL #{staleMinutes} MINUTE)
+    </update>
+
+</mapper>

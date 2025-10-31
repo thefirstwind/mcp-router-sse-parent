@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.pajk.mcpbridge.persistence.mapper.RoutingLogMapper">
+
+    <!-- Result Map -->
+    <resultMap id="RoutingLogResultMap" type="com.pajk.mcpbridge.persistence.entity.RoutingLog">
+        <id column="id" property="id"/>
+        <result column="request_id" property="requestId"/>
+        <result column="method" property="method"/>
+        <result column="params" property="params"/>
+        <result column="routing_strategy" property="routingStrategy"/>
+        <result column="target_server" property="targetServer"/>
+        <result column="response_time" property="responseTime"/>
+        <result column="status_code" property="statusCode"/>
+        <result column="success" property="success"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="request_time" property="requestTime"/>
+        <result column="response_timestamp" property="responseTimestamp"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 插入单条记录 -->
+    <insert id="insert" parameterType="com.pajk.mcpbridge.persistence.entity.RoutingLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO routing_logs (
+            request_id, method, params, routing_strategy, target_server,
+            response_time, status_code, success, error_message,
+            request_time, response_timestamp, created_at
+        ) VALUES (
+            #{requestId}, #{method}, #{params}, #{routingStrategy}, #{targetServer},
+            #{responseTime}, #{statusCode}, #{success}, #{errorMessage},
+            #{requestTime}, #{responseTimestamp}, NOW()
+        )
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO routing_logs (
+            request_id, method, params, routing_strategy, target_server,
+            response_time, status_code, success, error_message,
+            request_time, response_timestamp, created_at
+        ) VALUES
+        <foreach collection="logs" item="log" separator=",">
+            (
+                #{log.requestId}, #{log.method}, #{log.params}, #{log.routingStrategy}, #{log.targetServer},
+                #{log.responseTime}, #{log.statusCode}, #{log.success}, #{log.errorMessage},
+                #{log.requestTime}, #{log.responseTimestamp}, NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据请求ID查询 -->
+    <select id="selectByRequestId" resultMap="RoutingLogResultMap">
+        SELECT * FROM routing_logs
+        WHERE request_id = #{requestId}
+        LIMIT 1
+    </select>
+
+    <!-- 根据时间范围查询 -->
+    <select id="selectByTimeRange" resultMap="RoutingLogResultMap">
+        SELECT * FROM routing_logs
+        WHERE request_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY request_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据目标服务器查询 -->
+    <select id="selectByTargetServer" resultMap="RoutingLogResultMap">
+        SELECT * FROM routing_logs
+        WHERE target_server = #{targetServer}
+        <if test="startTime != null">
+            AND request_time BETWEEN #{startTime} AND #{endTime}
+        </if>
+        ORDER BY request_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 查询失败的路由日志 -->
+    <select id="selectFailures" resultMap="RoutingLogResultMap">
+        SELECT * FROM routing_logs
+        WHERE success = FALSE
+        <if test="startTime != null">
+            AND request_time BETWEEN #{startTime} AND #{endTime}
+        </if>
+        ORDER BY request_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计成功率 -->
+    <select id="calculateSuccessRate" resultType="java.lang.Double">
+        SELECT 
+            CASE 
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE (SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
+            END AS success_rate
+        FROM routing_logs
+        WHERE request_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计数量 -->
+    <select id="countByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM routing_logs
+        WHERE request_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+</mapper>
+
+

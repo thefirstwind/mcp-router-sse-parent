@@ -1,19 +1,25 @@
 package com.pajk.mcpbridge.core.service;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pajk.mcpbridge.core.config.NacosMcpRegistryConfig;
 import com.pajk.mcpbridge.core.model.McpMessage;
 import com.pajk.mcpbridge.core.model.McpServerInfo;
 import com.pajk.mcpbridge.core.registry.McpServerRegistry;
+import com.pajk.mcpbridge.persistence.entity.RoutingLog;
+import com.pajk.mcpbridge.persistence.service.PersistenceEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 增强的MCP路由服务
@@ -30,6 +36,12 @@ public class McpRouterService {
     private final HealthCheckService healthCheckService;
     private final LoadBalancer loadBalancer;
     private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
+    
+    // 持久化事件发布器（可选依赖，不影响主流程）
+    @Autowired(required = false)
+    private PersistenceEventPublisher persistenceEventPublisher;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 默认超时时间
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -46,6 +58,11 @@ public class McpRouterService {
      */
     public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Duration timeout) {
         log.info("🔄 Starting intelligent routing for service: {}, method: {}", serviceName, message.getMethod());
+        
+        // 创建路由日志对象（记录开始时间）
+        String requestId = UUID.randomUUID().toString();
+        RoutingLog routingLog = createRoutingLog(requestId, message);
+        long startTime = System.currentTimeMillis();
         
         // 检查是否是工具调用
         if (!"tools/call".equals(message.getMethod())) {
@@ -64,8 +81,23 @@ public class McpRouterService {
                     log.info("🎯 Load balanced selected server: {} ({}:{}) from {} candidates", 
                             selectedServer.getName(), selectedServer.getIp(), selectedServer.getPort(), candidates.size());
                     
+                    // 记录目标服务器和路由策略
+                    routingLog.setTargetServer(selectedServer.getName() + ":" + selectedServer.getIp() + ":" + selectedServer.getPort());
+                    routingLog.setRoutingStrategy("WEIGHTED_ROUND_ROBIN");
+                    
                     // Step 3: 按需建立连接并调用（带性能监控）
                     return routeToServerWithMonitoring(selectedServer, message, timeout);
+                })
+                .doOnSuccess(response -> {
+                    // 记录成功的路由日志
+                    long responseTime = System.currentTimeMillis() - startTime;
+                    routingLog.markSuccess(responseTime);
+                    publishRoutingLog(routingLog);
+                })
+                .doOnError(error -> {
+                    // 记录失败的路由日志
+                    routingLog.markFailure(error.getMessage(), 500);
+                    publishRoutingLog(routingLog);
                 })
                 .timeout(timeout)
                 .onErrorResume(error -> {
@@ -409,6 +441,40 @@ public class McpRouterService {
         return metadata;
     }
 
+    /**
+     * 创建路由日志对象
+     */
+    private RoutingLog createRoutingLog(String requestId, McpMessage message) {
+        try {
+            return RoutingLog.newBuilder()
+                .requestId(requestId)
+                .method(message.getMethod())
+                .params(objectMapper.writeValueAsString(message.getParams()))
+                .build();
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize request params", e);
+            return RoutingLog.newBuilder()
+                .requestId(requestId)
+                .method(message.getMethod())
+                .params(String.valueOf(message.getParams()))
+                .build();
+        }
+    }
+    
+    /**
+     * 发布路由日志（异步，不阻塞主流程）
+     */
+    private void publishRoutingLog(RoutingLog routingLog) {
+        if (persistenceEventPublisher != null) {
+            try {
+                persistenceEventPublisher.publishRoutingLog(routingLog);
+            } catch (Exception e) {
+                // 持久化失败不应影响主流程
+                log.warn("Failed to publish routing log", e);
+            }
+        }
+    }
+    
     /**
      * 构建错误元数据
      */

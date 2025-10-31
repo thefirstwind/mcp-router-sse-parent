@@ -53,6 +53,7 @@ public class McpRouterNacosRegistration {
             instance.setPort(serverPort);
             instance.setHealthy(true);
             instance.setEnabled(true);
+            instance.setEphemeral(true);  // 设置为临时实例，崩溃后自动清理
             
             // 设置元数据，标识这是一个路由器
             Map<String, String> metadata = new HashMap<>();

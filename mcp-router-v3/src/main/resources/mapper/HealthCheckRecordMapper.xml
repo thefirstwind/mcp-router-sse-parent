@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.pajk.mcpbridge.persistence.mapper.HealthCheckRecordMapper">
+
+    <!-- Result Map -->
+    <resultMap id="HealthCheckRecordResultMap" type="com.pajk.mcpbridge.persistence.entity.HealthCheckRecord">
+        <id column="id" property="id"/>
+        <result column="server_key" property="serverKey"/>
+        <result column="check_time" property="checkTime"/>
+        <result column="check_type" property="checkType"/>
+        <result column="check_level" property="checkLevel"/>
+        <result column="healthy" property="healthy"/>
+        <result column="response_time" property="responseTime"/>
+        <result column="status_code" property="statusCode"/>
+        <result column="response_body" property="responseBody"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="error_type" property="errorType"/>
+        <result column="sampled" property="sampled"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 插入单条记录 -->
+    <insert id="insert" parameterType="com.pajk.mcpbridge.persistence.entity.HealthCheckRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_check_records (
+            server_key, check_time, check_type, check_level, healthy,
+            response_time, status_code, response_body, error_message,
+            error_type, sampled, created_at
+        ) VALUES (
+            #{serverKey}, #{checkTime}, #{checkType}, #{checkLevel}, #{healthy},
+            #{responseTime}, #{statusCode}, #{responseBody}, #{errorMessage},
+            #{errorType}, #{sampled}, NOW()
+        )
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO health_check_records (
+            server_key, check_time, check_type, check_level, healthy,
+            response_time, status_code, response_body, error_message,
+            error_type, sampled, created_at
+        ) VALUES
+        <foreach collection="records" item="record" separator=",">
+            (
+                #{record.serverKey}, #{record.checkTime}, #{record.checkType}, 
+                #{record.checkLevel}, #{record.healthy}, #{record.responseTime}, 
+                #{record.statusCode}, #{record.responseBody}, #{record.errorMessage},
+                #{record.errorType}, #{record.sampled}, NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据服务器标识查询 -->
+    <select id="selectByServerKey" resultMap="HealthCheckRecordResultMap">
+        SELECT * FROM health_check_records
+        WHERE server_key = #{serverKey}
+        ORDER BY check_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 查询失败的健康检查记录 -->
+    <select id="selectFailures" resultMap="HealthCheckRecordResultMap">
+        SELECT * FROM health_check_records
+        WHERE healthy = FALSE
+        <if test="startTime != null">
+            AND check_time BETWEEN #{startTime} AND #{endTime}
+        </if>
+        ORDER BY check_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据时间范围查询 -->
+    <select id="selectByTimeRange" resultMap="HealthCheckRecordResultMap">
+        SELECT * FROM health_check_records
+        WHERE check_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY check_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计健康率 -->
+    <select id="calculateHealthRate" resultType="java.lang.Double">
+        SELECT 
+            CASE 
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE (SUM(CASE WHEN healthy = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
+            END AS health_rate
+        FROM health_check_records
+        WHERE server_key = #{serverKey}
+        <if test="startTime != null">
+            AND check_time BETWEEN #{startTime} AND #{endTime}
+        </if>
+    </select>
+
+    <!-- 统计数量 -->
+    <select id="countByTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM health_check_records
+        WHERE check_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+</mapper>
+
+

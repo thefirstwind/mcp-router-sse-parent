@@ -2,15 +2,19 @@ package com.pajk.mcpbridge.core.service;
 
 import com.pajk.mcpbridge.core.registry.McpServerRegistry;
 import com.pajk.mcpbridge.core.model.McpServerInfo;
+import com.pajk.mcpbridge.persistence.entity.HealthCheckRecord;
+import com.pajk.mcpbridge.persistence.service.PersistenceEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,8 +34,16 @@ public class HealthCheckService {
     private final McpClientManager mcpClientManager;
     private final CircuitBreakerService circuitBreakerService;
     
+    // 持久化事件发布器（可选依赖）
+    @Autowired(required = false)
+    private PersistenceEventPublisher persistenceEventPublisher;
+    
     // 健康检查结果缓存
     private final Map<String, HealthStatus> healthStatusCache = new ConcurrentHashMap<>();
+    
+    // 采样随机器（10%采样率）
+    private final Random samplingRandom = new Random();
+    private static final double SAMPLING_RATE = 0.1; // 成功检查10%采样
     
     // MCP健康检查超时时间
     private static final Duration MCP_HEALTH_CHECK_TIMEOUT = Duration.ofSeconds(10);
@@ -49,6 +61,8 @@ public class HealthCheckService {
                 serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(), 
                 serverInfo.getPort());
         
+        long startTime = System.currentTimeMillis();
+        
         // Level 1: Nacos心跳检查（快速基础检查）
         return checkNacosHealth(serverInfo)
                 .flatMap(nacosHealthy -> {
@@ -56,6 +70,11 @@ public class HealthCheckService {
                         // Nacos不健康，直接标记为失败
                         status.recordFailure();
                         log.debug("❌ Level 1 (Nacos) health check failed for server: {}", serverInfo.getName());
+                        
+                        // 记录失败的健康检查（失败100%记录）
+                        persistHealthCheckRecord(serverInfo, "LEVEL1", false, 
+                            System.currentTimeMillis() - startTime, "Nacos health check failed", "NACOS_UNHEALTHY");
+                        
                         return Mono.just(status);
                     }
                     
@@ -64,12 +83,23 @@ public class HealthCheckService {
                     // Level 2: MCP协议检查（深度功能检查）
                     return checkMcpCapabilities(serverInfo)
                             .map(mcpHealthy -> {
+                                long responseTime = System.currentTimeMillis() - startTime;
+                                
                                 if (mcpHealthy) {
                                     status.recordSuccess();
                                     log.debug("✅ Level 2 (MCP) health check passed for server: {}", serverInfo.getName());
+                                    
+                                    // 成功检查采样记录（10%）
+                                    if (shouldSampleSuccessCheck()) {
+                                        persistHealthCheckRecord(serverInfo, "LEVEL2", true, responseTime, null, null);
+                                    }
                                 } else {
                                     status.recordFailure();
                                     log.debug("❌ Level 2 (MCP) health check failed for server: {}", serverInfo.getName());
+                                    
+                                    // 失败检查100%记录
+                                    persistHealthCheckRecord(serverInfo, "LEVEL2", false, responseTime, 
+                                        "MCP capabilities check failed", "MCP_CHECK_FAILED");
                                 }
                                 return status;
                             });
@@ -78,6 +108,11 @@ public class HealthCheckService {
                     status.recordFailure();
                     log.debug("❌ Health check error for server: {} - {}", 
                             serverInfo.getName(), error.getMessage());
+                    
+                    // 错误也记录（失败100%记录）
+                    persistHealthCheckRecord(serverInfo, "COMBINED", false, 
+                        System.currentTimeMillis() - startTime, error.getMessage(), "EXCEPTION");
+                    
                     return Mono.just(status);
                 })
                 .doOnNext(this::updateHealthStatus)
@@ -465,6 +500,55 @@ public class HealthCheckService {
         LocalDateTime expireTime = LocalDateTime.now().minusMinutes(5);
         healthStatusCache.entrySet().removeIf(entry -> 
                 entry.getValue().getLastCheckTime().isBefore(expireTime));
+    }
+    
+    /**
+     * 判断是否应该采样成功的健康检查（10%采样率）
+     */
+    private boolean shouldSampleSuccessCheck() {
+        return samplingRandom.nextDouble() < SAMPLING_RATE;
+    }
+    
+    /**
+     * 持久化健康检查记录
+     */
+    private void persistHealthCheckRecord(McpServerInfo serverInfo, String checkLevel, 
+                                         boolean healthy, long responseTime, 
+                                         String errorMessage, String errorType) {
+        if (persistenceEventPublisher == null) {
+            return;
+        }
+        
+        try {
+            String serverKey = serverInfo.getName() + ":" + 
+                (serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp()) + ":" + 
+                serverInfo.getPort();
+            
+            HealthCheckRecord record = HealthCheckRecord.newBuilder()
+                .serverKey(serverKey)
+                .checkLevel(checkLevel)
+                .checkType("MCP")
+                .healthy(healthy)
+                .responseTime(responseTime)
+                .build();
+            
+            if (healthy) {
+                record.markHealthy(responseTime, 200);
+            } else {
+                record.markUnhealthy(errorMessage, errorType);
+            }
+            
+            // 标记是否为采样记录
+            if (healthy && samplingRandom.nextDouble() < SAMPLING_RATE) {
+                record.markSampled();
+            }
+            
+            persistenceEventPublisher.publishHealthCheck(record);
+            
+        } catch (Exception e) {
+            // 持久化失败不应影响主流程
+            log.debug("Failed to persist health check record", e);
+        }
     }
     
     /**

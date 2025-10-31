@@ -1,0 +1,175 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2025-10-30 18:55:23.258  INFO --- [kground-preinit] o.h.validator.internal.util.Version      : HV000001: Hibernate Validator 8.0.1.Final
+2025-10-30 18:55:23.289  INFO --- [           main] c.p.m.core.McpRouterV3Application        : Starting McpRouterV3Application v1.0.0 using Java 17.0.15 with PID 13363 (/Users/shine/projects.mcp-router-sse-parent/mcp-router-v3/target/mcp-router-v3-1.0.0.jar started by shine in /Users/shine/projects.mcp-router-sse-parent/mcp-router-v3)
+2025-10-30 18:55:23.289  INFO --- [           main] c.p.m.core.McpRouterV3Application        : No active profile set, falling back to 1 default profile: "default"
+2025-10-30 18:55:24.104  INFO --- [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback12.LogbackNacosLoggingAdapterBuilder
+2025-10-30 18:55:24.105  INFO --- [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapterBuilder
+2025-10-30 18:55:24.105  INFO --- [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapter match ch.qos.logback.classic.Logger success.
+2025-10-30 18:55:24.106  INFO --- [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.log4j2.Log4j2NacosLoggingAdapterBuilder
+2025-10-30 18:55:24.118  INFO --- [       Thread-1] c.a.n.c.a.r.identify.CredentialWatcher   : null No credential found
+2025-10-30 18:55:24.143  INFO --- [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-10-30 18:55:24.144  INFO --- [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-10-30 18:55:24.632  INFO --- [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to get current node abilities...
+2025-10-30 18:55:24.633  INFO --- [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to initialize current node abilities, support modes: [SDK_CLIENT]
+2025-10-30 18:55:24.634  INFO --- [           main] c.a.n.c.a.AbstractAbilityControlManager  : Initialize current abilities finish...
+2025-10-30 18:55:24.634  INFO --- [           main] c.a.n.c.a.d.NacosAbilityManagerHolder    : [AbilityControlManager] Successfully initialize AbilityControlManager
+2025-10-30 18:55:24.644  INFO --- [           main] c.p.m.c.config.NacosMcpRegistryConfig    : Nacos NamingService created successfully with server: 127.0.0.1:8848
+2025-10-30 18:55:24.693 ERROR --- [           main] i.n.r.d.DnsServerAddressStreamProviders  : Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider, fallback to system defaults. This may result in incorrect DNS resolutions on MacOS. Check whether you have a dependency on 'io.netty:netty-resolver-dns-native-macos'. Use DEBUG level to see the full stack: java.lang.UnsatisfiedLinkError: failed to load the required native library
+2025-10-30 18:55:24.740  INFO --- [           main] c.p.m.core.service.McpClientManager      : 🏊 Starting MCP connection pool manager...
+2025-10-30 18:55:24.740  INFO --- [           main] c.p.m.core.service.McpClientManager      : 📊 Pool configuration - Max size: 20, Idle timeout: PT10M, Max lifetime: PT1H
+2025-10-30 18:55:24.746  INFO --- [           main] c.p.m.core.service.McpClientManager      : ✅ MCP connection pool manager started
+2025-10-30 18:55:24.881  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ McpServerPersistenceService initialized successfully
+2025-10-30 18:55:24.881  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 Database persistence is ENABLED for MCP server registration
+2025-10-30 18:55:24.884  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 🔔 MCP connection event listener - Starting real-time service discovery mode
+2025-10-30 18:55:24.884  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ℹ️ mcp-router will discover mcp-servers and monitor real-time service registration
+2025-10-30 18:55:24.884  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📋 Configured service groups: [mcp-server, mcp-endpoints]
+2025-10-30 18:55:24.884  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 🔍 Querying all services in group: mcp-server
+2025-10-30 18:55:24.890  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📋 Found 3 services in group mcp-server: [mcp-router-v3, test-mcp-server-alignment, mcp-server-v2-real]
+2025-10-30 18:55:24.909  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Successfully subscribed to service changes: mcp-router-v3@mcp-server
+2025-10-30 18:55:24.909  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📡 Successfully subscribed to service changes: mcp-router-v3@mcp-server
+2025-10-30 18:55:24.913  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Successfully subscribed to service changes: test-mcp-server-alignment@mcp-server
+2025-10-30 18:55:24.914  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📡 Successfully subscribed to service changes: test-mcp-server-alignment@mcp-server
+2025-10-30 18:55:24.916  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Successfully subscribed to service changes: mcp-server-v2-real@mcp-server
+2025-10-30 18:55:24.916  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📡 Successfully subscribed to service changes: mcp-server-v2-real@mcp-server
+2025-10-30 18:55:24.916  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 🔍 Querying all services in group: mcp-endpoints
+2025-10-30 18:55:24.917  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📋 Found 2 services in group mcp-endpoints: [cf-server, mcp-server-v2-20250718]
+2025-10-30 18:55:24.919  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Successfully subscribed to service changes: cf-server@mcp-endpoints
+2025-10-30 18:55:24.919  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📡 Successfully subscribed to service changes: cf-server@mcp-endpoints
+2025-10-30 18:55:24.921  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Successfully subscribed to service changes: mcp-server-v2-20250718@mcp-endpoints
+2025-10-30 18:55:24.921  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📡 Successfully subscribed to service changes: mcp-server-v2-20250718@mcp-endpoints
+2025-10-30 18:55:24.921  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 🔄 Starting Nacos to database state synchronization...
+2025-10-30 18:55:24.922  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📋 Found 3 services in group mcp-server
+2025-10-30 18:55:24.923  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 💾 Syncing 1 instances for service: mcp-router-v3@mcp-server
+2025-10-30 18:55:24.924  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-router-v3 (127.0.0.1:8052)
+2025-10-30 18:55:24.924  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-router-v3:127.0.0.1:8052
+2025-10-30 18:55:24.933  INFO --- [           main] com.zaxxer.hikari.HikariDataSource       : McpRouterPool - Starting...
+2025-10-30 18:55:25.027  INFO --- [           main] com.zaxxer.hikari.pool.HikariPool        : McpRouterPool - Added connection com.mysql.cj.jdbc.ConnectionImpl@4e6280de
+2025-10-30 18:55:25.028  INFO --- [           main] com.zaxxer.hikari.HikariDataSource       : McpRouterPool - Start completed.
+2025-10-30 18:55:25.049  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 2
+2025-10-30 18:55:25.049  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-router-v3 (127.0.0.1:8052) - healthy=true, enabled=true, rows=2
+2025-10-30 18:55:25.050  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 💾 Syncing 1 instances for service: test-mcp-server-alignment@mcp-server
+2025-10-30 18:55:25.051  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: test-mcp-server-alignment (127.0.0.1:8999)
+2025-10-30 18:55:25.051  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: test-mcp-server-alignment:127.0.0.1:8999
+2025-10-30 18:55:25.055  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 2
+2025-10-30 18:55:25.055  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: test-mcp-server-alignment (127.0.0.1:8999) - healthy=false, enabled=true, rows=2
+2025-10-30 18:55:25.056  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 💾 Syncing 1 instances for service: mcp-server-v2-real@mcp-server
+2025-10-30 18:55:25.056  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-server-v2-real (127.0.0.1:8063)
+2025-10-30 18:55:25.056  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-server-v2-real:127.0.0.1:8063
+2025-10-30 18:55:25.059  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 2
+2025-10-30 18:55:25.060  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-server-v2-real (127.0.0.1:8063) - healthy=false, enabled=true, rows=2
+2025-10-30 18:55:25.061  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📋 Found 2 services in group mcp-endpoints
+2025-10-30 18:55:25.062  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 💾 Syncing 1 instances for service: cf-server@mcp-endpoints
+2025-10-30 18:55:25.062  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: cf-server (127.0.0.1:8899)
+2025-10-30 18:55:25.062  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: cf-server:127.0.0.1:8899
+2025-10-30 18:55:25.072  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 2
+2025-10-30 18:55:25.072  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: cf-server (127.0.0.1:8899) - healthy=true, enabled=true, rows=2
+2025-10-30 18:55:25.072  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 💾 Syncing 1 instances for service: mcp-server-v2-20250718@mcp-endpoints
+2025-10-30 18:55:25.072  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-server-v2-20250718 (127.0.0.1:8090)
+2025-10-30 18:55:25.072  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-server-v2-20250718:127.0.0.1:8090
+2025-10-30 18:55:25.078  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 2
+2025-10-30 18:55:25.078  INFO --- [           main] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-server-v2-20250718 (127.0.0.1:8090) - healthy=true, enabled=true, rows=2
+2025-10-30 18:55:25.080  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ Nacos to database state synchronization completed
+2025-10-30 18:55:25.080  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 📊 Sync summary: 5 services, 5 instances (3 healthy)
+2025-10-30 18:55:25.080  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ MCP router service discovery monitoring enabled
+2025-10-30 18:55:25.084  INFO --- [           main] c.p.m.c.config.NacosMcpRegistryConfig    : Creating Nacos ConfigService with properties: serverAddr=127.0.0.1:8848, namespace=public, appName=mcp-router-v3
+2025-10-30 18:55:25.092  INFO --- [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2025-10-30 18:55:25.092  INFO --- [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 [Nacos Service Change] Service: mcp-router-v3@mcp-server
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 💾 Attempting to persist instance to database: mcp-router-v3@mcp-server - 127.0.0.1:8052
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : ✅ Healthy instance: 127.0.0.1:8052 (weight: 1.0, ephemeral: true)
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 📊 [Service Statistics] mcp-router-v3@mcp-server - Total instances: 1, Healthy instances: 1
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 Service change recorded, connections will be established on-demand for next request: mcp-router-v3@mcp-server
+2025-10-30 18:55:25.134  INFO --- [oundedElastic-1] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-router-v3 (127.0.0.1:8052)
+2025-10-30 18:55:25.134  INFO --- [oundedElastic-1] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-router-v3:127.0.0.1:8052
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 [Nacos Service Change] Service: test-mcp-server-alignment@mcp-server
+2025-10-30 18:55:25.134  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 💾 Attempting to persist instance to database: test-mcp-server-alignment@mcp-server - 127.0.0.1:8999
+2025-10-30 18:55:25.135  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : ❌ Unhealthy instance: 127.0.0.1:8999 (healthy: false, enabled: true)
+2025-10-30 18:55:25.135  INFO --- [oundedElastic-3] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: test-mcp-server-alignment (127.0.0.1:8999)
+2025-10-30 18:55:25.135  INFO --- [oundedElastic-3] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: test-mcp-server-alignment:127.0.0.1:8999
+2025-10-30 18:55:25.135  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 📊 [Service Statistics] test-mcp-server-alignment@mcp-server - Total instances: 1, Healthy instances: 0
+2025-10-30 18:55:25.135  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 [Nacos Service Change] Service: mcp-server-v2-real@mcp-server
+2025-10-30 18:55:25.135  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 💾 Attempting to persist instance to database: mcp-server-v2-real@mcp-server - 127.0.0.1:8063
+2025-10-30 18:55:25.136  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : ❌ Unhealthy instance: 127.0.0.1:8063 (healthy: false, enabled: true)
+2025-10-30 18:55:25.136  INFO --- [oundedElastic-5] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-server-v2-real (127.0.0.1:8063)
+2025-10-30 18:55:25.136  INFO --- [oundedElastic-5] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-server-v2-real:127.0.0.1:8063
+2025-10-30 18:55:25.136  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 📊 [Service Statistics] mcp-server-v2-real@mcp-server - Total instances: 1, Healthy instances: 0
+2025-10-30 18:55:25.136  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 [Nacos Service Change] Service: cf-server@mcp-endpoints
+2025-10-30 18:55:25.136  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 💾 Attempting to persist instance to database: cf-server@mcp-endpoints - 127.0.0.1:8899
+2025-10-30 18:55:25.138  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : ✅ Healthy instance: 127.0.0.1:8899 (weight: 1.0, ephemeral: false)
+2025-10-30 18:55:25.138  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 📊 [Service Statistics] cf-server@mcp-endpoints - Total instances: 1, Healthy instances: 1
+2025-10-30 18:55:25.138  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 Service change recorded, connections will be established on-demand for next request: cf-server@mcp-endpoints
+2025-10-30 18:55:25.138  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 [Nacos Service Change] Service: mcp-server-v2-20250718@mcp-endpoints
+2025-10-30 18:55:25.138  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 💾 Attempting to persist instance to database: mcp-server-v2-20250718@mcp-endpoints - 127.0.0.1:8090
+2025-10-30 18:55:25.138  INFO --- [oundedElastic-7] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: cf-server (127.0.0.1:8899)
+2025-10-30 18:55:25.138  INFO --- [oundedElastic-7] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: cf-server:127.0.0.1:8899
+2025-10-30 18:55:25.138  INFO --- [oundedElastic-1] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 1
+2025-10-30 18:55:25.138  INFO --- [oundedElastic-1] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-router-v3 (127.0.0.1:8052) - healthy=true, enabled=true, rows=1
+2025-10-30 18:55:25.138  INFO --- [oundedElastic-1] c.p.m.c.l.McpConnectionEventListener     : ✅ Instance persisted to database: 127.0.0.1:8052
+2025-10-30 18:55:25.140  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : ✅ Healthy instance: 127.0.0.1:8090 (weight: 1.0, ephemeral: false)
+2025-10-30 18:55:25.140  INFO --- [oundedElastic-8] c.p.m.p.s.McpServerPersistenceService    : 🔍 Building McpServer entity for: mcp-server-v2-20250718 (127.0.0.1:8090)
+2025-10-30 18:55:25.140  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 📊 [Service Statistics] mcp-server-v2-20250718@mcp-endpoints - Total instances: 1, Healthy instances: 1
+2025-10-30 18:55:25.141  INFO --- [oundedElastic-8] c.p.m.p.s.McpServerPersistenceService    : 🗄️ Executing insertOrUpdate for serverKey: mcp-server-v2-20250718:127.0.0.1:8090
+2025-10-30 18:55:25.141  INFO --- [ncesChangeEvent] c.p.m.c.l.McpConnectionEventListener     : 🔄 Service change recorded, connections will be established on-demand for next request: mcp-server-v2-20250718@mcp-endpoints
+2025-10-30 18:55:25.141  INFO --- [oundedElastic-5] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 1
+2025-10-30 18:55:25.141  INFO --- [oundedElastic-5] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-server-v2-real (127.0.0.1:8063) - healthy=false, enabled=true, rows=1
+2025-10-30 18:55:25.141  INFO --- [oundedElastic-5] c.p.m.c.l.McpConnectionEventListener     : ✅ Instance persisted to database: 127.0.0.1:8063
+2025-10-30 18:55:25.142  INFO --- [oundedElastic-3] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 1
+2025-10-30 18:55:25.142  INFO --- [oundedElastic-3] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: test-mcp-server-alignment (127.0.0.1:8999) - healthy=false, enabled=true, rows=1
+2025-10-30 18:55:25.142  INFO --- [oundedElastic-7] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 1
+2025-10-30 18:55:25.142  INFO --- [oundedElastic-3] c.p.m.c.l.McpConnectionEventListener     : ✅ Instance persisted to database: 127.0.0.1:8999
+2025-10-30 18:55:25.143  INFO --- [oundedElastic-7] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: cf-server (127.0.0.1:8899) - healthy=true, enabled=true, rows=1
+2025-10-30 18:55:25.143  INFO --- [oundedElastic-7] c.p.m.c.l.McpConnectionEventListener     : ✅ Instance persisted to database: 127.0.0.1:8899
+2025-10-30 18:55:25.144  INFO --- [oundedElastic-8] c.p.m.p.s.McpServerPersistenceService    : 📊 InsertOrUpdate affected rows: 1
+2025-10-30 18:55:25.144  INFO --- [oundedElastic-8] c.p.m.p.s.McpServerPersistenceService    : ✅ Server registration persisted: mcp-server-v2-20250718 (127.0.0.1:8090) - healthy=true, enabled=true, rows=1
+2025-10-30 18:55:25.144  INFO --- [oundedElastic-8] c.p.m.c.l.McpConnectionEventListener     : ✅ Instance persisted to database: 127.0.0.1:8090
+2025-10-30 18:55:25.183  INFO --- [           main] c.p.m.c.config.NacosMcpRegistryConfig    : Nacos ConfigService created successfully with server:127.0.0.1:8848 and appName: mcp-router-v3
+2025-10-30 18:55:25.218  INFO --- [           main] c.p.m.p.s.PersistenceEventPublisher      : PersistenceEventPublisher initialized with buffer sizes: routing=10000, health=1000, error=1000
+2025-10-30 18:55:25.225  INFO --- [           main] c.p.m.p.s.HealthCheckRecordBatchWriter   : Starting HealthCheckRecord batch writer with batchSize=100, window=PT5S
+2025-10-30 18:55:25.226  INFO --- [           main] c.p.m.p.s.HealthCheckRecordBatchWriter   : HealthCheckRecord batch writer started successfully
+2025-10-30 18:55:25.231  INFO --- [           main] c.p.m.p.service.RoutingLogBatchWriter    : Starting RoutingLog batch writer with batchSize=500, window=PT2S
+2025-10-30 18:55:25.232  INFO --- [           main] c.p.m.p.service.RoutingLogBatchWriter    : RoutingLog batch writer started successfully
+2025-10-30 18:55:25.317  INFO --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2025-10-30 18:55:25.375  INFO --- [           main] o.s.a.m.s.a.McpServerAutoConfiguration   : Enable tools capabilities, notification: true
+2025-10-30 18:55:25.376  INFO --- [           main] o.s.a.m.s.a.McpServerAutoConfiguration   : Enable resources capabilities, notification: true
+2025-10-30 18:55:25.377  INFO --- [           main] o.s.a.m.s.a.McpServerAutoConfiguration   : Enable prompts capabilities, notification: true
+2025-10-30 18:55:25.377  INFO --- [           main] o.s.a.m.s.a.McpServerAutoConfiguration   : Enable completions capabilities
+2025-10-30 18:55:27.575  WARN --- [           main] onfigReactiveWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2025-10-30 18:55:27.578  INFO --- [           main] c.p.m.p.service.RoutingLogBatchWriter    : RoutingLog batch writer stopped. Stats: batches=0, records=0, failures=0
+2025-10-30 18:55:27.578  INFO --- [           main] c.p.m.p.s.HealthCheckRecordBatchWriter   : HealthCheckRecord batch writer stopped. Stats: batches=0, records=0, failures=0, sampled=0
+2025-10-30 18:55:27.578  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : 🧹 Cleaning up MCP connection event listener...
+2025-10-30 18:55:27.586  INFO --- [           main] c.p.m.c.l.McpConnectionEventListener     : ✅ MCP connection event listener cleanup completed
+2025-10-30 18:55:27.587  INFO --- [           main] com.zaxxer.hikari.HikariDataSource       : McpRouterPool - Shutdown initiated...
+2025-10-30 18:55:27.591  INFO --- [           main] com.zaxxer.hikari.HikariDataSource       : McpRouterPool - Shutdown completed.
+2025-10-30 18:55:27.591  INFO --- [           main] c.p.m.core.service.McpClientManager      : 🛑 Shutting down MCP connection pool...
+2025-10-30 18:55:27.591  INFO --- [           main] c.p.m.core.service.McpClientManager      : ✅ MCP connection pool shutdown completed. Stats: created=0, closed=0, requests=0
+2025-10-30 18:55:27.601  INFO --- [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-10-30 18:55:27.611 ERROR --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8052 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8052 or configure this application to listen on another port.
+
+2025-10-30 18:55:28.563  INFO --- [       Thread-8] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+2025-10-30 18:55:28.563  INFO --- [      Thread-12] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+2025-10-30 18:55:28.564  INFO --- [       Thread-3] c.a.n.common.executor.ThreadPoolManager  : [ThreadPoolManager] Start destroying ThreadPool
+2025-10-30 18:55:28.564  INFO --- [       Thread-8] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Completed destruction of Publisher
+2025-10-30 18:55:28.564  INFO --- [       Thread-3] c.a.n.common.executor.ThreadPoolManager  : [ThreadPoolManager] Completed destruction of ThreadPool
+2025-10-30 18:55:28.565  INFO --- [      Thread-12] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Completed destruction of HttpClient

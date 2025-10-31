@@ -5,6 +5,24 @@ server:
 spring:
   application:
     name: mcp-router-v3.01
+  
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/mcp_bridge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: mcp_user
+    password: mcp_user
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+    # HikariCP 连接池配置
+    hikari:
+      pool-name: McpRouterPool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+  
   ai:
     mcp:
       server:
@@ -32,6 +50,26 @@ spring:
             service-name: ${spring.application.name}
             app-name: ${spring.application.name}  # 配置应用名称，用于 Nacos 配置发布时的 appName 字段
             src-user: ${spring.application.name}  # 配置源用户，用于 Nacos 配置历史记录
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.pajk.mcpbridge.persistence.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+    # 禁用缓存以确保读取实时数据
+    cache-enabled: false
+    local-cache-scope: STATEMENT
+
+# MCP 持久化配置
+mcp:
+  persistence:
+    enabled: true
+    async: true
+    batch-size: 100
+    flush-interval: 5000
         
 # 日志配置现在由 logback-spring.xml 管理
 # 这里只保留必要的 Spring Boot 日志配置
