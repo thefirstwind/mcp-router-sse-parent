@@ -104,7 +104,14 @@
         SELECT COUNT(*) FROM health_check_records
         WHERE check_time BETWEEN #{startTime} AND #{endTime}
     </select>
+    
+    <!-- 删除指定时间之前的记录 -->
+    <delete id="deleteByTimeBefore">
+        DELETE FROM health_check_records
+        WHERE check_time &lt; #{cutoffTime}
+    </delete>
 
 </mapper>
+
 
 

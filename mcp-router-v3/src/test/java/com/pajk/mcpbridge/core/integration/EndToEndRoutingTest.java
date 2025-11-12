@@ -24,9 +24,9 @@ public class EndToEndRoutingTest {
 
     @Test
     public void testCompleteRoutingFlow() {
-        // 测试完整的路由流程
+        // 测试完整的路由流程 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health")
+                .uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
 
@@ -35,9 +35,9 @@ public class EndToEndRoutingTest {
 
     @Test
     public void testServiceRegistrationAndRouting() {
-        // 测试服务注册和路由
+        // 测试服务注册和路由 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health")
+                .uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
 
@@ -46,9 +46,9 @@ public class EndToEndRoutingTest {
 
     @Test
     public void testHealthCheckIntegration() {
-        // 测试健康检查集成
+        // 测试健康检查集成 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health/ready")
+                .uri("/actuator/health/readiness")
                 .exchange()
                 .expectStatus().isOk();
 

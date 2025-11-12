@@ -9,6 +9,7 @@ import com.pajk.mcpbridge.core.model.McpServerInfo;
 import com.pajk.mcpbridge.core.registry.McpServerRegistry;
 import com.pajk.mcpbridge.persistence.entity.RoutingLog;
 import com.pajk.mcpbridge.persistence.service.PersistenceEventPublisher;
+import io.modelcontextprotocol.spec.McpSchema;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,32 +44,58 @@ public class McpRouterService {
     
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 默认超时时间
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    // 默认超时时间（增加到60秒，以支持较慢的MCP操作如resources/list）
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
 
     /**
      * 路由请求到指定服务 - 默认超时
      */
     public Mono<McpMessage> routeRequest(String serviceName, McpMessage message) {
-        return routeRequest(serviceName, message, DEFAULT_TIMEOUT);
+        return routeRequest(serviceName, message, DEFAULT_TIMEOUT, Map.of());
+    }
+    
+    /**
+     * 路由请求到指定服务 - 默认超时（带请求头）
+     */
+    public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Map<String, String> headers) {
+        return routeRequest(serviceName, message, DEFAULT_TIMEOUT, headers);
     }
 
     /**
      * 按需路由请求：发现服务 -> 健康检查 -> 智能负载均衡 -> 建立连接 -> 调用
      */
-    public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Duration timeout) {
+    public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Duration timeout, Map<String, String> headers) {
         log.info("🔄 Starting intelligent routing for service: {}, method: {}", serviceName, message.getMethod());
         
         // 创建路由日志对象（记录开始时间）
         String requestId = UUID.randomUUID().toString();
-        RoutingLog routingLog = createRoutingLog(requestId, message);
+        RoutingLog routingLog = createRoutingLog(requestId, serviceName, message, headers);
         long startTime = System.currentTimeMillis();
         
-        // 检查是否是工具调用
-        if (!"tools/call".equals(message.getMethod())) {
-            return Mono.error(new IllegalArgumentException("Only tools/call method is supported, got: " + message.getMethod()));
+        // 检查是否是支持的方法
+        String method = message.getMethod();
+        if (!isSupportedMethod(method)) {
+            return Mono.error(new IllegalArgumentException("Unsupported method: " + method + ". Supported methods: initialize, tools/list, tools/call, resources/list, resources/read, prompts/list, prompts/get, resources/templates/list"));
         }
         
+        // initialize 由 router 本地处理，直接返回 router 的能力信息
+        if ("initialize".equals(method)) {
+            log.info("🖐 Handling 'initialize' locally in router (no backend routing)");
+            return handleInitializeRequest(message)
+                    .doOnSuccess(response -> {
+                        long responseTime = System.currentTimeMillis() - startTime;
+                        routingLog.markSuccess((int) responseTime);
+                        setResponseBody(routingLog, response);
+                        publishRoutingLog(routingLog);
+                    })
+                    .doOnError(error -> {
+                        routingLog.markFailure(error.getMessage(), 500, "UNKNOWN", error.getClass().getSimpleName());
+                        setErrorResponseBody(routingLog, error);
+                        publishRoutingLog(routingLog);
+                    });
+        }
+        
+        // 其余方法按需路由至后端服务器
         // Step 1: 通过服务发现找到可用实例
         return discoverHealthyInstances(serviceName)
                 .flatMap(candidates -> {
@@ -82,21 +109,26 @@ public class McpRouterService {
                             selectedServer.getName(), selectedServer.getIp(), selectedServer.getPort(), candidates.size());
                     
                     // 记录目标服务器和路由策略
-                    routingLog.setTargetServer(selectedServer.getName() + ":" + selectedServer.getIp() + ":" + selectedServer.getPort());
-                    routingLog.setRoutingStrategy("WEIGHTED_ROUND_ROBIN");
+                    routingLog.setServerKey(selectedServer.getName() + ":" + selectedServer.getIp() + ":" + selectedServer.getPort());
+                    routingLog.setServerName(selectedServer.getName());  // 设置服务器名称
+                    routingLog.setLoadBalanceStrategy("WEIGHTED_ROUND_ROBIN");
                     
                     // Step 3: 按需建立连接并调用（带性能监控）
-                    return routeToServerWithMonitoring(selectedServer, message, timeout);
+                    return routeToServerWithMonitoring(selectedServer, message, timeout, routingLog);
                 })
                 .doOnSuccess(response -> {
                     // 记录成功的路由日志
                     long responseTime = System.currentTimeMillis() - startTime;
-                    routingLog.markSuccess(responseTime);
+                    routingLog.markSuccess((int) responseTime);
+                    // 设置响应体
+                    setResponseBody(routingLog, response);
                     publishRoutingLog(routingLog);
                 })
                 .doOnError(error -> {
                     // 记录失败的路由日志
-                    routingLog.markFailure(error.getMessage(), 500);
+                    routingLog.markFailure(error.getMessage(), 500, "UNKNOWN", error.getClass().getSimpleName());
+                    // 设置错误响应体
+                    setErrorResponseBody(routingLog, error);
                     publishRoutingLog(routingLog);
                 })
                 .timeout(timeout)
@@ -154,14 +186,13 @@ public class McpRouterService {
 
     /**
      * Step 3: 路由到指定服务器（带性能监控）
+     * 支持 tools/call 和 tools/list 方法
      */
-    private Mono<McpMessage> routeToServerWithMonitoring(McpServerInfo serverInfo, McpMessage message, Duration timeout) {
+    private Mono<McpMessage> routeToServerWithMonitoring(McpServerInfo serverInfo, McpMessage message, Duration timeout, RoutingLog routingLog) {
         log.debug("📡 Establishing monitored connection to server: {}", serverInfo.getName());
         
-        String toolName = extractToolName(message);
-        Map<String, Object> arguments = extractToolArguments(message);
-        
-        log.info("🔧 Calling tool '{}' on server '{}' with monitoring", toolName, serverInfo.getName());
+        String method = message.getMethod();
+        log.info("🔧 Processing method '{}' on server '{}' with monitoring", method, serverInfo.getName());
         
         long startTime = System.currentTimeMillis();
         Instance instance = convertToNacosInstance(serverInfo);
@@ -175,11 +206,73 @@ public class McpRouterService {
                     String realClientId = client.getClientInfo().name();  // 真实的 MCP 客户端名称
                     String clientVersion = client.getClientInfo().version(); // 客户端版本
                     
-                    // sessionId 简化处理，不暴露
-                    String requestSessionId = null;
+                    // 根据方法类型调用不同的处理逻辑
+                    // 注意：initialize 不应该走到这里，因为 routeRequest 已经拦截了
+                    Mono<Object> resultMono;
+                    if ("tools/list".equals(method)) {
+                        // 处理 tools/list 请求
+                        resultMono = mcpClientManager.listTools(serverInfo)
+                                .map(listToolsResult -> {
+                                    // 将 ListToolsResult 转换为 Map 格式
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("tools", listToolsResult.tools());
+                                    // 添加空的 toolsMeta（如果 MCP 协议需要）
+                                    result.put("toolsMeta", Map.of());
+                                    return (Object) result;
+                                });
+                    } else if ("tools/call".equals(method)) {
+                        // 处理 tools/call 请求
+                        String toolName = extractToolName(message);
+                        Map<String, Object> arguments = extractToolArguments(message);
+                        resultMono = mcpClientManager.callTool(serverInfo, toolName, arguments);
+                    } else if ("resources/list".equals(method)) {
+                        // 处理 resources/list 请求
+                        resultMono = mcpClientManager.listResources(serverInfo)
+                                .map(listResourcesResult -> {
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("resources", listResourcesResult.resources());
+                                    return (Object) result;
+                                });
+                    } else if ("resources/read".equals(method)) {
+                        // 处理 resources/read 请求
+                        McpSchema.ReadResourceRequest readRequest = extractReadResourceRequest(message);
+                        resultMono = mcpClientManager.readResource(serverInfo, readRequest)
+                                .map(readResourceResult -> {
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("contents", readResourceResult.contents());
+                                    return (Object) result;
+                                });
+                    } else if ("prompts/list".equals(method)) {
+                        // 处理 prompts/list 请求
+                        resultMono = mcpClientManager.listPrompts(serverInfo)
+                                .map(listPromptsResult -> {
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("prompts", listPromptsResult.prompts());
+                                    return (Object) result;
+                                });
+                    } else if ("prompts/get".equals(method)) {
+                        // 处理 prompts/get 请求
+                        McpSchema.GetPromptRequest getPromptRequest = extractGetPromptRequest(message);
+                        resultMono = mcpClientManager.getPrompt(serverInfo, getPromptRequest)
+                                .map(getPromptResult -> {
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("description", getPromptResult.description());
+                                    result.put("messages", getPromptResult.messages());
+                                    return (Object) result;
+                                });
+                    } else if ("resources/templates/list".equals(method)) {
+                        // 处理 resources/templates/list 请求
+                        resultMono = mcpClientManager.listResourceTemplates(serverInfo)
+                                .map(listResourceTemplatesResult -> {
+                                    Map<String, Object> result = new java.util.HashMap<>();
+                                    result.put("resourceTemplates", listResourceTemplatesResult.resourceTemplates());
+                                    return (Object) result;
+                                });
+                    } else {
+                        return Mono.error(new IllegalArgumentException("Unsupported method: " + method));
+                    }
                     
-                    // 调用工具
-                    return mcpClientManager.callTool(serverInfo, toolName, arguments)
+                    return resultMono
                             .map(result -> {
                                 // 记录成功指标
                                 long responseTime = System.currentTimeMillis() - startTime;
@@ -196,7 +289,7 @@ public class McpRouterService {
                                         .targetService(serverInfo.getName())
                                         .clientId(realClientId)  // 使用 MCP 客户端的真实名称
                                         .sessionId(null)  // 不暴露 sessionId
-                                        .metadata(buildResponseMetadata(serverInfo, responseTime, toolName, realClientId, clientVersion))
+                                        .metadata(buildResponseMetadata(serverInfo, responseTime, method, realClientId, clientVersion))
                                         .timestamp(System.currentTimeMillis())
                                         .build();
                                 
@@ -209,7 +302,7 @@ public class McpRouterService {
                                 loadBalancer.decrementConnectionCount(instance);
                             });
                 })
-                .timeout(timeout.dividedBy(2)) // 给连接建立留一半时间
+                .timeout(timeout.multipliedBy(9).dividedBy(10)) // 使用 90% 的超时时间，给连接建立和请求处理留足够时间
                 .onErrorResume(error -> {
                     // 记录错误指标
                     long responseTime = System.currentTimeMillis() - startTime;
@@ -219,39 +312,109 @@ public class McpRouterService {
                     
                     log.error("❌ Failed to route to server: {} - {} (response time: {}ms)", 
                             serverInfo.getName(), error.getMessage(), responseTime);
-                    return createErrorResponse(message, -1, "Connection or tool call failed: " + error.getMessage());
+                    return createErrorResponse(message, -1, "Connection or request failed: " + error.getMessage());
                 });
     }
 
     /**
      * 智能路由：自动发现服务并路由
      */
-    public Mono<McpMessage> smartRoute(McpMessage message, Duration timeout) {
+    public Mono<McpMessage> smartRoute(McpMessage message, Duration timeout, Map<String, String> headers) {
         log.info("🧠 Starting smart routing for message: {}", message.getMethod());
         
-        if (!"tools/call".equals(message.getMethod())) {
-            return createErrorResponse(message, -32601, "Method not supported: " + message.getMethod());
+        // 支持的智能路由方法：
+        // - tools/call：基于工具反向发现服务
+        // - tools/list：选择任一健康 MCP 服务返回其工具列表
+        // - resources/list：选择任一健康 MCP 服务返回其资源列表
+        // - prompts/list：选择任一健康 MCP 服务返回其提示列表
+        String method = message.getMethod();
+        if ("tools/call".equals(method)) {
+            String toolName = extractToolName(message);
+            if (toolName == null) {
+                return createErrorResponse(message, -32602, "Tool name not found in request");
+            }
+            
+            // 创建路由日志对象
+            String requestId = UUID.randomUUID().toString();
+            RoutingLog routingLog = createRoutingLog(requestId, "smart-route", message, headers);
+            long startTime = System.currentTimeMillis();
+            
+            // 发现所有可能的服务（提供该工具）
+            return discoverServicesWithTool(toolName)
+                    .flatMap(candidates -> {
+                        if (candidates.isEmpty()) {
+                            return createErrorResponse(message, 10002, "No services found that provide tool: " + toolName);
+                        }
+                        
+                        McpServerInfo selectedServer = selectOptimalServerWithLoadBalancing(candidates);
+                        log.info("🎯 Smart routing selected server: {} for tool: {}", selectedServer.getName(), toolName);
+                        
+                        routingLog.setServerKey(selectedServer.getName() + ":" + selectedServer.getIp() + ":" + selectedServer.getPort());
+                        routingLog.setServerName(selectedServer.getName());
+                        routingLog.setLoadBalanceStrategy("WEIGHTED_ROUND_ROBIN");
+                        
+                        return routeToServerWithMonitoring(selectedServer, message, timeout, routingLog);
+                    })
+                    .doOnSuccess(response -> {
+                        long responseTime = System.currentTimeMillis() - startTime;
+                        routingLog.markSuccess((int) responseTime);
+                        setResponseBody(routingLog, response);
+                        publishRoutingLog(routingLog);
+                    })
+                    .doOnError(error -> {
+                        routingLog.markFailure(error.getMessage(), 500, "UNKNOWN", error.getClass().getSimpleName());
+                        setErrorResponseBody(routingLog, error);
+                        publishRoutingLog(routingLog);
+                    })
+                    .timeout(Duration.ofSeconds(Math.min(5, (int) timeout.toSeconds())))
+                    .onErrorResume(err -> {
+                        log.error("❌ Smart routing failed: {}", err.getMessage());
+                        return createErrorResponse(message, -1, "Smart routing failed: " + err.getMessage());
+                    });
+        } else if ("tools/list".equals(method) || 
+                   "resources/list".equals(method) || 
+                   "prompts/list".equals(method) ||
+                   "resources/templates/list".equals(method)) {
+            // 对于这些列表方法，无需特定条件，选择任一健康的 MCP 服务即可
+            String requestId = UUID.randomUUID().toString();
+            RoutingLog routingLog = createRoutingLog(requestId, "smart-route", message, headers);
+            long startTime = System.currentTimeMillis();
+            
+            // 仅在 MCP 服务器分组内发现服务，避免选择到非 MCP endpoint 服务
+            // 使用配置的服务组，支持多个服务组（如 mcp-server 和 mcp-endpoints）
+            return serverRegistry.getAllHealthyServers("*", registryProperties.getServiceGroups())
+                    .collectList()
+                    .flatMap(candidates -> {
+                        // 过滤掉路由自身的实例，避免自调用
+                        candidates = candidates.stream()
+                                .filter(s -> s != null && s.getName() != null && !"mcp-router-v3".equals(s.getName()))
+                                .toList();
+                        if (candidates == null || candidates.isEmpty()) {
+                            return createErrorResponse(message, 10001, "No healthy MCP services available for " + method);
+                        }
+                        McpServerInfo selectedServer = selectOptimalServerWithLoadBalancing(candidates);
+                        log.info("🎯 Smart routing selected server: {} for method: {}", selectedServer.getName(), method);
+                        
+                        routingLog.setServerKey(selectedServer.getName() + ":" + selectedServer.getIp() + ":" + selectedServer.getPort());
+                        routingLog.setServerName(selectedServer.getName());
+                        routingLog.setLoadBalanceStrategy("WEIGHTED_ROUND_ROBIN");
+                        
+                        return routeToServerWithMonitoring(selectedServer, message, timeout, routingLog);
+                    })
+                    .doOnSuccess(response -> {
+                        long responseTime = System.currentTimeMillis() - startTime;
+                        routingLog.markSuccess((int) responseTime);
+                        setResponseBody(routingLog, response);
+                        publishRoutingLog(routingLog);
+                    })
+                    .doOnError(error -> {
+                        routingLog.markFailure(error.getMessage(), 500, "UNKNOWN", error.getClass().getSimpleName());
+                        setErrorResponseBody(routingLog, error);
+                        publishRoutingLog(routingLog);
+                    });
+        } else {
+            return createErrorResponse(message, -32601, "Method not supported: " + method);
         }
-        
-        String toolName = extractToolName(message);
-        if (toolName == null) {
-            return createErrorResponse(message, -32602, "Tool name not found in request");
-        }
-        
-        // 发现所有可能的服务
-        return discoverServicesWithTool(toolName)
-                .flatMap(candidates -> {
-                    if (candidates.isEmpty()) {
-                        return createErrorResponse(message, 10002, "No services found that provide tool: " + toolName);
-                    }
-                    
-                    // 选择最优服务（使用加权轮询确保负载均衡）
-                    McpServerInfo selectedServer = selectOptimalServerWithLoadBalancing(candidates);
-                    log.info("🎯 Smart routing selected server: {} for tool: {}", selectedServer.getName(), toolName);
-                    
-                    // 路由到选定的服务器
-                    return routeToServerWithMonitoring(selectedServer, message, timeout);
-                });
     }
 
     /**
@@ -380,6 +543,55 @@ public class McpRouterService {
     }
 
     /**
+     * 检查方法是否支持
+     */
+    private boolean isSupportedMethod(String method) {
+        return "initialize".equals(method) ||
+               "tools/list".equals(method) ||
+               "tools/call".equals(method) ||
+               "resources/list".equals(method) ||
+               "resources/read".equals(method) ||
+               "prompts/list".equals(method) ||
+               "prompts/get".equals(method) ||
+               "resources/templates/list".equals(method);
+    }
+
+    /**
+     * 从消息中提取读取资源请求
+     */
+    @SuppressWarnings("unchecked")
+    private McpSchema.ReadResourceRequest extractReadResourceRequest(McpMessage message) {
+        if (message.getParams() instanceof Map) {
+            Map<String, Object> params = (Map<String, Object>) message.getParams();
+            String uri = (String) params.get("uri");
+            if (uri != null) {
+                return new McpSchema.ReadResourceRequest(uri);
+            }
+        }
+        throw new IllegalArgumentException("Missing 'uri' parameter in resources/read request");
+    }
+
+    /**
+     * 从消息中提取获取提示请求
+     */
+    @SuppressWarnings("unchecked")
+    private McpSchema.GetPromptRequest extractGetPromptRequest(McpMessage message) {
+        if (message.getParams() instanceof Map) {
+            Map<String, Object> params = (Map<String, Object>) message.getParams();
+            String name = (String) params.get("name");
+            Map<String, Object> arguments = null;
+            Object args = params.get("arguments");
+            if (args instanceof Map) {
+                arguments = (Map<String, Object>) args;
+            }
+            if (name != null) {
+                return new McpSchema.GetPromptRequest(name, arguments != null ? arguments : Map.of());
+            }
+        }
+        throw new IllegalArgumentException("Missing 'name' parameter in prompts/get request");
+    }
+
+    /**
      * 创建错误响应
      */
     private Mono<McpMessage> createErrorResponse(McpMessage originalMessage, int code, String errorMessage) {
@@ -413,13 +625,13 @@ public class McpRouterService {
     /**
      * 构建响应元数据
      */
-    private Map<String, Object> buildResponseMetadata(McpServerInfo serverInfo, long responseTime, String toolName, String clientId, String clientVersion) {
+    private Map<String, Object> buildResponseMetadata(McpServerInfo serverInfo, long responseTime, String methodOrToolName, String clientId, String clientVersion) {
         Map<String, Object> metadata = new java.util.HashMap<>();
         metadata.put("routedAt", System.currentTimeMillis());
         metadata.put("responseTime", responseTime);
         metadata.put("targetServer", serverInfo.getName());
         metadata.put("targetHost", serverInfo.getIp() + ":" + serverInfo.getPort());
-        metadata.put("toolName", toolName);
+        metadata.put("method", methodOrToolName); // 可以是方法名（如 tools/list）或工具名（如 tools/call）
         metadata.put("routerVersion", "v3");
         metadata.put("routingStrategy", "intelligent");
         metadata.put("serverVersion", serverInfo.getVersion());
@@ -444,20 +656,159 @@ public class McpRouterService {
     /**
      * 创建路由日志对象
      */
-    private RoutingLog createRoutingLog(String requestId, McpMessage message) {
+    private RoutingLog createRoutingLog(String requestId, String serviceName, McpMessage message, Map<String, String> headers) {
         try {
-            return RoutingLog.newBuilder()
+            String params = objectMapper.writeValueAsString(message.getParams());
+            // 限制 params 大小为 10KB
+            params = truncateIfNeeded(params, 10240);
+            
+            // 提取工具名称
+            String toolName = extractToolName(message);
+            
+            // 序列化请求头
+            String requestHeadersJson = "{}";
+            if (headers != null && !headers.isEmpty()) {
+                try {
+                    requestHeadersJson = objectMapper.writeValueAsString(headers);
+                } catch (JsonProcessingException e) {
+                    log.warn("Failed to serialize request headers", e);
+                }
+            }
+            
+            return RoutingLog.builder()
                 .requestId(requestId)
                 .method(message.getMethod())
-                .params(objectMapper.writeValueAsString(message.getParams()))
+                .path("/mcp/router/route/" + serviceName)  // 设置请求路径
+                .mcpMethod(message.getMethod())  // 设置 MCP 方法
+                .toolName(toolName != null ? toolName : "")  // 设置工具名称
+                .requestHeaders(requestHeadersJson)  // 设置请求头
+                .requestBody(params)
+                .serverName(serviceName)  // 设置服务器名称（初始值，后续会更新为实际选中的服务器）
+                .startTime(java.time.LocalDateTime.now())
+                .isSuccess(true)
+                .isCached(false)
+                .isRetry(false)
+                .retryCount(0)
                 .build();
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize request params", e);
-            return RoutingLog.newBuilder()
+            String params = truncateIfNeeded(String.valueOf(message.getParams()), 10240);
+            
+            // 提取工具名称
+            String toolName = extractToolName(message);
+            
+            // 序列化请求头
+            String requestHeadersJson = "{}";
+            if (headers != null && !headers.isEmpty()) {
+                try {
+                    requestHeadersJson = objectMapper.writeValueAsString(headers);
+                } catch (JsonProcessingException ex) {
+                    log.warn("Failed to serialize request headers", ex);
+                }
+            }
+            
+            return RoutingLog.builder()
                 .requestId(requestId)
                 .method(message.getMethod())
-                .params(String.valueOf(message.getParams()))
+                .path("/mcp/router/route/" + serviceName)  // 设置请求路径
+                .mcpMethod(message.getMethod())  // 设置 MCP 方法
+                .toolName(toolName != null ? toolName : "")  // 设置工具名称
+                .requestHeaders(requestHeadersJson)  // 设置请求头
+                .requestBody(params)
+                .serverName(serviceName)  // 设置服务器名称（初始值，后续会更新为实际选中的服务器）
+                .startTime(java.time.LocalDateTime.now())
+                .isSuccess(true)
+                .isCached(false)
+                .isRetry(false)
+                .retryCount(0)
                 .build();
+        }
+    }
+    
+    /**
+     * 本地处理 initialize 请求：返回 router 的能力信息（符合 MCP 标准）
+     */
+    private Mono<McpMessage> handleInitializeRequest(McpMessage message) {
+        Map<String, Object> result = new java.util.HashMap<>();
+        
+        // protocolVersion
+        result.put("protocolVersion", "2024-11-05");
+        
+        // capabilities
+        Map<String, Object> capabilities = new java.util.HashMap<>();
+        capabilities.put("tools", Map.of("listChanged", false));
+        capabilities.put("resources", Map.of("subscribe", false, "listChanged", false));
+        capabilities.put("prompts", Map.of("listChanged", false));
+        capabilities.put("sampling", Map.of());
+        result.put("capabilities", capabilities);
+        
+        // serverInfo
+        Map<String, Object> serverInfo = new java.util.HashMap<>();
+        serverInfo.put("name", "mcp-router-v3");
+        serverInfo.put("version", "1.0.1");
+        result.put("serverInfo", serverInfo);
+        
+        McpMessage response = McpMessage.builder()
+                .id(message.getId())
+                .method("initialize")
+                .jsonrpc("2.0")
+                .result(result)
+                .timestamp(System.currentTimeMillis())
+                .build();
+        
+        return Mono.just(response);
+    }
+    
+    /**
+     * 截断字符串到指定大小（如果超出）
+     */
+    private String truncateIfNeeded(String str, int maxBytes) {
+        if (str == null) {
+            return null;
+        }
+        
+        byte[] bytes = str.getBytes();
+        if (bytes.length <= maxBytes) {
+            return str;
+        }
+        
+        // 截断并添加标记
+        String truncated = new String(bytes, 0, maxBytes - 20);
+        return truncated + "... [TRUNCATED]";
+    }
+    
+    /**
+     * 设置响应体
+     */
+    private void setResponseBody(RoutingLog routingLog, McpMessage response) {
+        try {
+            String responseBody = objectMapper.writeValueAsString(response);
+            // 限制响应体大小为 50KB
+            responseBody = truncateIfNeeded(responseBody, 51200);
+            routingLog.setResponseBody(responseBody);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize response body", e);
+            String responseBody = truncateIfNeeded(String.valueOf(response), 51200);
+            routingLog.setResponseBody(responseBody);
+        }
+    }
+    
+    /**
+     * 设置错误响应体
+     */
+    private void setErrorResponseBody(RoutingLog routingLog, Throwable error) {
+        try {
+            Map<String, Object> errorResponse = Map.of(
+                "error", error.getMessage(),
+                "errorType", error.getClass().getSimpleName()
+            );
+            String responseBody = objectMapper.writeValueAsString(errorResponse);
+            responseBody = truncateIfNeeded(responseBody, 51200);
+            routingLog.setResponseBody(responseBody);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize error response body", e);
+            String responseBody = truncateIfNeeded("{\"error\":\"" + error.getMessage() + "\"}", 51200);
+            routingLog.setResponseBody(responseBody);
         }
     }
     
@@ -467,11 +818,15 @@ public class McpRouterService {
     private void publishRoutingLog(RoutingLog routingLog) {
         if (persistenceEventPublisher != null) {
             try {
+                log.debug("📝 Publishing routing log: requestId={}, isSuccess={}", 
+                    routingLog.getRequestId(), routingLog.getIsSuccess());
                 persistenceEventPublisher.publishRoutingLog(routingLog);
             } catch (Exception e) {
                 // 持久化失败不应影响主流程
                 log.warn("Failed to publish routing log", e);
             }
+        } else {
+            log.warn("⚠️ PersistenceEventPublisher is null, routing log not published");
         }
     }
     

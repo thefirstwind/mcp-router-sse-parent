@@ -1,6 +1,8 @@
 package com.pajk.mcpbridge.core.controller;
 
 import com.pajk.mcpbridge.core.service.McpSseTransportProvider;
+import com.pajk.mcpbridge.core.service.McpSessionBridgeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pajk.mcpbridge.core.model.SseSession;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -10,9 +12,13 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * MCP SSE控制器
@@ -25,6 +31,8 @@ public class McpSseController {
 
     private final static Logger log = LoggerFactory.getLogger(McpSseController.class);
     private final McpSseTransportProvider sseTransportProvider;
+    private final McpSessionBridgeService sessionBridgeService; // 注入 SessionBridgeService
+    private final ObjectMapper objectMapper; // 注入 ObjectMapper
 
     /**
      * 建立SSE连接
@@ -45,9 +53,81 @@ public class McpSseController {
                 .doOnComplete(() -> 
                     log.info("SSE connection completed for client: {}", clientId))
                 .doOnError(error -> 
-                    log.error("SSE connection error for client: {}", clientId, error));
+                    log.error("SSE connection error for client: {}", clientId, error))
+                .doOnCancel(() ->
+                    log.info("SSE connection cancelled for client: {}", clientId));
     }
     
+    /**
+     * 为指定服务建立SSE连接 (兼容 MCP Inspector)
+     * /sse/{serviceName} → 建立客户端到路由器的SSE连接，并桥接到后端服务
+     */
+    @GetMapping(value = "/{serviceName}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> connectForService(
+            @PathVariable String serviceName,
+            @RequestParam(value = "clientId", required = false) String clientId,
+            @RequestParam(value = "metadata", required = false) String metadata) {
+        
+        String effectiveClientId = (clientId == null || clientId.isBlank())
+                ? "inspector-" + java.util.UUID.randomUUID()
+                : clientId;
+        log.info("SSE connect request for service: {}, clientId: {}", serviceName, effectiveClientId);
+        
+        Map<String, String> metadataMap = parseMetadata(metadata);
+        
+        // 1. 建立客户端到路由器的 SSE 连接
+        return sseTransportProvider.connect(effectiveClientId, metadataMap)
+                .doOnNext(event -> {
+                    // 2. 当客户端连接成功并收到第一个 "connected" 事件时，进行桥接
+                    if ("connected".equals(event.event()) && event.data() != null) {
+                        try {
+                            Map<String, String> data = objectMapper.readValue(event.data(), new TypeReference<Map<String, String>>() {}); // 使用 TypeReference
+                            String sessionId = data.get("sessionId");
+                            if (sessionId != null) {
+                                log.info("Client SSE connected with sessionId: {}, attempting to bridge to service: {}", sessionId, serviceName);
+                                // 建立客户端到后端服务的桥接
+                                sessionBridgeService.bridgeSseSession(sessionId, serviceName)
+                                        .doOnSuccess(v -> log.info("SSE session {} successfully bridged to service {}", sessionId, serviceName))
+                                        .doOnError(error -> log.error("Failed to bridge SSE session {} to service {}: {}", sessionId, serviceName, error.getMessage()))
+                                        .subscribe(); // 订阅以触发执行
+                            }
+                        } catch (Exception e) {
+                            log.error("Failed to parse connected event data for client: {}. Error: {}", effectiveClientId, e.getMessage());
+                        }
+                    }
+                })
+                .doOnComplete(() -> {
+                    log.info("Client SSE connection completed for client: {}, service: {}", effectiveClientId, serviceName);
+                    // 客户端连接关闭时，断开桥接
+                    sseTransportProvider.findSessionByClientId(effectiveClientId).ifPresent(session -> {
+                        sessionBridgeService.removeBridge(session.getSessionId())
+                                .doOnSuccess(v -> log.info("Removed bridge for client session: {}", session.getSessionId()))
+                                .doOnError(error -> log.error("Failed to remove bridge for client session {}: {}", session.getSessionId(), error.getMessage()))
+                                .subscribe();
+                    });
+                })
+                .doOnError(error -> {
+                    log.error("Client SSE connection error for client: {}, service: {}. Error: {}", effectiveClientId, serviceName, error.getMessage());
+                    // 客户端连接发生错误时，断开桥接
+                    sseTransportProvider.findSessionByClientId(effectiveClientId).ifPresent(session -> {
+                        sessionBridgeService.removeBridge(session.getSessionId())
+                                .doOnSuccess(v -> log.info("Removed bridge for client session: {}", session.getSessionId()))
+                                .doOnError(error_ -> log.error("Failed to remove bridge for client session {}: {}", session.getSessionId(), error_.getMessage()))
+                                .subscribe();
+                    });
+                })
+                .doOnCancel(() -> {
+                    log.info("Client SSE connection cancelled for client: {}, service: {}", effectiveClientId, serviceName);
+                    // 客户端连接取消时，断开桥接
+                    sseTransportProvider.findSessionByClientId(effectiveClientId).ifPresent(session -> {
+                        sessionBridgeService.removeBridge(session.getSessionId())
+                                .doOnSuccess(v -> log.info("Removed bridge for client session: {}", session.getSessionId()))
+                                .doOnError(error_ -> log.error("Failed to remove bridge for client session {}: {}", session.getSessionId(), error_.getMessage()))
+                                .subscribe();
+                    });
+                });
+    }
+
     /**
      * 发送消息到指定会话
      */

@@ -24,9 +24,9 @@ public class FaultRecoveryTest {
 
     @Test
     public void testBasicFaultTolerance() {
-        // 测试基本的故障容错能力
+        // 测试基本的故障容错能力 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health")
+                .uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
 
@@ -35,9 +35,9 @@ public class FaultRecoveryTest {
 
     @Test
     public void testCircuitBreakerRecovery() {
-        // 测试熔断器恢复机制
+        // 测试熔断器恢复机制 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health")
+                .uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
 
@@ -46,9 +46,9 @@ public class FaultRecoveryTest {
 
     @Test
     public void testServiceFailoverTest() {
-        // 测试服务故障转移
+        // 测试服务故障转移 - 使用actuator健康检查端点
         webTestClient.get()
-                .uri("/health/ready")
+                .uri("/actuator/health/readiness")
                 .exchange()
                 .expectStatus().isOk();
 

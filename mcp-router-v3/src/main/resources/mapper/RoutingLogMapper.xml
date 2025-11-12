@@ -4,65 +4,216 @@
 
 <mapper namespace="com.pajk.mcpbridge.persistence.mapper.RoutingLogMapper">
 
-    <!-- Result Map -->
+    <!-- ============================================================================ -->
+    <!-- Result Map - 完整字段映射 -->
+    <!-- ============================================================================ -->
     <resultMap id="RoutingLogResultMap" type="com.pajk.mcpbridge.persistence.entity.RoutingLog">
+        <!-- 主键和标识 -->
         <id column="id" property="id"/>
         <result column="request_id" property="requestId"/>
+        <result column="trace_id" property="traceId"/>
+        <result column="parent_id" property="parentId"/>
+        
+        <!-- 路由信息 -->
+        <result column="server_key" property="serverKey"/>
+        <result column="server_name" property="serverName"/>
+        <result column="load_balance_strategy" property="loadBalanceStrategy"/>
+        
+        <!-- 请求信息 -->
         <result column="method" property="method"/>
-        <result column="params" property="params"/>
-        <result column="routing_strategy" property="routingStrategy"/>
-        <result column="target_server" property="targetServer"/>
-        <result column="response_time" property="responseTime"/>
-        <result column="status_code" property="statusCode"/>
-        <result column="success" property="success"/>
+        <result column="path" property="path"/>
+        <result column="mcp_method" property="mcpMethod"/>
+        <result column="tool_name" property="toolName"/>
+        <result column="query_params" property="queryParams"/>
+        <result column="request_headers" property="requestHeaders"/>
+        <result column="request_body" property="requestBody"/>
+        <result column="request_size" property="requestSize"/>
+        
+        <!-- 响应信息 -->
+        <result column="response_status" property="responseStatus"/>
+        <result column="response_headers" property="responseHeaders"/>
+        <result column="response_body" property="responseBody"/>
+        <result column="response_size" property="responseSize"/>
+        
+        <!-- 时间信息 -->
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="duration" property="duration"/>
+        <result column="queue_time" property="queueTime"/>
+        <result column="connect_time" property="connectTime"/>
+        <result column="process_time" property="processTime"/>
+        
+        <!-- 客户端信息 -->
+        <result column="client_id" property="clientId"/>
+        <result column="client_ip" property="clientIp"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="session_id" property="sessionId"/>
+        
+        <!-- 状态标识 -->
+        <result column="is_success" property="isSuccess"/>
+        <result column="is_cached" property="isCached"/>
+        <result column="is_retry" property="isRetry"/>
+        <result column="retry_count" property="retryCount"/>
+        
+        <!-- 错误信息 -->
         <result column="error_message" property="errorMessage"/>
-        <result column="request_time" property="requestTime"/>
-        <result column="response_timestamp" property="responseTimestamp"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="error_type" property="errorType"/>
+        
+        <!-- 元数据 -->
+        <result column="metadata" property="metadata"/>
+        <result column="tags" property="tags"/>
+        
+        <!-- 时间戳 -->
         <result column="created_at" property="createdAt"/>
     </resultMap>
 
-    <!-- 插入单条记录 -->
+    <!-- ============================================================================ -->
+    <!-- 插入单条记录 - 完整字段 -->
+    <!-- ============================================================================ -->
     <insert id="insert" parameterType="com.pajk.mcpbridge.persistence.entity.RoutingLog"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO routing_logs (
-            request_id, method, params, routing_strategy, target_server,
-            response_time, status_code, success, error_message,
-            request_time, response_timestamp, created_at
+            <!-- 请求标识 -->
+            request_id, trace_id, parent_id,
+            <!-- 路由信息 -->
+            server_key, server_name, load_balance_strategy,
+            <!-- 请求信息 -->
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            <!-- 响应信息 -->
+            response_status, response_headers, response_body, response_size,
+            <!-- 时间信息 -->
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            <!-- 客户端信息 -->
+            client_id, client_ip, user_agent, session_id,
+            <!-- 状态标识 -->
+            is_success, is_cached, is_retry, retry_count,
+            <!-- 错误信息 -->
+            error_message, error_code, error_type,
+            <!-- 元数据 -->
+            metadata, tags,
+            <!-- 时间戳 -->
+            created_at
         ) VALUES (
-            #{requestId}, #{method}, #{params}, #{routingStrategy}, #{targetServer},
-            #{responseTime}, #{statusCode}, #{success}, #{errorMessage},
-            #{requestTime}, #{responseTimestamp}, NOW()
+            <!-- 请求标识 -->
+            #{requestId}, #{traceId}, #{parentId},
+            <!-- 路由信息 -->
+            #{serverKey}, #{serverName}, #{loadBalanceStrategy},
+            <!-- 请求信息 -->
+            #{method}, #{path}, #{mcpMethod}, #{toolName}, #{queryParams},
+            #{requestHeaders}, #{requestBody}, #{requestSize},
+            <!-- 响应信息 -->
+            #{responseStatus}, #{responseHeaders}, #{responseBody}, #{responseSize},
+            <!-- 时间信息 -->
+            #{startTime}, #{endTime}, #{duration}, #{queueTime}, #{connectTime}, #{processTime},
+            <!-- 客户端信息 -->
+            #{clientId}, #{clientIp}, #{userAgent}, #{sessionId},
+            <!-- 状态标识 -->
+            #{isSuccess}, #{isCached}, #{isRetry}, #{retryCount},
+            <!-- 错误信息 -->
+            #{errorMessage}, #{errorCode}, #{errorType},
+            <!-- 元数据 -->
+            #{metadata}, #{tags},
+            <!-- 时间戳 -->
+            NOW()
         )
     </insert>
 
-    <!-- 批量插入 -->
+    <!-- ============================================================================ -->
+    <!-- 批量插入 - 完整字段 -->
+    <!-- ============================================================================ -->
     <insert id="batchInsert" parameterType="java.util.List">
         INSERT INTO routing_logs (
-            request_id, method, params, routing_strategy, target_server,
-            response_time, status_code, success, error_message,
-            request_time, response_timestamp, created_at
+            <!-- 请求标识 -->
+            request_id, trace_id, parent_id,
+            <!-- 路由信息 -->
+            server_key, server_name, load_balance_strategy,
+            <!-- 请求信息 -->
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            <!-- 响应信息 -->
+            response_status, response_headers, response_body, response_size,
+            <!-- 时间信息 -->
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            <!-- 客户端信息 -->
+            client_id, client_ip, user_agent, session_id,
+            <!-- 状态标识 -->
+            is_success, is_cached, is_retry, retry_count,
+            <!-- 错误信息 -->
+            error_message, error_code, error_type,
+            <!-- 元数据 -->
+            metadata, tags,
+            <!-- 时间戳 -->
+            created_at
         ) VALUES
         <foreach collection="logs" item="log" separator=",">
             (
-                #{log.requestId}, #{log.method}, #{log.params}, #{log.routingStrategy}, #{log.targetServer},
-                #{log.responseTime}, #{log.statusCode}, #{log.success}, #{log.errorMessage},
-                #{log.requestTime}, #{log.responseTimestamp}, NOW()
+                <!-- 请求标识 -->
+                #{log.requestId}, #{log.traceId}, #{log.parentId},
+                <!-- 路由信息 -->
+                #{log.serverKey}, #{log.serverName}, #{log.loadBalanceStrategy},
+                <!-- 请求信息 -->
+                #{log.method}, #{log.path}, #{log.mcpMethod}, #{log.toolName}, #{log.queryParams},
+                #{log.requestHeaders}, #{log.requestBody}, #{log.requestSize},
+                <!-- 响应信息 -->
+                #{log.responseStatus}, #{log.responseHeaders}, #{log.responseBody}, #{log.responseSize},
+                <!-- 时间信息 -->
+                #{log.startTime}, #{log.endTime}, #{log.duration}, #{log.queueTime}, #{log.connectTime}, #{log.processTime},
+                <!-- 客户端信息 -->
+                #{log.clientId}, #{log.clientIp}, #{log.userAgent}, #{log.sessionId},
+                <!-- 状态标识 -->
+                #{log.isSuccess}, #{log.isCached}, #{log.isRetry}, #{log.retryCount},
+                <!-- 错误信息 -->
+                #{log.errorMessage}, #{log.errorCode}, #{log.errorType},
+                <!-- 元数据 -->
+                #{log.metadata}, #{log.tags},
+                <!-- 时间戳 -->
+                NOW()
             )
         </foreach>
     </insert>
 
+    <!-- ============================================================================ -->
+    <!-- 查询语句 -->
+    <!-- ============================================================================ -->
+
     <!-- 根据请求ID查询 -->
     <select id="selectByRequestId" resultMap="RoutingLogResultMap">
-        SELECT * FROM routing_logs
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
         WHERE request_id = #{requestId}
         LIMIT 1
     </select>
 
     <!-- 根据时间范围查询 -->
     <select id="selectByTimeRange" resultMap="RoutingLogResultMap">
-        SELECT * FROM routing_logs
-        WHERE request_time BETWEEN #{startTime} AND #{endTime}
-        ORDER BY request_time DESC
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY start_time DESC
         <if test="limit != null">
             LIMIT #{limit}
         </if>
@@ -70,12 +221,24 @@
 
     <!-- 根据目标服务器查询 -->
     <select id="selectByTargetServer" resultMap="RoutingLogResultMap">
-        SELECT * FROM routing_logs
-        WHERE target_server = #{targetServer}
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
+        WHERE server_key = #{targetServer}
         <if test="startTime != null">
-            AND request_time BETWEEN #{startTime} AND #{endTime}
+            AND start_time BETWEEN #{startTime} AND #{endTime}
         </if>
-        ORDER BY request_time DESC
+        ORDER BY start_time DESC
         <if test="limit != null">
             LIMIT #{limit}
         </if>
@@ -83,34 +246,91 @@
 
     <!-- 查询失败的路由日志 -->
     <select id="selectFailures" resultMap="RoutingLogResultMap">
-        SELECT * FROM routing_logs
-        WHERE success = FALSE
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
+        WHERE is_success = FALSE
         <if test="startTime != null">
-            AND request_time BETWEEN #{startTime} AND #{endTime}
+            AND start_time BETWEEN #{startTime} AND #{endTime}
         </if>
-        ORDER BY request_time DESC
+        ORDER BY start_time DESC
         <if test="limit != null">
             LIMIT #{limit}
         </if>
     </select>
+
+    <!-- ============================================================================ -->
+    <!-- 统计查询 -->
+    <!-- ============================================================================ -->
 
     <!-- 统计成功率 -->
     <select id="calculateSuccessRate" resultType="java.lang.Double">
         SELECT 
             CASE 
                 WHEN COUNT(*) = 0 THEN 0
-                ELSE (SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
+                ELSE (SUM(CASE WHEN is_success = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
             END AS success_rate
         FROM routing_logs
-        WHERE request_time BETWEEN #{startTime} AND #{endTime}
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
     </select>
 
     <!-- 统计数量 -->
     <select id="countByTimeRange" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM routing_logs
-        WHERE request_time BETWEEN #{startTime} AND #{endTime}
+        SELECT COUNT(*) 
+        FROM routing_logs
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
     </select>
+    
+    <!-- 统计平均响应时间 -->
+    <select id="calculateAvgDuration" resultType="java.lang.Double">
+        SELECT AVG(duration)
+        FROM routing_logs
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
+          AND is_success = TRUE
+    </select>
+    
+    <!-- 统计各工具调用次数 -->
+    <select id="countByToolName" resultType="java.util.Map">
+        SELECT 
+            tool_name,
+            COUNT(*) as call_count,
+            AVG(duration) as avg_duration,
+            SUM(CASE WHEN is_success = TRUE THEN 1 ELSE 0 END) as success_count
+        FROM routing_logs
+        WHERE start_time BETWEEN #{startTime} AND #{endTime}
+          AND tool_name IS NOT NULL
+        GROUP BY tool_name
+        ORDER BY call_count DESC
+    </select>
+    
+    <!-- ============================================================================ -->
+    <!-- 删除和归档 -->
+    <!-- ============================================================================ -->
+    
+    <!-- 删除指定时间之前的记录 -->
+    <delete id="deleteByTimeBefore">
+        DELETE FROM routing_logs
+        WHERE start_time &lt; #{cutoffTime}
+    </delete>
+    
+    <!-- 归档到历史表（插入到 routing_logs_archive） -->
+    <insert id="archiveToHistory">
+        INSERT INTO routing_logs_archive
+        SELECT * FROM routing_logs
+        WHERE start_time &lt; #{cutoffTime}
+    </insert>
 
 </mapper>
+
 
 

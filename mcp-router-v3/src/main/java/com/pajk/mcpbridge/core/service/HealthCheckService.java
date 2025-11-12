@@ -524,12 +524,17 @@ public class HealthCheckService {
                 (serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp()) + ":" + 
                 serverInfo.getPort();
             
-            HealthCheckRecord record = HealthCheckRecord.newBuilder()
+            HealthCheckRecord record = HealthCheckRecord.builder()
                 .serverKey(serverKey)
-                .checkLevel(checkLevel)
+                .checkTime(LocalDateTime.now())
                 .checkType("MCP")
+                .checkLevel(checkLevel)
                 .healthy(healthy)
                 .responseTime(responseTime)
+                .errorMessage(errorMessage)
+                .errorType(errorType)
+                .sampled(false)
+                .createdAt(LocalDateTime.now())
                 .build();
             
             if (healthy) {
@@ -539,7 +544,7 @@ public class HealthCheckService {
             }
             
             // 标记是否为采样记录
-            if (healthy && samplingRandom.nextDouble() < SAMPLING_RATE) {
+            if (shouldSampleSuccessCheck()) {
                 record.markSampled();
             }
             

@@ -57,10 +57,12 @@ public class RoutingLogBatchWriter {
     @PostConstruct
     public void start() {
         log.info("Starting RoutingLog batch writer with batchSize={}, window={}", BATCH_SIZE, BATCH_WINDOW);
+        log.info("Sampling strategy: Success=100%, Failure=100% (Full recording enabled)");
         
         subscription = eventPublisher.getRoutingLogSink()
             .asFlux()
             .cast(RoutingLog.class)
+            .filter(this::shouldSample) // 应用采样策略
             .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
             .filter(batch -> !batch.isEmpty())
             .flatMap(this::writeBatch, 1) // 并发度为1，保证顺序
@@ -72,6 +74,19 @@ public class RoutingLogBatchWriter {
             );
         
         log.info("RoutingLog batch writer started successfully");
+    }
+    
+    /**
+     * 采样策略：成功请求100%，失败请求100%（临时调整为全量记录）
+     */
+    private boolean shouldSample(RoutingLog log) {
+        // 失败请求：100% 记录
+        if (log.getIsSuccess() == null || !log.getIsSuccess()) {
+            return true;
+        }
+        
+        // 成功请求：100% 采样（原来是10%）
+        return true; // Math.random() < 0.1;
     }
     
     /**
@@ -140,13 +155,13 @@ public class RoutingLogBatchWriter {
      */
     private void logToFile(RoutingLog routingLog) {
         // 使用特殊的日志标记，便于后续数据恢复
-        log.warn("PERSISTENCE_FALLBACK|ROUTING_LOG|requestId={}|method={}|targetServer={}|success={}|responseTime={}|requestTime={}",
+        log.warn("PERSISTENCE_FALLBACK|ROUTING_LOG|requestId={}|method={}|serverKey={}|isSuccess={}|duration={}|createdAt={}",
             routingLog.getRequestId(),
             routingLog.getMethod(),
-            routingLog.getTargetServer(),
-            routingLog.getSuccess(),
-            routingLog.getResponseTime(),
-            routingLog.getRequestTime()
+            routingLog.getServerKey(),
+            routingLog.getIsSuccess(),
+            routingLog.getDuration(),
+            routingLog.getCreatedAt()
         );
     }
     

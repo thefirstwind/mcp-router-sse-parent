@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
  * @author MCP Router Team
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = com.pajk.mcpbridge.core.McpRouterV3Application.class)
 public class RoutingLogPersistenceTest {
     
     @Autowired(required = false)
@@ -48,12 +48,23 @@ public class RoutingLogPersistenceTest {
         }
         
         // 创建测试数据
-        RoutingLog log = RoutingLog.newBuilder()
+        RoutingLog log = RoutingLog.builder()
             .requestId(UUID.randomUUID().toString())
-            .method("tools/call")
-            .params("{\"name\":\"test\"}")
-            .routingStrategy("ROUND_ROBIN")
-            .targetServer("test-server:localhost:8080")
+            .method("POST")
+            .path("/mcp/router/route/test-server")
+            .mcpMethod("tools/call")
+            .toolName("testTool")
+            .requestHeaders("{\"Content-Type\":\"application/json\"}")
+            .requestBody("{\"name\":\"test\"}")
+            .responseBody("{\"result\":\"success\"}")
+            .loadBalanceStrategy("ROUND_ROBIN")
+            .serverKey("test-server:localhost:8080")
+            .serverName("test-server")
+            .startTime(LocalDateTime.now())
+            .endTime(LocalDateTime.now().plusNanos(100 * 1_000_000L))
+            .duration(100)
+            .isSuccess(true)
+            .createdAt(LocalDateTime.now())
             .build();
         
         log.markSuccess(100);
@@ -76,21 +87,32 @@ public class RoutingLogPersistenceTest {
         // 创建100条测试数据
         List<RoutingLog> logs = java.util.stream.IntStream.range(0, 100)
             .mapToObj(i -> {
-                RoutingLog log = RoutingLog.newBuilder()
+                RoutingLog logEntry = RoutingLog.builder()
                     .requestId(UUID.randomUUID().toString())
-                    .method("tools/call")
-                    .params("{\"index\":" + i + "}")
-                    .routingStrategy("WEIGHTED")
-                    .targetServer("server-" + (i % 5) + ":localhost:808" + (i % 5))
+                    .method("POST")
+                    .path("/mcp/router/route/server-" + (i % 5))
+                    .mcpMethod("tools/call")
+                    .toolName("testTool" + (i % 5))
+                    .requestHeaders("{\"Content-Type\":\"application/json\"}")
+                    .requestBody("{\"index\":" + i + "}")
+                    .responseBody("{\"result\":\"success\"}")
+                    .loadBalanceStrategy("WEIGHTED")
+                    .serverKey("server-" + (i % 5) + ":localhost:808" + (i % 5))
+                    .serverName("server-" + (i % 5))
+                    .startTime(LocalDateTime.now())
+                    .endTime(LocalDateTime.now().plusNanos((50 + i) * 1_000_000L))
+                    .duration(50 + i)
+                    .isSuccess(true)
+                    .createdAt(LocalDateTime.now())
                     .build();
                 
                 if (i % 10 == 0) {
-                    log.markFailure("Test error", 500);
+                    logEntry.markFailure("Test error", 500, "TEST_ERROR", "TEST_TYPE");
                 } else {
-                    log.markSuccess(50 + i);
+                    logEntry.markSuccess(50 + i);
                 }
                 
-                return log;
+                return logEntry;
             })
             .toList();
         
@@ -115,12 +137,23 @@ public class RoutingLogPersistenceTest {
         
         // 插入测试数据
         String requestId = UUID.randomUUID().toString();
-        RoutingLog log = RoutingLog.newBuilder()
+        RoutingLog log = RoutingLog.builder()
             .requestId(requestId)
-            .method("tools/call")
-            .params("{\"test\":\"query\"}")
-            .routingStrategy("LEAST_CONNECTIONS")
-            .targetServer("query-server:localhost:9999")
+            .method("POST")
+            .path("/mcp/router/route/query-server")
+            .mcpMethod("tools/call")
+            .toolName("queryTool")
+            .requestHeaders("{\"Content-Type\":\"application/json\"}")
+            .requestBody("{\"test\":\"query\"}")
+            .responseBody("{\"result\":\"success\"}")
+            .loadBalanceStrategy("LEAST_CONNECTIONS")
+            .serverKey("query-server:localhost:9999")
+            .serverName("query-server")
+            .startTime(LocalDateTime.now())
+            .endTime(LocalDateTime.now().plusNanos(200 * 1_000_000L))
+            .duration(200)
+            .isSuccess(true)
+            .createdAt(LocalDateTime.now())
             .build();
         
         log.markSuccess(200);
@@ -130,8 +163,8 @@ public class RoutingLogPersistenceTest {
         RoutingLog queried = routingLogMapper.selectByRequestId(requestId);
         assertNotNull("Should find the log", queried);
         assertEquals("Request ID should match", requestId, queried.getRequestId());
-        assertEquals("Method should match", "tools/call", queried.getMethod());
-        assertTrue("Should be successful", queried.getSuccess());
+        assertEquals("Method should match", "tools/call", queried.getMcpMethod());
+        assertTrue("Should be successful", queried.getIsSuccess());
         
         System.out.println("✅ Query by request ID test passed");
     }
@@ -161,16 +194,27 @@ public class RoutingLogPersistenceTest {
         
         // 插入一些失败的记录
         for (int i = 0; i < 5; i++) {
-            RoutingLog log = RoutingLog.newBuilder()
+            RoutingLog logEntry = RoutingLog.builder()
                 .requestId(UUID.randomUUID().toString())
-                .method("tools/call")
-                .params("{}")
-                .routingStrategy("ROUND_ROBIN")
-                .targetServer("error-server:localhost:8080")
+                .method("POST")
+                .path("/mcp/router/route/error-server")
+                .mcpMethod("tools/call")
+                .toolName("errorTool")
+                .requestHeaders("{\"Content-Type\":\"application/json\"}")
+                .requestBody("{}")
+                .responseBody("{\"error\":\"test error\"}")
+                .loadBalanceStrategy("ROUND_ROBIN")
+                .serverKey("error-server:localhost:8080")
+                .serverName("error-server")
+                .startTime(LocalDateTime.now())
+                .endTime(LocalDateTime.now().plusNanos(200 * 1_000_000L))
+                .duration(200)
+                .isSuccess(false)
+                .createdAt(LocalDateTime.now())
                 .build();
             
-            log.markFailure("Test error " + i, 500);
-            routingLogMapper.insert(log);
+            logEntry.markFailure("Test error " + i, 500, "TEST_ERROR_" + i, "TEST_TYPE");
+            routingLogMapper.insert(logEntry);
         }
         
         // 查询失败记录
@@ -182,8 +226,8 @@ public class RoutingLogPersistenceTest {
         assertTrue("Should find some failures", failures.size() >= 5);
         
         // 验证所有记录都是失败的
-        for (RoutingLog log : failures) {
-            assertFalse("All logs should be failures", log.getSuccess());
+        for (RoutingLog logEntry : failures) {
+            assertFalse("All logs should be failures", logEntry.getIsSuccess());
         }
         
         System.out.println("✅ Select failures test passed. Found " + failures.size() + " failures");
@@ -217,16 +261,27 @@ public class RoutingLogPersistenceTest {
         
         // 发布10条事件
         for (int i = 0; i < 10; i++) {
-            RoutingLog log = RoutingLog.newBuilder()
+            RoutingLog logEntry = RoutingLog.builder()
                 .requestId(UUID.randomUUID().toString())
-                .method("tools/call")
-                .params("{\"index\":" + i + "}")
-                .routingStrategy("ROUND_ROBIN")
-                .targetServer("event-server:localhost:8080")
+                .method("POST")
+                .path("/mcp/router/route/event-server")
+                .mcpMethod("tools/call")
+                .toolName("eventTool" + i)
+                .requestHeaders("{\"Content-Type\":\"application/json\"}")
+                .requestBody("{\"index\":" + i + "}")
+                .responseBody("{\"result\":\"success\"}")
+                .loadBalanceStrategy("ROUND_ROBIN")
+                .serverKey("event-server:localhost:8080")
+                .serverName("event-server")
+                .startTime(LocalDateTime.now())
+                .endTime(LocalDateTime.now().plusNanos(100 * 1_000_000L))
+                .duration(100)
+                .isSuccess(true)
+                .createdAt(LocalDateTime.now())
                 .build();
             
-            log.markSuccess(100);
-            eventPublisher.publishRoutingLog(log);
+            logEntry.markSuccess(100);
+            eventPublisher.publishRoutingLog(logEntry);
         }
         
         // 获取统计
@@ -259,5 +314,8 @@ public class RoutingLogPersistenceTest {
         System.out.println("   Failure rate: " + String.format("%.2f%%", stats.failureRate()));
     }
 }
+
+
+
 
 

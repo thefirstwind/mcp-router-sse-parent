@@ -10,8 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Arrays;
-import java.util.List;
+// import java.util.Arrays;  // 已注释的测试方法不再需要
+// import java.util.List;     // 已注释的测试方法不再需要
 
 /**
  * MCP服务器健康状态验证测试
@@ -25,27 +25,6 @@ public class McpServerHealthVerificationTest {
     
     @Autowired
     private McpServerPersistenceService persistenceService;
-    
-    /**
-     * 验证并修复 cf-server 和 mcp-server-v2-20250718 的健康状态
-     */
-    @Test
-    public void testVerifyAndFixSpecificServers() {
-        log.info("========================================");
-        log.info("🔍 开始验证服务器健康状态");
-        log.info("========================================");
-        
-        List<String> serverNames = Arrays.asList(
-            "cf-server",
-            "mcp-server-v2-20250718"
-        );
-        
-        int fixedCount = persistenceService.verifyAndFixSpecificServers(serverNames);
-        
-        log.info("========================================");
-        log.info("✅ 验证完成，共修复 {} 个服务器", fixedCount);
-        log.info("========================================");
-    }
     
     /**
      * 验证所有临时节点的健康状态
@@ -63,4 +42,21 @@ public class McpServerHealthVerificationTest {
         log.info("========================================");
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -306,8 +306,8 @@ public class McpServerRegistry {
                 subscribeServiceChangeIfNeeded(serviceName, serviceGroup);
                 return healthyList;
             } catch (Exception e) {
-                log.error("Failed to get healthy servers for service: {}", serviceName, e);
-                throw new RuntimeException("Failed to get healthy servers", e);
+                log.warn("⚠️ Failed to get healthy servers for service: {} (Nacos未启用是正常的): {}", serviceName, e.getMessage());
+                return List.<McpServerInfo>of(); // 返回空列表，而不是抛出异常
             }
         }).flatMapMany(Flux::fromIterable);
     }
@@ -432,8 +432,8 @@ public class McpServerRegistry {
                 log.debug("📊 Total {} MCP servers found in group: {}", allServers.size(), serviceGroup);
                 return allServers;
             } catch (Exception e) {
-                log.error("❌ Failed to get all MCP services in group: {}", serviceGroup, e);
-                throw new RuntimeException("Failed to get all MCP services", e);
+                log.warn("⚠️ Failed to get all MCP services in group: {} (Nacos未启用是正常的): {}", serviceGroup, e.getMessage());
+                return List.<McpServerInfo>of(); // 返回空列表，而不是抛出异常
             }
         }).flatMapMany(Flux::fromIterable);
     }
@@ -449,8 +449,8 @@ public class McpServerRegistry {
                         .map(instance -> buildServerInfo(instance, serviceName))
                         .toList();
             } catch (Exception e) {
-                log.error("Failed to get all instances for service: {}", serviceName, e);
-                throw new RuntimeException("Failed to get all instances", e);
+                log.warn("⚠️ Failed to get all instances for service: {} (Nacos未启用是正常的): {}", serviceName, e.getMessage());
+                return List.<McpServerInfo>of(); // 返回空列表，而不是抛出异常
             }
         }).flatMapMany(Flux::fromIterable);
     }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.Disposable;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
 
 /**
  * MCP SSE传输提供者
@@ -29,7 +31,7 @@ public class McpSseTransportProvider {
     private final Map<String, SseSession> activeSessions = new ConcurrentHashMap<>();
     
     // 会话超时时间（60秒）
-    private static final long DEFAULT_TIMEOUT_MS = 60_000;
+    private static final long DEFAULT_TIMEOUT_MS = 600_000;
     
     // 心跳间隔（30秒）
     private static final long HEARTBEAT_INTERVAL_MS = 30_000;
@@ -53,25 +55,51 @@ public class McpSseTransportProvider {
             SseSession session = createSession(sessionId, clientId, metadata, sink);
             activeSessions.put(sessionId, session);
             
-            // 订阅sink的消息并发送给客户端
-            sink.asFlux().subscribe(event -> emitter.next(event));
+            // 订阅sink的消息并发送给客户端，保存订阅以便清理
+            Disposable sinkSubscription = sink.asFlux()
+                    .doOnError(error -> {
+                        log.error("Error in sink flux for session: {}", sessionId, error);
+                        emitter.error(error);
+                    })
+                    .subscribe(
+                            event -> {
+                                try {
+                                    emitter.next(event);
+                                } catch (Exception e) {
+                                    log.error("Error emitting event for session: {}", sessionId, e);
+                                }
+                            },
+                            error -> {
+                                log.error("Subscription error for session: {}", sessionId, error);
+                                emitter.error(error);
+                            },
+                            () -> {
+                                log.info("Sink flux completed for session: {}", sessionId);
+                                emitter.complete();
+                            }
+                    );
             
             // 发送连接成功事件
             sendConnectionEvent(session, "connected");
             
-            // 启动心跳
-            startHeartbeat(session);
+            // 启动心跳，保存订阅
+            Disposable heartbeatSubscription = startHeartbeat(session);
             
             // 处理连接关闭
             emitter.onDispose(() -> {
                 log.info("SSE connection disposed for client: {}, session: {}", clientId, sessionId);
+                // 取消心跳订阅
+                if (heartbeatSubscription != null && !heartbeatSubscription.isDisposed()) {
+                    heartbeatSubscription.dispose();
+                }
+                // 取消sink订阅
+                if (sinkSubscription != null && !sinkSubscription.isDisposed()) {
+                    sinkSubscription.dispose();
+                }
                 session.setStatus(SseSession.SessionStatus.DISCONNECTED);
                 activeSessions.remove(sessionId);
                 sink.tryEmitComplete();
             });
-            
-            // 处理错误 - 这里不需要设置错误处理器，因为Flux.create的错误处理会由emitter内部处理
-            // 移除 emitter.onError 调用
         });
     }
     
@@ -109,12 +137,9 @@ public class McpSseTransportProvider {
      * 发送消息到指定客户端
      */
     public Mono<Void> sendMessageToClient(String clientId, String eventType, String data) {
-        SseSession session = findSessionByClientId(clientId);
-        if (session == null) {
-            return Mono.error(new IllegalArgumentException("No active session for client: " + clientId));
-        }
-        
-        return sendMessage(session.getSessionId(), eventType, data);
+        return findSessionByClientId(clientId)
+                .map(session -> sendMessage(session.getSessionId(), eventType, data))
+                .orElse(Mono.error(new IllegalArgumentException("No active session for client: " + clientId)));
     }
     
     /**
@@ -220,27 +245,61 @@ public class McpSseTransportProvider {
     
     /**
      * 启动心跳
+     * @return 心跳订阅，用于后续清理
      */
-    private void startHeartbeat(SseSession session) {
-        Flux.interval(Duration.ofMillis(HEARTBEAT_INTERVAL_MS))
-                .takeWhile(tick -> session.getStatus() == SseSession.SessionStatus.CONNECTED)
-                .subscribe(tick -> {
-                    try {
-                        sendMessage(session.getSessionId(), "heartbeat", 
-                                "{\"timestamp\":\"" + LocalDateTime.now() + "\"}");
-                    } catch (Exception e) {
-                        log.error("Failed to send heartbeat for session: {}", session.getSessionId(), e);
+    private Disposable startHeartbeat(SseSession session) {
+        return Flux.interval(Duration.ofMillis(HEARTBEAT_INTERVAL_MS))
+                .takeWhile(tick -> {
+                    SseSession.SessionStatus status = session.getStatus();
+                    boolean shouldContinue = status == SseSession.SessionStatus.CONNECTED || 
+                                           status == SseSession.SessionStatus.CONNECTING;
+                    if (!shouldContinue) {
+                        log.debug("Stopping heartbeat for session: {} due to status: {}", 
+                                session.getSessionId(), status);
                     }
-                });
+                    return shouldContinue;
+                })
+                .subscribe(
+                        tick -> {
+                            try {
+                                // 检查会话是否仍然存在
+                                if (activeSessions.containsKey(session.getSessionId())) {
+                                    ServerSentEvent<String> heartbeatEvent = ServerSentEvent.<String>builder()
+                                            .id(String.valueOf(messageIdGenerator.incrementAndGet()))
+                                            .event("heartbeat")
+                                            .data("{\"timestamp\":\"" + LocalDateTime.now() + "\"}")
+                                            .build();
+                                    
+                                    Sinks.EmitResult result = session.getSink().tryEmitNext(heartbeatEvent);
+                                    if (result.isFailure()) {
+                                        log.warn("Failed to emit heartbeat for session: {}, result: {}", 
+                                                session.getSessionId(), result);
+                                    } else {
+                                        session.updateLastActiveTime();
+                                        log.debug("Sent heartbeat for session: {}", session.getSessionId());
+                                    }
+                                } else {
+                                    log.debug("Session {} no longer exists, stopping heartbeat", session.getSessionId());
+                                }
+                            } catch (Exception e) {
+                                log.error("Failed to send heartbeat for session: {}", session.getSessionId(), e);
+                            }
+                        },
+                        error -> {
+                            log.error("Heartbeat flux error for session: {}", session.getSessionId(), error);
+                        },
+                        () -> {
+                            log.debug("Heartbeat flux completed for session: {}", session.getSessionId());
+                        }
+                );
     }
     
     /**
      * 根据客户端ID查找会话
      */
-    private SseSession findSessionByClientId(String clientId) {
+    public Optional<SseSession> findSessionByClientId(String clientId) {
         return activeSessions.values().stream()
                 .filter(session -> clientId.equals(session.getClientId()))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 } 

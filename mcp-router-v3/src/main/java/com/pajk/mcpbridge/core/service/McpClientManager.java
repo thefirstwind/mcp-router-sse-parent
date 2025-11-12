@@ -41,7 +41,7 @@ public class McpClientManager {
     // 连接池配置
     private static final int MAX_POOL_SIZE = 20;
     private static final Duration IDLE_TIMEOUT = Duration.ofMinutes(10); // 10分钟空闲超时
-    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(60); // 增加到60秒以支持较慢的MCP操作
     private static final Duration MAX_LIFETIME = Duration.ofHours(1); // 连接最大生命周期
     
     // 统计信息
@@ -105,6 +105,7 @@ public class McpClientManager {
 
         // 创建新连接
         return createNewConnection(serverInfo)
+                .timeout(CONNECTION_TIMEOUT.multipliedBy(2)) // 给连接创建和初始化留足够时间（60秒）
                 .map(client -> {
                     McpConnectionWrapper wrapper = new McpConnectionWrapper(
                             client, serverInfo, LocalDateTime.now());
@@ -121,38 +122,38 @@ public class McpClientManager {
      * 创建新的MCP连接
      */
     private Mono<McpAsyncClient> createNewConnection(McpServerInfo serverInfo) {
-        return Mono.fromCallable(() -> {
+        return Mono.defer(() -> {
             log.debug("🔧 Creating new MCP connection for server: {}", serverInfo.getName());
-            
+ 
             String serverBaseUrl = buildServerUrl(serverInfo);
             log.debug("Using server URL: {}", serverBaseUrl);
-
+ 
             // 创建WebClient Builder
             WebClient.Builder clientBuilder = webClientBuilder
                     .clone()
                     .baseUrl(serverBaseUrl)
                     .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024));
-
+ 
             // 创建SSE传输，使用从 Nacos 元数据获取的自定义 SSE 端点和消息端点
             WebFluxSseClientTransport transport = new WebFluxSseClientTransport(clientBuilder, objectMapper);
-
+ 
             // 创建客户端信息
             McpSchema.Implementation clientInfo = new McpSchema.Implementation(
                     "mcp-router-v3-client",
                     "2.0.0"
             );
-
+ 
             // 构建异步MCP客户端
             McpAsyncClient client = McpClient.async(transport)
                     .clientInfo(clientInfo)
                     .requestTimeout(CONNECTION_TIMEOUT)
                     .build();
-
-            // 初始化客户端
-            client.initialize().block(CONNECTION_TIMEOUT);
-            
-            log.debug("✅ MCP connection created and initialized for server: {}", serverInfo.getName());
-            return client;
+ 
+            // 以响应式方式初始化客户端，避免阻塞
+            return client.initialize()
+                    .timeout(CONNECTION_TIMEOUT)
+                    .thenReturn(client)
+                    .doOnSuccess(c -> log.debug("✅ MCP connection created and initialized for server: {}", serverInfo.getName()));
         })
         .subscribeOn(Schedulers.boundedElastic());
     }
@@ -192,9 +193,63 @@ public class McpClientManager {
                                 invalidateConnection(serverInfo);
                             });
                 })
-                .timeout(Duration.ofSeconds(30))
+                .timeout(Duration.ofSeconds(60))
                 .onErrorMap(e -> new RuntimeException("MCP call failed for tool '" + toolName + "' on server '" +
                         serverInfo.getName() + "': " + e.getMessage()));
+    }
+
+    /**
+     * 发送 initialize 请求到后端服务器
+     */
+    public Mono<Map<String, Object>> initialize(McpServerInfo serverInfo, com.pajk.mcpbridge.core.model.McpMessage message) {
+        log.debug("🔧 Sending initialize request to server via connection pool: {}", serverInfo.getName());
+        
+        // 从消息中提取 initialize 参数
+        Object params = message.getParams();
+        if (params == null) {
+            return Mono.error(new IllegalArgumentException("Initialize params is required"));
+        }
+        
+        // 通过 HTTP 直接发送 initialize 请求
+        String serverBaseUrl = buildServerUrl(serverInfo);
+        String sessionId = java.util.UUID.randomUUID().toString(); // 生成临时 sessionId
+        
+        // 构建请求体
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("jsonrpc", "2.0");
+        requestBody.put("id", message.getId());
+        requestBody.put("method", "initialize");
+        requestBody.put("params", params);
+        
+        // 通过 WebClient 发送请求
+        return webClientBuilder
+                .baseUrl(serverBaseUrl)
+                .build()
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/mcp/message")
+                        .queryParam("sessionId", sessionId)
+                        .build())
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(response -> {
+                    // 解析响应，返回 result Map
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> result = (Map<String, Object>) response.get("result");
+                    if (result == null) {
+                        throw new RuntimeException("Invalid initialize response: no result");
+                    }
+                    return result;
+                })
+                .doOnSuccess(result -> log.debug("✅ Initialize request successful via pool for server: {}", serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to initialize via pool for server: {}", serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                })
+                .timeout(Duration.ofSeconds(60))
+                .onErrorMap(e -> new RuntimeException("MCP initialize failed for server '" + serverInfo.getName() + "': " + e.getMessage()));
     }
 
     /**
@@ -222,6 +277,108 @@ public class McpClientManager {
                 .map(result -> result.tools().stream()
                         .anyMatch(tool -> tool.name().equals(toolName)))
                 .onErrorReturn(false);
+    }
+
+    /**
+     * 获取服务器的可用资源列表
+     */
+    public Mono<McpSchema.ListResourcesResult> listResources(McpServerInfo serverInfo) {
+        log.debug("📋 Listing resources for server via connection pool: {}", serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(McpAsyncClient::listResources)
+                .doOnSuccess(resources -> log.debug("✅ Listed {} resources via pool for server: {}", 
+                        resources.resources() != null ? resources.resources().size() : 0, serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to list resources via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
+    }
+
+    /**
+     * 读取资源内容
+     */
+    public Mono<McpSchema.ReadResourceResult> readResource(McpServerInfo serverInfo, McpSchema.Resource resource) {
+        log.debug("📖 Reading resource '{}' from server via connection pool: {}", 
+                resource.uri(), serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(client -> client.readResource(resource))
+                .doOnSuccess(result -> log.debug("✅ Read resource successfully via pool"))
+                .doOnError(error -> {
+                    log.error("❌ Failed to read resource via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
+    }
+
+    /**
+     * 读取资源内容（使用请求对象）
+     */
+    public Mono<McpSchema.ReadResourceResult> readResource(McpServerInfo serverInfo, McpSchema.ReadResourceRequest request) {
+        log.debug("📖 Reading resource '{}' from server via connection pool: {}", 
+                request.uri(), serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(client -> client.readResource(request))
+                .doOnSuccess(result -> log.debug("✅ Read resource successfully via pool"))
+                .doOnError(error -> {
+                    log.error("❌ Failed to read resource via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
+    }
+
+    /**
+     * 获取服务器的可用提示列表
+     */
+    public Mono<McpSchema.ListPromptsResult> listPrompts(McpServerInfo serverInfo) {
+        log.debug("📋 Listing prompts for server via connection pool: {}", serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(McpAsyncClient::listPrompts)
+                .doOnSuccess(prompts -> log.debug("✅ Listed {} prompts via pool for server: {}", 
+                        prompts.prompts() != null ? prompts.prompts().size() : 0, serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to list prompts via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
+    }
+
+    /**
+     * 获取提示内容
+     */
+    public Mono<McpSchema.GetPromptResult> getPrompt(McpServerInfo serverInfo, McpSchema.GetPromptRequest request) {
+        log.debug("📝 Getting prompt '{}' from server via connection pool: {}", 
+                request.name(), serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(client -> client.getPrompt(request))
+                .doOnSuccess(result -> log.debug("✅ Got prompt successfully via pool"))
+                .doOnError(error -> {
+                    log.error("❌ Failed to get prompt via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
+    }
+
+    /**
+     * 获取服务器的可用资源模板列表
+     */
+    public Mono<McpSchema.ListResourceTemplatesResult> listResourceTemplates(McpServerInfo serverInfo) {
+        log.debug("📋 Listing resource templates for server via connection pool: {}", serverInfo.getName());
+
+        return getOrCreateMcpClient(serverInfo)
+                .flatMap(McpAsyncClient::listResourceTemplates)
+                .doOnSuccess(templates -> log.debug("✅ Listed {} resource templates via pool for server: {}", 
+                        templates.resourceTemplates() != null ? templates.resourceTemplates().size() : 0, serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to list resource templates via pool for server: {}", 
+                            serverInfo.getName(), error);
+                    invalidateConnection(serverInfo);
+                });
     }
 
     /**

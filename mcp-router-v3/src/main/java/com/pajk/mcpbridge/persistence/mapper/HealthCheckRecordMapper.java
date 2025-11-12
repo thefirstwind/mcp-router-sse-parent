@@ -68,6 +68,15 @@ public interface HealthCheckRecordMapper {
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
+    
+    /**
+     * 删除指定时间之前的健康检查记录
+     * 
+     * @param cutoffTime 截止时间
+     * @return 删除的记录数
+     */
+    int deleteByTimeBefore(@Param("cutoffTime") LocalDateTime cutoffTime);
 }
+
 
 

@@ -25,6 +25,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class RoutingLog {
     
+    // ============================================================================
+    // 主键和标识
+    // ============================================================================
+    
     /**
      * 主键ID（自增）
      */
@@ -36,93 +40,288 @@ public class RoutingLog {
     private String requestId;
     
     /**
-     * 请求方法（如: tools/list, tools/call）
+     * 追踪ID（用于分布式追踪）
+     */
+    private String traceId;
+    
+    /**
+     * 父请求ID（用于请求链路追踪）
+     */
+    private String parentId;
+    
+    // ============================================================================
+    // 路由信息
+    // ============================================================================
+    
+    /**
+     * 目标服务器标识 (server_key)
+     */
+    private String serverKey;
+    
+    /**
+     * 目标服务器名称 (server_name)
+     */
+    private String serverName;
+    
+    /**
+     * 负载均衡策略 (load_balance_strategy)
+     * 如: ROUND_ROBIN, WEIGHTED_ROUND_ROBIN, LEAST_CONNECTIONS, SMART_ROUTING
+     */
+    private String loadBalanceStrategy;
+    
+    // ============================================================================
+    // 请求信息
+    // ============================================================================
+    
+    /**
+     * HTTP方法 (method)
+     * 如: GET, POST, PUT, DELETE
      */
     private String method;
     
     /**
-     * 请求参数（JSON格式）
+     * 请求路径 (path)
+     * 如: /mcp/router/route/mcp-server-v6
      */
-    private String params;
+    private String path;
     
     /**
-     * 路由策略（ROUND_ROBIN, WEIGHTED, LEAST_CONNECTIONS）
+     * MCP方法 (mcp_method)
+     * 如: tools/call, tools/list, resources/list
      */
-    private String routingStrategy;
+    private String mcpMethod;
     
     /**
-     * 目标服务器标识
+     * 工具名称 (tool_name)
+     * 如: getPersonById, getAllPersons
      */
-    private String targetServer;
+    private String toolName;
     
     /**
-     * 响应时间（毫秒）
+     * 查询参数 (query_params)
+     * URL查询字符串
      */
-    private Long responseTime;
+    private String queryParams;
     
     /**
-     * HTTP状态码
+     * 请求头 (request_headers)
+     * JSON格式
      */
-    private Integer statusCode;
+    private String requestHeaders;
     
     /**
-     * 是否成功（true/false）
+     * 请求体 (request_body)
+     * 完整的请求体内容
      */
-    private Boolean success;
+    private String requestBody;
     
     /**
-     * 错误信息（如果失败）
+     * 请求体大小 (request_size)
+     * 单位：字节
+     */
+    private Integer requestSize;
+    
+    // ============================================================================
+    // 响应信息
+    // ============================================================================
+    
+    /**
+     * 响应状态码 (response_status)
+     * 如: 200, 404, 500
+     */
+    private Integer responseStatus;
+    
+    /**
+     * 响应头 (response_headers)
+     * JSON格式
+     */
+    private String responseHeaders;
+    
+    /**
+     * 响应体 (response_body)
+     * 完整的响应体内容
+     */
+    private String responseBody;
+    
+    /**
+     * 响应体大小 (response_size)
+     * 单位：字节
+     */
+    private Integer responseSize;
+    
+    // ============================================================================
+    // 时间信息
+    // ============================================================================
+    
+    /**
+     * 请求开始时间 (start_time)
+     */
+    private LocalDateTime startTime;
+    
+    /**
+     * 请求结束时间 (end_time)
+     */
+    private LocalDateTime endTime;
+    
+    /**
+     * 请求总耗时 (duration)
+     * 单位：毫秒
+     */
+    private Integer duration;
+    
+    /**
+     * 排队时间 (queue_time)
+     * 单位：毫秒
+     */
+    private Integer queueTime;
+    
+    /**
+     * 连接时间 (connect_time)
+     * 单位：毫秒
+     */
+    private Integer connectTime;
+    
+    /**
+     * 处理时间 (process_time)
+     * 单位：毫秒
+     */
+    private Integer processTime;
+    
+    // ============================================================================
+    // 客户端信息
+    // ============================================================================
+    
+    /**
+     * 客户端ID (client_id)
+     */
+    private String clientId;
+    
+    /**
+     * 客户端IP (client_ip)
+     */
+    private String clientIp;
+    
+    /**
+     * 用户代理 (user_agent)
+     */
+    private String userAgent;
+    
+    /**
+     * 会话ID (session_id)
+     */
+    private String sessionId;
+    
+    // ============================================================================
+    // 状态标识
+    // ============================================================================
+    
+    /**
+     * 是否成功 (is_success)
+     */
+    private Boolean isSuccess;
+    
+    /**
+     * 是否命中缓存 (is_cached)
+     */
+    private Boolean isCached;
+    
+    /**
+     * 是否重试请求 (is_retry)
+     */
+    private Boolean isRetry;
+    
+    /**
+     * 重试次数 (retry_count)
+     */
+    private Integer retryCount;
+    
+    // ============================================================================
+    // 错误信息
+    // ============================================================================
+    
+    /**
+     * 错误信息 (error_message)
      */
     private String errorMessage;
     
     /**
-     * 请求时间
+     * 错误代码 (error_code)
      */
-    private LocalDateTime requestTime;
+    private String errorCode;
     
     /**
-     * 响应时间
+     * 错误类型 (error_type)
+     * 如: TIMEOUT, CONNECTION_ERROR, SERVER_ERROR
      */
-    private LocalDateTime responseTimestamp;
+    private String errorType;
+    
+    // ============================================================================
+    // 元数据
+    // ============================================================================
     
     /**
-     * 创建时间（数据库记录创建时间）
+     * 扩展元数据 (metadata)
+     * JSON格式，存储其他业务相关信息
+     */
+    private String metadata;
+    
+    /**
+     * 标签 (tags)
+     * JSON格式，用于分类和过滤
+     */
+    private String tags;
+    
+    // ============================================================================
+    // 时间戳
+    // ============================================================================
+    
+    /**
+     * 创建时间（数据库记录创建时间）(created_at)
      */
     private LocalDateTime createdAt;
     
-    /**
-     * 创建一个新的路由日志构建器，自动设置请求时间
-     */
-    public static RoutingLogBuilder newBuilder() {
-        return RoutingLog.builder()
-            .requestTime(LocalDateTime.now())
-            .success(true); // 默认成功，失败时再更新
-    }
+    // ============================================================================
+    // 便捷方法
+    // ============================================================================
     
     /**
      * 标记为成功并设置响应时间
      */
-    public void markSuccess(long responseTimeMs) {
-        this.success = true;
-        this.responseTime = responseTimeMs;
-        this.responseTimestamp = LocalDateTime.now();
-        this.statusCode = 200;
+    public void markSuccess(int durationMs) {
+        this.isSuccess = true;
+        this.duration = durationMs;
+        this.endTime = LocalDateTime.now();
+        this.responseStatus = 200;
     }
     
     /**
      * 标记为失败并设置错误信息
      */
-    public void markFailure(String errorMessage, Integer statusCode) {
-        this.success = false;
+    public void markFailure(String errorMessage, Integer statusCode, String errorCode, String errorType) {
+        this.isSuccess = false;
         this.errorMessage = errorMessage;
-        this.responseTimestamp = LocalDateTime.now();
-        this.statusCode = statusCode;
+        this.errorCode = errorCode;
+        this.errorType = errorType;
+        this.endTime = LocalDateTime.now();
+        this.responseStatus = statusCode;
         
-        // 计算响应时间
-        if (this.requestTime != null) {
-            this.responseTime = java.time.Duration.between(
-                this.requestTime,
-                this.responseTimestamp
+        // 计算耗时
+        if (this.startTime != null && this.endTime != null) {
+            this.duration = (int) java.time.Duration.between(
+                this.startTime,
+                this.endTime
+            ).toMillis();
+        }
+    }
+    
+    /**
+     * 计算并设置耗时
+     */
+    public void calculateDuration() {
+        if (this.startTime != null && this.endTime != null) {
+            this.duration = (int) java.time.Duration.between(
+                this.startTime,
+                this.endTime
             ).toMillis();
         }
     }

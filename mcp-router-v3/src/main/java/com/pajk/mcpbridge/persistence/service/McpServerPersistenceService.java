@@ -59,20 +59,28 @@ public class McpServerPersistenceService {
             log.info("🔍 Building McpServer entity for: {} ({}:{})", 
                 serverInfo.getName(), serverInfo.getHost(), serverInfo.getPort());
             
-            McpServer server = McpServer.fromRegistration(
-                serverKey,
-                serverInfo.getName(),
-                serverInfo.getServiceGroup(),
-                serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp(),
-                serverInfo.getPort(),
-                serverInfo.getSseEndpoint(),
-                "/health",  // healthEndpoint
-                metadata,
-                serverInfo.isHealthy(),  // 使用真实的健康状态
-                serverInfo.getEnabled(),  // 使用真实的启用状态
-                serverInfo.getWeight(),  // 使用真实的权重
-                serverInfo.isEphemeral() // 使用真实的临时节点状态
-            );
+            McpServer server = McpServer.builder()
+                .serverKey(serverKey)
+                .serverName(serverInfo.getName())
+                .serverGroup(serverInfo.getServiceGroup() != null ? serverInfo.getServiceGroup() : "mcp-server")
+                .namespaceId(serverInfo.getNamespaceId() != null ? serverInfo.getNamespaceId() : "public")
+                .host(serverInfo.getHost() != null ? serverInfo.getHost() : serverInfo.getIp())
+                .port(serverInfo.getPort())
+                .sseEndpoint(serverInfo.getSseEndpoint() != null ? serverInfo.getSseEndpoint() : "/sse")
+                .healthEndpoint("/health")  // healthEndpoint
+                .metadata(metadata)
+                .healthy(serverInfo.isHealthy())
+                .enabled(serverInfo.getEnabled() != null ? serverInfo.getEnabled() : true)
+                .weight(serverInfo.getWeight())
+                .ephemeral(serverInfo.isEphemeral())
+                .clusterName("DEFAULT")
+                .version(serverInfo.getVersion() != null ? serverInfo.getVersion() : "1.0.0")
+                .protocol(serverInfo.getProtocol() != null ? serverInfo.getProtocol() : "mcp-sse")
+                .totalRequests(0L)
+                .totalErrors(0L)
+                .lastHealthCheck(LocalDateTime.now())
+                .registeredAt(LocalDateTime.now())
+                .build();
             
             int rows = mcpServerMapper.insertOrUpdate(server);
             
@@ -237,105 +245,6 @@ public class McpServerPersistenceService {
             failedOperations.incrementAndGet();
             log.error("❌ Failed to verify and mark offline ephemeral nodes: {}", e.getMessage());
         }
-    }
-    
-    /**
-     * 验证并修复特定服务器的健康状态
-     * 用于手动检查和修复可能已经下线但数据库中仍显示为健康的服务器
-     * 
-     * @param serverNames 需要检查的服务器名称列表
-     * @return 修复的服务器数量
-     */
-    public int verifyAndFixSpecificServers(List<String> serverNames) {
-        if (serverNames == null || serverNames.isEmpty()) {
-            log.warn("⚠️ No server names provided for verification");
-            return 0;
-        }
-        
-        int fixedCount = 0;
-        
-        for (String serverName : serverNames) {
-            try {
-                log.info("🔍 Verifying server: {}", serverName);
-                
-                // 查询该服务的所有实例
-                List<McpServer> servers = mcpServerMapper.selectByServiceNameAndGroup(serverName, "mcp-server");
-                
-                if (servers.isEmpty()) {
-                    log.warn("⚠️ Server not found in database: {}", serverName);
-                    continue;
-                }
-                
-                for (McpServer server : servers) {
-                    // 检查是否为健康的临时节点
-                    if (server.getHealthy() != null && server.getHealthy() 
-                        && server.getEphemeral() != null && server.getEphemeral()) {
-                        
-                        // 检查最后更新时间
-                        LocalDateTime lastUpdate = server.getUpdatedAt() != null ? 
-                            server.getUpdatedAt() : server.getLastHealthCheck();
-                        
-                        if (lastUpdate != null) {
-                            long minutesSinceUpdate = java.time.Duration.between(lastUpdate, LocalDateTime.now()).toMinutes();
-                            
-                            log.info("📊 Server: {}:{} - healthy={}, last_update={} minutes ago", 
-                                serverName, server.getPort(), server.getHealthy(), minutesSinceUpdate);
-                            
-                            // 如果超过5分钟未更新，标记为不健康
-                            if (minutesSinceUpdate > 5) {
-                                log.warn("⚠️ Server {}:{} has not been updated for {} minutes, marking as unhealthy",
-                                    serverName, server.getPort(), minutesSinceUpdate);
-                                
-                                int rows = mcpServerMapper.updateHealthStatus(
-                                    server.getServerKey(), 
-                                    false, 
-                                    LocalDateTime.now()
-                                );
-                                
-                                if (rows > 0) {
-                                    fixedCount++;
-                                    log.info("✅ Successfully marked server as unhealthy: {}:{}", 
-                                        serverName, server.getPort());
-                                }
-                            } else {
-                                log.info("ℹ️ Server {}:{} is recently updated, keeping healthy status",
-                                    serverName, server.getPort());
-                            }
-                        } else {
-                            log.warn("⚠️ Server {}:{} has no update timestamp, marking as unhealthy",
-                                serverName, server.getPort());
-                            
-                            int rows = mcpServerMapper.updateHealthStatus(
-                                server.getServerKey(), 
-                                false, 
-                                LocalDateTime.now()
-                            );
-                            
-                            if (rows > 0) {
-                                fixedCount++;
-                                log.info("✅ Successfully marked server as unhealthy: {}:{}", 
-                                    serverName, server.getPort());
-                            }
-                        }
-                    } else {
-                        log.info("ℹ️ Server {}:{} is already unhealthy or not ephemeral, skipping",
-                            serverName, server.getPort());
-                    }
-                }
-                
-            } catch (Exception e) {
-                failedOperations.incrementAndGet();
-                log.error("❌ Failed to verify server: {} - {}", serverName, e.getMessage(), e);
-            }
-        }
-        
-        if (fixedCount > 0) {
-            log.info("🎉 Verification complete. Fixed {} server(s).", fixedCount);
-        } else {
-            log.info("✅ Verification complete. No servers needed fixing.");
-        }
-        
-        return fixedCount;
     }
     
     /**

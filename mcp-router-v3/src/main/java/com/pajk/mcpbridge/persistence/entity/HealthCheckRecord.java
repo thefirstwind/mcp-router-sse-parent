@@ -95,17 +95,6 @@ public class HealthCheckRecord {
     private LocalDateTime createdAt;
     
     /**
-     * 创建新的健康检查记录构建器
-     */
-    public static HealthCheckRecordBuilder newBuilder() {
-        return HealthCheckRecord.builder()
-            .checkTime(LocalDateTime.now())
-            .checkType("MCP")
-            .checkLevel("LEVEL2")
-            .sampled(false);
-    }
-    
-    /**
      * 标记为健康
      */
     public void markHealthy(long responseTimeMs, Integer statusCode) {
@@ -130,5 +119,32 @@ public class HealthCheckRecord {
         this.sampled = true;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

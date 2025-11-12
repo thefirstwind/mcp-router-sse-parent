@@ -150,47 +150,6 @@ public class McpServer {
     private LocalDateTime deletedAt;
     
     /**
-     * 构建器模式 - 从服务注册信息创建
-     */
-    public static McpServer fromRegistration(String serverKey, String serverName, String serviceGroup,
-                                             String host, Integer port, String sseEndpoint, 
-                                             String healthEndpoint, String metadata) {
-        return fromRegistration(serverKey, serverName, serviceGroup, host, port, sseEndpoint, 
-                               healthEndpoint, metadata, true, true, 1.0, true);
-    }
-    
-    /**
-     * 构建器模式 - 从服务注册信息创建（完整参数版本）
-     */
-    public static McpServer fromRegistration(String serverKey, String serverName, String serviceGroup,
-                                             String host, Integer port, String sseEndpoint, 
-                                             String healthEndpoint, String metadata,
-                                             Boolean healthy, Boolean enabled, Double weight, Boolean ephemeral) {
-        return McpServer.builder()
-            .serverKey(serverKey)
-            .serverName(serverName)
-            .serverGroup(serviceGroup != null ? serviceGroup : "mcp-server")
-            .namespaceId("public")
-            .host(host)
-            .port(port)
-            .sseEndpoint(sseEndpoint != null ? sseEndpoint : "/sse")
-            .healthEndpoint(healthEndpoint != null ? healthEndpoint : "/health")
-            .healthy(healthy != null ? healthy : true)
-            .enabled(enabled != null ? enabled : true)
-            .weight(weight != null ? weight : 1.0)
-            .ephemeral(ephemeral != null ? ephemeral : true)
-            .clusterName("DEFAULT")
-            .version("1.0.0")
-            .protocol("mcp-sse")
-            .metadata(metadata)
-            .totalRequests(0L)
-            .totalErrors(0L)
-            .lastHealthCheck(LocalDateTime.now())
-            .registeredAt(LocalDateTime.now())
-            .build();
-    }
-    
-    /**
      * 更新健康状态
      */
     public void updateHealthStatus(boolean healthy) {
