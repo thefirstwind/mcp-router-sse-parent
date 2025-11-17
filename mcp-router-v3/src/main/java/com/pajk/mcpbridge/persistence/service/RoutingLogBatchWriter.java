@@ -59,21 +59,33 @@ public class RoutingLogBatchWriter {
         log.info("Starting RoutingLog batch writer with batchSize={}, window={}", BATCH_SIZE, BATCH_WINDOW);
         log.info("Sampling strategy: Success=100%, Failure=100% (Full recording enabled)");
         
-        subscription = eventPublisher.getRoutingLogSink()
-            .asFlux()
-            .cast(RoutingLog.class)
-            .filter(this::shouldSample) // 应用采样策略
-            .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
-            .filter(batch -> !batch.isEmpty())
-            .flatMap(this::writeBatch, 1) // 并发度为1，保证顺序
-            .subscribeOn(Schedulers.boundedElastic())
-            .subscribe(
-                count -> log.debug("Batch write completed: {} records", count),
-                error -> log.error("Batch write error", error),
-                () -> log.info("Batch writer completed")
-            );
-        
-        log.info("RoutingLog batch writer started successfully");
+        try {
+            subscription = eventPublisher.getRoutingLogSink()
+                .asFlux()
+                .doOnSubscribe(sub -> log.info("✅ RoutingLog batch writer subscribed to event stream"))
+                .doOnNext(routingLog -> log.trace("📥 Received routing log: {}", routingLog))
+                .cast(RoutingLog.class)
+                .filter(this::shouldSample) // 应用采样策略
+                .doOnNext(routingLog -> log.trace("✅ Routing log passed sampling filter: {}", routingLog.getRequestId()))
+                .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
+                .filter(batch -> !batch.isEmpty())
+                .doOnNext(batch -> log.debug("📦 Batching {} routing logs for write", batch.size()))
+                .flatMap(this::writeBatch, 1) // 并发度为1，保证顺序
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(
+                    count -> log.debug("✅ Batch write completed: {} records", count),
+                    error -> {
+                        log.error("❌ Batch write error in RoutingLogBatchWriter", error);
+                        failureCount.incrementAndGet();
+                    },
+                    () -> log.warn("⚠️ RoutingLog batch writer stream completed (unexpected)")
+                );
+            
+            log.info("✅ RoutingLog batch writer started successfully and subscribed to event stream");
+        } catch (Exception e) {
+            log.error("❌ Failed to start RoutingLog batch writer", e);
+            throw new RuntimeException("Failed to start RoutingLog batch writer", e);
+        }
     }
     
     /**

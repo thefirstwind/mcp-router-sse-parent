@@ -48,6 +48,9 @@ public class HealthCheckService {
     // MCP健康检查超时时间
     private static final Duration MCP_HEALTH_CHECK_TIMEOUT = Duration.ofSeconds(10);
     
+    // 用于控制警告日志只输出一次
+    private static boolean persistenceWarningLogged = false;
+    
     /**
      * 分层健康检查：结合Nacos心跳和MCP协议检查
      */
@@ -516,6 +519,13 @@ public class HealthCheckService {
                                          boolean healthy, long responseTime, 
                                          String errorMessage, String errorType) {
         if (persistenceEventPublisher == null) {
+            // 只在第一次出现时记录警告，避免日志刷屏
+            if (!persistenceWarningLogged) {
+                log.warn("⚠️ PersistenceEventPublisher is null, health check record not published. " +
+                        "Check configuration: mcp.persistence.enabled must be true in application.yml. " +
+                        "This warning will only be logged once.");
+                persistenceWarningLogged = true;
+            }
             return;
         }
         
@@ -529,11 +539,9 @@ public class HealthCheckService {
                 .checkTime(LocalDateTime.now())
                 .checkType("MCP")
                 .checkLevel(checkLevel)
-                .healthy(healthy)
-                .responseTime(responseTime)
+                .responseTime((int) responseTime)
                 .errorMessage(errorMessage)
-                .errorType(errorType)
-                .sampled(false)
+                .errorCode(errorType)
                 .createdAt(LocalDateTime.now())
                 .build();
             
@@ -541,11 +549,6 @@ public class HealthCheckService {
                 record.markHealthy(responseTime, 200);
             } else {
                 record.markUnhealthy(errorMessage, errorType);
-            }
-            
-            // 标记是否为采样记录
-            if (shouldSampleSuccessCheck()) {
-                record.markSampled();
             }
             
             persistenceEventPublisher.publishHealthCheck(record);

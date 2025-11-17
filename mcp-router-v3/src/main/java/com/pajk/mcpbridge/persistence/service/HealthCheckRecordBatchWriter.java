@@ -59,20 +59,31 @@ public class HealthCheckRecordBatchWriter {
     public void start() {
         log.info("Starting HealthCheckRecord batch writer with batchSize={}, window={}", BATCH_SIZE, BATCH_WINDOW);
         
-        subscription = eventPublisher.getHealthCheckSink()
-            .asFlux()
-            .cast(HealthCheckRecord.class)
-            .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
-            .filter(batch -> !batch.isEmpty())
-            .flatMap(this::writeBatch, 1)
-            .subscribeOn(Schedulers.boundedElastic())
-            .subscribe(
-                count -> log.debug("Batch write completed: {} records", count),
-                error -> log.error("Batch write error", error),
-                () -> log.info("Batch writer completed")
-            );
-        
-        log.info("HealthCheckRecord batch writer started successfully");
+        try {
+            subscription = eventPublisher.getHealthCheckSink()
+                .asFlux()
+                .doOnSubscribe(sub -> log.info("✅ HealthCheckRecord batch writer subscribed to event stream"))
+                .doOnNext(record -> log.trace("📥 Received health check record: {}", record))
+                .cast(HealthCheckRecord.class)
+                .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
+                .filter(batch -> !batch.isEmpty())
+                .doOnNext(batch -> log.debug("📦 Batching {} health check records for write", batch.size()))
+                .flatMap(this::writeBatch, 1)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(
+                    count -> log.debug("✅ Batch write completed: {} records", count),
+                    error -> {
+                        log.error("❌ Batch write error in HealthCheckRecordBatchWriter", error);
+                        failureCount.incrementAndGet();
+                    },
+                    () -> log.warn("⚠️ HealthCheckRecord batch writer stream completed (unexpected)")
+                );
+            
+            log.info("✅ HealthCheckRecord batch writer started successfully and subscribed to event stream");
+        } catch (Exception e) {
+            log.error("❌ Failed to start HealthCheckRecord batch writer", e);
+            throw new RuntimeException("Failed to start HealthCheckRecord batch writer", e);
+        }
     }
     
     /**
@@ -82,8 +93,8 @@ public class HealthCheckRecordBatchWriter {
     public void stop() {
         if (subscription != null && !subscription.isDisposed()) {
             subscription.dispose();
-            log.info("HealthCheckRecord batch writer stopped. Stats: batches={}, records={}, failures={}, sampled={}",
-                batchCount.get(), recordCount.get(), failureCount.get(), sampledCount.get());
+            log.info("HealthCheckRecord batch writer stopped. Stats: batches={}, records={}, failures={}",
+                batchCount.get(), recordCount.get(), failureCount.get());
         }
     }
     
@@ -95,10 +106,6 @@ public class HealthCheckRecordBatchWriter {
             try {
                 long startTime = System.currentTimeMillis();
                 
-                // 统计采样记录数
-                long sampled = records.stream().filter(r -> r.getSampled() != null && r.getSampled()).count();
-                sampledCount.addAndGet(sampled);
-                
                 // 执行批量插入
                 int count = healthCheckRecordMapper.batchInsert(records);
                 
@@ -108,7 +115,7 @@ public class HealthCheckRecordBatchWriter {
                 batchCount.incrementAndGet();
                 recordCount.addAndGet(count);
                 
-                log.info("Batch insert successful: {} records in {}ms (sampled: {})", count, duration, sampled);
+                log.info("Batch insert successful: {} records in {}ms", count, duration);
                 
                 // 性能告警
                 if (duration > 1000) {
@@ -144,10 +151,10 @@ public class HealthCheckRecordBatchWriter {
      * 将单条记录写入日志文件
      */
     private void logToFile(HealthCheckRecord record) {
-        log.warn("PERSISTENCE_FALLBACK|HEALTH_CHECK|serverKey={}|checkTime={}|healthy={}|responseTime={}|errorMessage={}",
+        log.warn("PERSISTENCE_FALLBACK|HEALTH_CHECK|serverKey={}|checkTime={}|status={}|responseTime={}|errorMessage={}",
             record.getServerKey(),
             record.getCheckTime(),
-            record.getHealthy(),
+            record.getStatus(),
             record.getResponseTime(),
             record.getErrorMessage()
         );

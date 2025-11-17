@@ -27,9 +27,16 @@ spring:
     mcp:
       server:
         name: ${spring.application.name}
-        enabled: true
-        sse-endpoint: /sse
-        tools-enabled: false
+#        version: 1.0.1
+#        type: ASYNC  # Recommended for reactive applications
+#        instructions: "MCP Router provides intelligent routing to backend MCP servers"
+        sse-message-endpoint: /mcp/message  # 与 mcp-server-v6 相同
+#        sse-endpoint: /sse                  # 与 mcp-server-v6 相同
+#        capabilities:
+#          tool: true
+#          resource: true
+#          prompt: true
+#          completion: true
     alibaba:
       mcp:
         nacos:
@@ -75,9 +82,12 @@ mcp:
 # 这里只保留必要的 Spring Boot 日志配置
 logging:
   config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.pajk.mcpbridge: DEBUG
     
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: "*"

@@ -11,13 +11,17 @@
         <result column="check_time" property="checkTime"/>
         <result column="check_type" property="checkType"/>
         <result column="check_level" property="checkLevel"/>
-        <result column="healthy" property="healthy"/>
+        <result column="status" property="status"/>
+        <result column="health_score" property="healthScore"/>
         <result column="response_time" property="responseTime"/>
-        <result column="status_code" property="statusCode"/>
-        <result column="response_body" property="responseBody"/>
+        <result column="connection_time" property="connectionTime"/>
+        <result column="check_duration" property="checkDuration"/>
+        <result column="consecutive_successes" property="consecutiveSuccesses"/>
+        <result column="consecutive_failures" property="consecutiveFailures"/>
+        <result column="total_checks" property="totalChecks"/>
         <result column="error_message" property="errorMessage"/>
-        <result column="error_type" property="errorType"/>
-        <result column="sampled" property="sampled"/>
+        <result column="error_code" property="errorCode"/>
+        <result column="details" property="details"/>
         <result column="created_at" property="createdAt"/>
     </resultMap>
 
@@ -25,29 +29,33 @@
     <insert id="insert" parameterType="com.pajk.mcpbridge.persistence.entity.HealthCheckRecord"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO health_check_records (
-            server_key, check_time, check_type, check_level, healthy,
-            response_time, status_code, response_body, error_message,
-            error_type, sampled, created_at
+            server_key, check_time, check_type, check_level, status, health_score,
+            response_time, connection_time, check_duration,
+            consecutive_successes, consecutive_failures, total_checks,
+            error_message, error_code, details, created_at
         ) VALUES (
-            #{serverKey}, #{checkTime}, #{checkType}, #{checkLevel}, #{healthy},
-            #{responseTime}, #{statusCode}, #{responseBody}, #{errorMessage},
-            #{errorType}, #{sampled}, NOW()
+            #{serverKey}, #{checkTime}, #{checkType}, #{checkLevel}, #{status}, #{healthScore},
+            #{responseTime}, #{connectionTime}, #{checkDuration},
+            #{consecutiveSuccesses}, #{consecutiveFailures}, #{totalChecks},
+            #{errorMessage}, #{errorCode}, #{details}, NOW()
         )
     </insert>
 
     <!-- 批量插入 -->
     <insert id="batchInsert" parameterType="java.util.List">
         INSERT INTO health_check_records (
-            server_key, check_time, check_type, check_level, healthy,
-            response_time, status_code, response_body, error_message,
-            error_type, sampled, created_at
+            server_key, check_time, check_type, check_level, status, health_score,
+            response_time, connection_time, check_duration,
+            consecutive_successes, consecutive_failures, total_checks,
+            error_message, error_code, details, created_at
         ) VALUES
         <foreach collection="records" item="record" separator=",">
             (
                 #{record.serverKey}, #{record.checkTime}, #{record.checkType}, 
-                #{record.checkLevel}, #{record.healthy}, #{record.responseTime}, 
-                #{record.statusCode}, #{record.responseBody}, #{record.errorMessage},
-                #{record.errorType}, #{record.sampled}, NOW()
+                #{record.checkLevel}, #{record.status}, #{record.healthScore},
+                #{record.responseTime}, #{record.connectionTime}, #{record.checkDuration},
+                #{record.consecutiveSuccesses}, #{record.consecutiveFailures}, #{record.totalChecks},
+                #{record.errorMessage}, #{record.errorCode}, #{record.details}, NOW()
             )
         </foreach>
     </insert>
@@ -65,7 +73,7 @@
     <!-- 查询失败的健康检查记录 -->
     <select id="selectFailures" resultMap="HealthCheckRecordResultMap">
         SELECT * FROM health_check_records
-        WHERE healthy = FALSE
+        WHERE status = 'UNHEALTHY'
         <if test="startTime != null">
             AND check_time BETWEEN #{startTime} AND #{endTime}
         </if>
@@ -90,7 +98,7 @@
         SELECT 
             CASE 
                 WHEN COUNT(*) = 0 THEN 0
-                ELSE (SUM(CASE WHEN healthy = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
+                ELSE (SUM(CASE WHEN status = 'HEALTHY' THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
             END AS health_rate
         FROM health_check_records
         WHERE server_key = #{serverKey}

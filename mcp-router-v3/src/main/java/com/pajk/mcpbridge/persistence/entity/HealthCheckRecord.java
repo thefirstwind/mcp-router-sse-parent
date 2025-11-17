@@ -55,24 +55,44 @@ public class HealthCheckRecord {
     private String checkLevel;
     
     /**
-     * 检查结果（true=healthy, false=unhealthy）
+     * 健康状态（HEALTHY, UNHEALTHY, UNKNOWN, DEGRADED）
      */
-    private Boolean healthy;
+    private String status;
+    
+    /**
+     * 健康度评分（0.00-1.00）
+     */
+    private java.math.BigDecimal healthScore;
     
     /**
      * 响应时间（毫秒）
      */
-    private Long responseTime;
+    private Integer responseTime;
     
     /**
-     * HTTP状态码
+     * 连接时间（毫秒）
      */
-    private Integer statusCode;
+    private Integer connectionTime;
     
     /**
-     * 响应体（如果有）
+     * 检查总耗时（毫秒）
      */
-    private String responseBody;
+    private Integer checkDuration;
+    
+    /**
+     * 连续成功次数
+     */
+    private Integer consecutiveSuccesses;
+    
+    /**
+     * 连续失败次数
+     */
+    private Integer consecutiveFailures;
+    
+    /**
+     * 累计检查次数
+     */
+    private Integer totalChecks;
     
     /**
      * 错误信息（如果失败）
@@ -80,14 +100,14 @@ public class HealthCheckRecord {
     private String errorMessage;
     
     /**
-     * 错误类型（TIMEOUT, CONNECTION_REFUSED, HTTP_ERROR等）
+     * 错误代码
      */
-    private String errorType;
+    private String errorCode;
     
     /**
-     * 是否采样记录
+     * 检查详情（JSON格式）
      */
-    private Boolean sampled;
+    private String details;
     
     /**
      * 创建时间
@@ -98,25 +118,35 @@ public class HealthCheckRecord {
      * 标记为健康
      */
     public void markHealthy(long responseTimeMs, Integer statusCode) {
-        this.healthy = true;
-        this.responseTime = responseTimeMs;
-        this.statusCode = statusCode;
+        this.status = "HEALTHY";
+        this.healthScore = java.math.BigDecimal.valueOf(1.00);
+        this.responseTime = (int) responseTimeMs;
+        if (this.consecutiveSuccesses == null) {
+            this.consecutiveSuccesses = 0;
+        }
+        this.consecutiveSuccesses++;
+        if (this.totalChecks == null) {
+            this.totalChecks = 0;
+        }
+        this.totalChecks++;
     }
     
     /**
      * 标记为不健康
      */
     public void markUnhealthy(String errorMessage, String errorType) {
-        this.healthy = false;
+        this.status = "UNHEALTHY";
+        this.healthScore = java.math.BigDecimal.valueOf(0.00);
         this.errorMessage = errorMessage;
-        this.errorType = errorType;
-    }
-    
-    /**
-     * 标记为采样记录
-     */
-    public void markSampled() {
-        this.sampled = true;
+        this.errorCode = errorType;
+        if (this.consecutiveFailures == null) {
+            this.consecutiveFailures = 0;
+        }
+        this.consecutiveFailures++;
+        if (this.totalChecks == null) {
+            this.totalChecks = 0;
+        }
+        this.totalChecks++;
     }
 }
 

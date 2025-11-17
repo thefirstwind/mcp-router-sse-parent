@@ -143,3 +143,30 @@ echo "  mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e 'SELECT * FROM routing_logs 
 echo ""
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

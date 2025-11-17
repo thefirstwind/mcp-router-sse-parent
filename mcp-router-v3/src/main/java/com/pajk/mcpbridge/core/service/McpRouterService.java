@@ -826,9 +826,18 @@ public class McpRouterService {
                 log.warn("Failed to publish routing log", e);
             }
         } else {
-            log.warn("⚠️ PersistenceEventPublisher is null, routing log not published");
+            // 只在第一次出现时记录警告，避免日志刷屏
+            if (!persistenceWarningLogged) {
+                log.warn("⚠️ PersistenceEventPublisher is null, routing log not published. " +
+                        "Check configuration: mcp.persistence.enabled must be true in application.yml. " +
+                        "This warning will only be logged once.");
+                persistenceWarningLogged = true;
+            }
         }
     }
+    
+    // 用于控制警告日志只输出一次
+    private static boolean persistenceWarningLogged = false;
     
     /**
      * 构建错误元数据

@@ -43,12 +43,15 @@ public class PersistenceEventPublisher {
     
     public PersistenceEventPublisher() {
         // 创建多播 Sink，支持多个订阅者
-        // 使用 LATEST 策略：如果消费者跟不上，丢弃旧数据
+        // 使用 onBackpressureBuffer 策略：如果消费者跟不上，缓冲数据
+        // 注意：multicast() Sink 如果没有订阅者，事件会被丢弃
+        // 批量写入器必须在 @PostConstruct 时订阅，否则事件会丢失
         this.routingLogSink = Sinks.many().multicast().onBackpressureBuffer(10000);
         this.healthCheckSink = Sinks.many().multicast().onBackpressureBuffer(1000);
         this.errorLogSink = Sinks.many().multicast().onBackpressureBuffer(1000);
         
         log.info("PersistenceEventPublisher initialized with buffer sizes: routing=10000, health=1000, error=1000");
+        log.info("⚠️  Note: Events will be dropped if no subscribers are attached. Ensure batch writers are started.");
     }
     
     /**
@@ -62,6 +65,7 @@ public class PersistenceEventPublisher {
             
             if (result.isSuccess()) {
                 publishSuccessCount.incrementAndGet();
+                log.trace("✅ Published routing log event successfully");
             } else {
                 handleEmitFailure("RoutingLog", result, routingLog);
             }
@@ -82,6 +86,7 @@ public class PersistenceEventPublisher {
             
             if (result.isSuccess()) {
                 publishSuccessCount.incrementAndGet();
+                log.trace("✅ Published health check event successfully");
             } else {
                 handleEmitFailure("HealthCheck", result, healthCheckRecord);
             }
@@ -150,19 +155,22 @@ public class PersistenceEventPublisher {
         
         switch (result) {
             case FAIL_OVERFLOW:
-                log.warn("{} event buffer overflow, event dropped: {}", eventType, event);
+                log.warn("❌ {} event buffer overflow, event dropped. Check if batch writer is consuming events fast enough.", eventType);
                 break;
             case FAIL_CANCELLED:
-                log.warn("{} event sink cancelled, event dropped: {}", eventType, event);
+                log.warn("❌ {} event sink cancelled, event dropped. Check if batch writer subscription is active.", eventType);
                 break;
             case FAIL_TERMINATED:
-                log.error("{} event sink terminated, event dropped: {}", eventType, event);
+                log.error("❌ {} event sink terminated, event dropped. Batch writer may have stopped.", eventType);
                 break;
             case FAIL_NON_SERIALIZED:
-                log.error("{} event emit non-serialized, event dropped: {}", eventType, event);
+                log.error("❌ {} event emit non-serialized, event dropped: {}", eventType, event);
+                break;
+            case FAIL_ZERO_SUBSCRIBER:
+                log.error("❌ {} event emit failed: NO SUBSCRIBERS! Batch writer may not be started or subscription failed. Event: {}", eventType, event);
                 break;
             default:
-                log.error("{} event emit failed with result: {}, event: {}", eventType, result, event);
+                log.error("❌ {} event emit failed with result: {}, event: {}", eventType, result, event);
         }
     }
     
