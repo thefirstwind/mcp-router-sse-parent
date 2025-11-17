@@ -83,6 +83,18 @@ public interface RoutingLogMapper {
         @Param("endTime") LocalDateTime endTime,
         @Param("limit") Integer limit
     );
+
+    /**
+     * 根据 sessionId 查询最近的路由日志
+     *
+     * @param sessionId 会话ID
+     * @param limit     限制返回数量
+     * @return 路由日志列表
+     */
+    List<RoutingLog> selectBySessionId(
+        @Param("sessionId") String sessionId,
+        @Param("limit") Integer limit
+    );
     
     /**
      * 统计路由成功率

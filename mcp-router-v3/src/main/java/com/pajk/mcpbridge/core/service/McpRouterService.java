@@ -330,6 +330,7 @@ public class McpRouterService {
         String method = message.getMethod();
         if ("tools/call".equals(method)) {
             String toolName = extractToolName(message);
+            String sessionId = resolveSessionId(message, headers);
             if (toolName == null) {
                 return createErrorResponse(message, -32602, "Tool name not found in request");
             }
@@ -664,6 +665,7 @@ public class McpRouterService {
             
             // 提取工具名称
             String toolName = extractToolName(message);
+            String sessionId = resolveSessionId(message, headers);
             
             // 序列化请求头
             String requestHeadersJson = "{}";
@@ -683,6 +685,7 @@ public class McpRouterService {
                 .toolName(toolName != null ? toolName : "")  // 设置工具名称
                 .requestHeaders(requestHeadersJson)  // 设置请求头
                 .requestBody(params)
+                .sessionId(sessionId)
                 .serverName(serviceName)  // 设置服务器名称（初始值，后续会更新为实际选中的服务器）
                 .startTime(java.time.LocalDateTime.now())
                 .isSuccess(true)
@@ -696,6 +699,7 @@ public class McpRouterService {
             
             // 提取工具名称
             String toolName = extractToolName(message);
+            String sessionId = resolveSessionId(message, headers);
             
             // 序列化请求头
             String requestHeadersJson = "{}";
@@ -715,6 +719,7 @@ public class McpRouterService {
                 .toolName(toolName != null ? toolName : "")  // 设置工具名称
                 .requestHeaders(requestHeadersJson)  // 设置请求头
                 .requestBody(params)
+                .sessionId(sessionId)
                 .serverName(serviceName)  // 设置服务器名称（初始值，后续会更新为实际选中的服务器）
                 .startTime(java.time.LocalDateTime.now())
                 .isSuccess(true)
@@ -723,6 +728,21 @@ public class McpRouterService {
                 .retryCount(0)
                 .build();
         }
+    }
+
+    private String resolveSessionId(McpMessage message, Map<String, String> headers) {
+        String sessionId = message.getSessionId();
+        if ((sessionId == null || sessionId.isEmpty()) && message.getMetadata() != null) {
+            Object value = message.getMetadata().get("sessionId");
+            if (value != null) {
+                sessionId = value.toString();
+            }
+        }
+        if ((sessionId == null || sessionId.isEmpty()) && headers != null) {
+            sessionId = headers.getOrDefault("sessionId",
+                    headers.getOrDefault("Session-Id", headers.getOrDefault("X-Session-Id", null)));
+        }
+        return sessionId;
     }
     
     /**
@@ -779,22 +799,28 @@ public class McpRouterService {
     
     /**
      * 设置响应体
+     * 如果响应体超过 2048 字节，会自动压缩存储
      */
     private void setResponseBody(RoutingLog routingLog, McpMessage response) {
         try {
             String responseBody = objectMapper.writeValueAsString(response);
             // 限制响应体大小为 50KB
             responseBody = truncateIfNeeded(responseBody, 51200);
+            // 如果超过压缩阈值，自动压缩（压缩逻辑在 CompressionUtils 中）
+            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize response body", e);
             String responseBody = truncateIfNeeded(String.valueOf(response), 51200);
+            // 如果超过压缩阈值，自动压缩
+            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         }
     }
     
     /**
      * 设置错误响应体
+     * 如果响应体超过 2048 字节，会自动压缩存储
      */
     private void setErrorResponseBody(RoutingLog routingLog, Throwable error) {
         try {
@@ -804,10 +830,14 @@ public class McpRouterService {
             );
             String responseBody = objectMapper.writeValueAsString(errorResponse);
             responseBody = truncateIfNeeded(responseBody, 51200);
+            // 如果超过压缩阈值，自动压缩
+            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize error response body", e);
             String responseBody = truncateIfNeeded("{\"error\":\"" + error.getMessage() + "\"}", 51200);
+            // 如果超过压缩阈值，自动压缩
+            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         }
     }

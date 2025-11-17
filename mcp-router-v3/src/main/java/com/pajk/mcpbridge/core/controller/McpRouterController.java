@@ -48,6 +48,7 @@ public class McpRouterController {
                                        ServerHttpRequest request) {
         log.info("Received route request for service: {}", serviceName);
         Map<String, String> headers = extractHeaders(request);
+        attachSessionIdIfPresent(message, headers, request);
         return routerService.routeRequest(serviceName, message, headers)
                 .map(resp -> {
                     if (resp.getError() != null) {
@@ -76,6 +77,7 @@ public class McpRouterController {
                                                    ServerHttpRequest request) {
         log.info("Received route request for service: {} with timeout: {}s", serviceName, timeoutSeconds);
         Map<String, String> headers = extractHeaders(request);
+        attachSessionIdIfPresent(message, headers, request);
         return routerService.routeRequest(serviceName, message, Duration.ofSeconds(timeoutSeconds), headers)
                 .map(resp -> {
                     if (resp.getError() != null) {
@@ -103,6 +105,7 @@ public class McpRouterController {
                                      ServerHttpRequest request) {
         log.info("Received smart route request");
         Map<String, String> headers = extractHeaders(request);
+        attachSessionIdIfPresent(message, headers, request);
         if (smartRouteShortCircuit) {
             // Short-circuit in tests: immediately return a benign OK response
             return Mono.just(McpMessage.builder()
@@ -234,6 +237,18 @@ public class McpRouterController {
             }
         });
         return headers;
+    }
+
+    private void attachSessionIdIfPresent(McpMessage message, Map<String, String> headers, ServerHttpRequest request) {
+        String sessionId = request.getQueryParams().getFirst("sessionId");
+        if (sessionId == null || sessionId.isEmpty()) {
+            sessionId = headers.getOrDefault("sessionId",
+                    headers.getOrDefault("Session-Id", headers.getOrDefault("X-Session-Id", null)));
+        }
+        if (sessionId != null && !sessionId.isEmpty()) {
+            message.setSessionId(sessionId);
+            headers.putIfAbsent("sessionId", sessionId);
+        }
     }
 }
  

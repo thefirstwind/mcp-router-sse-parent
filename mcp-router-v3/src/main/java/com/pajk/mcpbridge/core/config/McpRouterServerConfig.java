@@ -789,6 +789,13 @@ public class McpRouterServerConfig {
                         
                         // 解析 MCP 消息
                         McpMessage mcpMessage = objectMapper.readValue(body, McpMessage.class);
+                        if (sessionId != null && !sessionId.isEmpty()) {
+                            mcpMessage.setSessionId(sessionId);
+                            if (mcpMessage.getMetadata() == null) {
+                                mcpMessage.setMetadata(new java.util.HashMap<>());
+                            }
+                            mcpMessage.getMetadata().put("sessionId", sessionId);
+                        }
                         log.info("✅ Parsed MCP message: id={}, method={}, jsonrpc={}", 
                                 mcpMessage.getId(), mcpMessage.getMethod(), mcpMessage.getJsonrpc());
                         

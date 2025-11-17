@@ -32,7 +32,8 @@
         <!-- 响应信息 -->
         <result column="response_status" property="responseStatus"/>
         <result column="response_headers" property="responseHeaders"/>
-        <result column="response_body" property="responseBody"/>
+        <result column="response_body" property="responseBody" 
+                typeHandler="com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler"/>
         <result column="response_size" property="responseSize"/>
         
         <!-- 时间信息 -->
@@ -104,7 +105,7 @@
             #{method}, #{path}, #{mcpMethod}, #{toolName}, #{queryParams},
             #{requestHeaders}, #{requestBody}, #{requestSize},
             <!-- 响应信息 -->
-            #{responseStatus}, #{responseHeaders}, #{responseBody}, #{responseSize},
+            #{responseStatus}, #{responseHeaders}, #{responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler}, #{responseSize},
             <!-- 时间信息 -->
             #{startTime}, #{endTime}, #{duration}, #{queueTime}, #{connectTime}, #{processTime},
             <!-- 客户端信息 -->
@@ -157,7 +158,7 @@
                 #{log.method}, #{log.path}, #{log.mcpMethod}, #{log.toolName}, #{log.queryParams},
                 #{log.requestHeaders}, #{log.requestBody}, #{log.requestSize},
                 <!-- 响应信息 -->
-                #{log.responseStatus}, #{log.responseHeaders}, #{log.responseBody}, #{log.responseSize},
+                #{log.responseStatus}, #{log.responseHeaders}, #{log.responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler}, #{log.responseSize},
                 <!-- 时间信息 -->
                 #{log.startTime}, #{log.endTime}, #{log.duration}, #{log.queueTime}, #{log.connectTime}, #{log.processTime},
                 <!-- 客户端信息 -->
@@ -195,6 +196,27 @@
         FROM routing_logs
         WHERE request_id = #{requestId}
         LIMIT 1
+    </select>
+
+    <!-- 根据 sessionId 查询路由日志 -->
+    <select id="selectBySessionId" resultMap="RoutingLogResultMap" parameterType="map">
+        SELECT
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags, created_at
+        FROM routing_logs
+        WHERE session_id = #{sessionId}
+        ORDER BY start_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
     </select>
 
     <!-- 根据时间范围查询 -->

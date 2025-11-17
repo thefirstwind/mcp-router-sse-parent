@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -60,9 +61,9 @@ public class HealthCheckRecord {
     private String status;
     
     /**
-     * 健康度评分（0.00-1.00）
+     * 健康评分（0~1）
      */
-    private java.math.BigDecimal healthScore;
+    private BigDecimal healthScore;
     
     /**
      * 响应时间（毫秒）
@@ -119,7 +120,7 @@ public class HealthCheckRecord {
      */
     public void markHealthy(long responseTimeMs, Integer statusCode) {
         this.status = "HEALTHY";
-        this.healthScore = java.math.BigDecimal.valueOf(1.00);
+        this.healthScore = BigDecimal.valueOf(1.00);
         this.responseTime = (int) responseTimeMs;
         if (this.consecutiveSuccesses == null) {
             this.consecutiveSuccesses = 0;
@@ -136,7 +137,7 @@ public class HealthCheckRecord {
      */
     public void markUnhealthy(String errorMessage, String errorType) {
         this.status = "UNHEALTHY";
-        this.healthScore = java.math.BigDecimal.valueOf(0.00);
+        this.healthScore = BigDecimal.valueOf(0.00);
         this.errorMessage = errorMessage;
         this.errorCode = errorType;
         if (this.consecutiveFailures == null) {
