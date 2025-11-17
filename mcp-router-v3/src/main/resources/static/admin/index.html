@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MCP Router 控制面板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+            background-color: #f5f7fb;
+            color: #0f172a;
+        }
+        body {
+            margin: 0;
+            padding: 32px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(15,23,42,0.08);
+        }
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        @media(max-width: 1200px) {
+            .split { grid-template-columns: 1fr; }
+        }
+        .sessions-panel { max-height: 80vh; overflow: auto; }
+        .detail-panel > .card { margin-bottom: 0; }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        #sessionSearch {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 6px 10px;
+            min-width: 200px;
+        }
+        tr.selected { background: #eef2ff; }
+        .request-columns {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+            gap: 16px;
+            min-height: 360px;
+        }
+        @media(max-width: 1100px) {
+            .request-columns { grid-template-columns: 1fr; }
+        }
+        .request-list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .request-detail {
+            border-left: 1px solid #e5e7eb;
+            padding-left: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .payload-block { display: flex; flex-direction: column; gap: 6px; }
+        .payload-header { font-weight: 600; }
+        pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 240px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .payload-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .copy-btn {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .copy-btn.copied {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        th {
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-size: 12px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            border: 1px solid transparent;
+        }
+        .badge.success {
+            background: #ecfdf5;
+            color: #047857;
+        }
+        .badge.fail {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        .error {
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: #fef2f2;
+            color: #b91c1c;
+            margin-bottom: 16px;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div>
+        <h1 style="margin:0">MCP Router 控制面板</h1>
+        <div class="muted" id="updatedAt">正在载入...</div>
+    </div>
+    <div>
+        <a id="healthLink" href="/actuator/health" target="_blank" style="text-decoration:none;color:#2563eb;">健康检查</a>
+    </div>
+</div>
+
+<div id="errorBox" class="error" style="display:none;"></div>
+
+<div class="grid">
+    <div class="card">
+        <div class="muted">活跃会话</div>
+        <div id="sessionCount" style="font-size:32px;font-weight:600;">-</div>
+        <div class="muted">当前已注册的 SSE 会话</div>
+    </div>
+    <div class="card">
+        <div class="muted">近 1 小时成功率</div>
+        <div id="successRate" style="font-size:32px;font-weight:600;">-</div>
+        <div class="muted">基于 routing_logs 统计</div>
+    </div>
+    <div class="card">
+        <div class="muted">服务分布</div>
+        <div id="serviceDistribution" style="font-size:14px;"></div>
+    </div>
+</div>
+
+<div class="split">
+    <div class="card sessions-panel">
+        <div class="panel-header">
+            <div>
+                <h3>会话列表</h3>
+                <div class="muted">点击某条会话查看请求详情</div>
+            </div>
+            <input id="sessionSearch" placeholder="按 sessionId / service 筛选">
+        </div>
+        <table id="sessionsTable">
+            <thead>
+            <tr>
+                <th>Session ID</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Last Active</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr><td colspan="4" class="muted">正在加载...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card detail-panel">
+        <div class="card">
+            <h3>当前选中会话</h3>
+            <div id="currentSessionInfo" class="muted">尚未选择任何会话</div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+            <h3>Session 请求详情</h3>
+            <div class="muted" id="sessionLogHint">点击左侧会话以加载请求流水</div>
+            <div class="request-columns">
+                <div class="request-list">
+                    <table id="sessionLogsTable">
+                        <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Path</th>
+                            <th>Status</th>
+                            <th>开始时间</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr><td colspan="4" class="muted">尚未选择会话</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="request-detail">
+                    <div class="muted" id="requestDetailHint">选择列表中的请求查看 request / response</div>
+                    <div class="payload-block">
+                        <div class="payload-toolbar">
+                            <div class="payload-header">Request</div>
+                            <button class="copy-btn" data-target="requestPayload">复制</button>
+                        </div>
+                        <pre id="requestPayload"></pre>
+                    </div>
+                    <div class="payload-block">
+                        <div class="payload-toolbar">
+                            <div class="payload-header">Response</div>
+                            <button class="copy-btn" data-target="responsePayload">复制</button>
+                        </div>
+                        <pre id="responsePayload"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+            <h3>最近路由日志</h3>
+            <table id="logsTable">
+                <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Method</th>
+                    <th>Server</th>
+                    <th>Status</th>
+                    <th>Duration</th>
+                    <th>Start Time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td colspan="6" class="muted">正在加载...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const adminBasePath = (() => {
+        const match = window.location.pathname.match(/^(.*)\/admin/);
+        return match ? match[1] : '';
+    })();
+    const apiBase = `${adminBasePath}/admin`;
+    const healthLink = document.getElementById('healthLink');
+    if (healthLink) {
+        healthLink.href = `${adminBasePath || ''}/actuator/health`;
+    }
+
+    let sessionCache = [];
+
+    async function fetchJson(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            throw new Error(`请求 ${url} 失败: ${resp.status}`);
+        }
+        return resp.json();
+    }
+
+    function showError(message) {
+        const box = document.getElementById('errorBox');
+        box.textContent = message;
+        box.style.display = 'block';
+    }
+
+    function clearError() {
+        document.getElementById('errorBox').style.display = 'none';
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return 'N/A';
+        }
+        let date;
+        if (Array.isArray(value)) {
+            const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nano = 0] = value;
+            date = new Date(year, month - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
+        } else {
+            date = new Date(value);
+        }
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    function attachPayloadCopyHandlers() {
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (target && navigator.clipboard) {
+                    navigator.clipboard.writeText(target.textContent || '').then(() => {
+                        btn.classList.add('copied');
+                        btn.textContent = '已复制';
+                        setTimeout(() => {
+                            btn.classList.remove('copied');
+                            btn.textContent = '复制';
+                        }, 1500);
+                    });
+                }
+            });
+        });
+    }
+
+    function renderSummary(summary) {
+        document.getElementById('sessionCount').textContent = summary.sessionCount ?? 0;
+        document.getElementById('successRate').textContent = `${(summary.successRate ?? 0).toFixed(2)}%`;
+        document.getElementById('updatedAt').textContent = `更新于：${formatTime(summary.generatedAt)}`;
+    }
+
+    function updateServiceDistribution(sessions) {
+        if (!sessions || sessions.length === 0) {
+            document.getElementById('serviceDistribution').textContent = '暂无数据';
+            return;
+        }
+        const map = {};
+        sessions.forEach(s => {
+            const key = s.serviceName ?? '未绑定';
+            const bucket = map[key] || { total: 0, active: 0 };
+            bucket.total++;
+            if (s.active) bucket.active++;
+            map[key] = bucket;
+        });
+        const desc = Object.entries(map)
+            .map(([service, stats]) => `${service}: ${stats.active}/${stats.total} active`)
+            .join(' | ');
+        document.getElementById('serviceDistribution').textContent = desc;
+    }
+
+    function selectSessionRow(sessionId) {
+        document.querySelectorAll('#sessionsTable tbody tr').forEach(row => {
+            row.classList.toggle('selected', row.dataset.sessionId === sessionId);
+        });
+    }
+
+    function renderSessions(sessions) {
+        sessionCache = sessions || [];
+        const keyword = document.getElementById('sessionSearch').value?.trim().toLowerCase() ?? '';
+        const filtered = keyword
+            ? sessionCache.filter(s =>
+                (s.sessionId || '').toLowerCase().includes(keyword) ||
+                (s.serviceName || '').toLowerCase().includes(keyword))
+            : sessionCache;
+
+        const tbody = document.querySelector('#sessionsTable tbody');
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="muted">没有匹配的会话</td></tr>';
+            return;
+        }
+        tbody.innerHTML = filtered.map(s => `
+            <tr data-session-id="${s.sessionId}">
+                <td>${s.sessionId}</td>
+                <td>${s.serviceName ?? '未绑定'}</td>
+                <td><span class="badge ${s.active ? 'success' : ''}">${s.active ? 'Active' : 'Closed'}</span></td>
+                <td>${formatTime(s.lastActive)}</td>
+            </tr>
+        `).join('');
+
+        tbody.querySelectorAll('tr[data-session-id]').forEach(row => {
+            row.addEventListener('click', () => {
+                const sessionId = row.dataset.sessionId;
+                selectSessionRow(sessionId);
+                highlightSessionInfo(sessionId);
+                loadSessionLogs(sessionId);
+            });
+        });
+    }
+
+    function highlightSessionInfo(sessionId) {
+        const session = sessionCache.find(s => s.sessionId === sessionId);
+        if (!session) {
+            document.getElementById('currentSessionInfo').textContent = '无法找到该会话';
+            return;
+        }
+        document.getElementById('currentSessionInfo').innerHTML = `
+            <div><strong>Session:</strong> ${session.sessionId}</div>
+            <div><strong>Service:</strong> ${session.serviceName ?? '未绑定'}</div>
+            <div><strong>Last Active:</strong> ${formatTime(session.lastActive)}</div>
+        `;
+    }
+
+    function renderLogs(logs) {
+        const tbody = document.querySelector('#logsTable tbody');
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无日志</td></tr>';
+            return;
+        }
+        tbody.innerHTML = logs.map(log => `
+            <tr>
+                <td>${log.requestId ?? '-'}</td>
+                <td>${log.mcpMethod ?? '-'}</td>
+                <td>${log.serverName ?? '-'}</td>
+                <td><span class="badge ${log.success ? 'success' : 'fail'}">${log.success ? 'SUCCESS' : 'FAILED'}</span></td>
+                <td>${log.duration ?? '-'} ms</td>
+                <td>${formatTime(log.startTime)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderSessionRequests(logs) {
+        const tbody = document.querySelector('#sessionLogsTable tbody');
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="muted">暂无请求</td></tr>';
+            return;
+        }
+        tbody.innerHTML = logs.map(log => `
+            <tr data-request-id="${log.requestId}">
+                <td>${log.mcpMethod ?? '-'}</td>
+                <td>${log.path ?? '-'}</td>
+                <td>${log.responseStatus ?? '-'}</td>
+                <td>${formatTime(log.startTime)}</td>
+            </tr>
+        `).join('');
+        tbody.querySelectorAll('tr[data-request-id]').forEach((row, index) => {
+            row.addEventListener('click', () => {
+                selectRequestRow(row.dataset.requestId);
+                showRequestDetail(logs[index]);
+            });
+        });
+    }
+
+    function selectRequestRow(requestId) {
+        document.querySelectorAll('#sessionLogsTable tbody tr').forEach(row => {
+            row.classList.toggle('selected', row.dataset.requestId === requestId);
+        });
+    }
+
+    function showRequestDetail(log) {
+        if (!log) {
+            document.getElementById('requestDetailHint').textContent = '选择列表中的请求查看详情';
+            document.getElementById('requestPayload').textContent = '';
+            document.getElementById('responsePayload').textContent = '';
+            return;
+        }
+        document.getElementById('requestDetailHint').textContent =
+            `${log.method ?? '-'} ${log.path ?? ''} → ${log.responseStatus ?? '-'} | ${formatTime(log.startTime)}`;
+        document.getElementById('requestPayload').textContent = log.requestBody ?? '';
+        document.getElementById('responsePayload').textContent = log.responseBody ?? '';
+    }
+
+    async function loadSessionLogs(sessionId) {
+        if (!sessionId) { return; }
+        document.getElementById('sessionLogHint').textContent = `正在加载 ${sessionId} 的请求...`;
+        const tbody = document.querySelector('#sessionLogsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">加载中...</td></tr>';
+        try {
+            const logs = await fetchJson(`${apiBase}/api/sessions/${sessionId}/logs`);
+            renderSessionRequests(logs);
+            document.getElementById('sessionLogHint').textContent = `当前 Session：${sessionId}`;
+            if (logs && logs.length > 0) {
+                showRequestDetail(logs[0]);
+                selectRequestRow(logs[0].requestId);
+            } else {
+                showRequestDetail(null);
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('sessionLogHint').textContent = `加载失败：${err.message}`;
+            tbody.innerHTML = '<tr><td colspan="4" class="muted">加载失败</td></tr>';
+        }
+    }
+
+    async function loadDashboard() {
+        try {
+            clearError();
+            const [summary, sessions, logs] = await Promise.all([
+                fetchJson(`${apiBase}/api/summary`),
+                fetchJson(`${apiBase}/api/sessions`),
+                fetchJson(`${apiBase}/api/logs`),
+            ]);
+            renderSummary(summary);
+            renderSessions(sessions);
+            updateServiceDistribution(sessions);
+            renderLogs(logs);
+        } catch (err) {
+            console.error(err);
+            showError(err.message || '仪表盘数据加载失败');
+        }
+    }
+
+    document.getElementById('sessionSearch').addEventListener('input', () => renderSessions(sessionCache));
+    attachPayloadCopyHandlers();
+    loadDashboard();
+    setInterval(loadDashboard, 15000);
+</script>
+</body>
+</html>
+
