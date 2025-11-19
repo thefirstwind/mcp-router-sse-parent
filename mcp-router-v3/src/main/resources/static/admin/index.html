@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>MCP Router 控制面板</title>
+    <title>MCP Bridge 控制面板</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         :root {
@@ -41,7 +41,44 @@
             .split { grid-template-columns: 1fr; }
         }
         .sessions-panel { max-height: 80vh; overflow: auto; }
+        /* RESTful 页面专用布局：列表更宽，详情更窄 */
+        #restful-tab .split {
+            grid-template-columns: 1.5fr 1.5fr;
+        }
+        @media(max-width: 1200px) {
+            #restful-tab .split { grid-template-columns: 1fr; }
+        }
         .detail-panel > .card { margin-bottom: 0; }
+        /* SSE 会话页面的 detail-panel 固定在右侧 */
+        #sse-tab .detail-panel {
+            position: sticky;
+            top: 32px;
+            align-self: start;
+            max-height: calc(100vh - 64px);
+            overflow-y: auto;
+        }
+        /* 最近路由日志表格容器，允许独立滚动 */
+        #sse-tab .detail-panel > .card:last-child {
+            max-height: 400px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #sse-tab .detail-panel > .card:last-child > h3 {
+            flex-shrink: 0;
+            margin-top: 0;
+        }
+        #sse-tab .detail-panel > .card:last-child > table {
+            flex: 1;
+            overflow-y: auto;
+            display: block;
+        }
+        #sse-tab .detail-panel > .card:last-child > table thead {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+        }
         .panel-header {
             display: flex;
             justify-content: space-between;
@@ -75,6 +112,14 @@
             flex-direction: column;
             gap: 12px;
         }
+        /* RESTful 页面的 request/response 占满宽度 */
+        #restful-tab .request-columns {
+            grid-template-columns: 1fr;
+        }
+        #restful-tab .request-detail {
+            border-left: none;
+            padding-left: 0;
+        }
         .payload-block { display: flex; flex-direction: column; gap: 6px; }
         .payload-header { font-weight: 600; }
         pre {
@@ -88,6 +133,11 @@
             word-break: break-word;
             margin: 0;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        /* RESTful 页面的 response 区域，完整显示不限制高度 */
+        #restful-tab pre {
+            max-height: none;
+            min-height: 200px;
         }
         .muted {
             color: #6b7280;
@@ -105,6 +155,19 @@
             font-size: 14px;
             word-break: break-all;
         }
+        /* RESTful 请求列表的列宽优化 */
+        #restfulRequestsTable th,
+        #restfulRequestsTable td {
+            padding: 12px 16px;
+        }
+        #restfulRequestsTable th:nth-child(1),
+        #restfulRequestsTable td:nth-child(1) { width: 30%; } /* Server */
+        #restfulRequestsTable th:nth-child(2),
+        #restfulRequestsTable td:nth-child(2) { width: 40%; } /* Name (Tool) */
+        #restfulRequestsTable th:nth-child(3),
+        #restfulRequestsTable td:nth-child(3) { width: 15%; } /* Status */
+        #restfulRequestsTable th:nth-child(4),
+        #restfulRequestsTable td:nth-child(4) { width: 15%; } /* Time */
         .payload-toolbar {
             display: flex;
             justify-content: space-between;
@@ -154,12 +217,56 @@
             margin-bottom: 16px;
             border: 1px solid #fecaca;
         }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: #2563eb;
+        }
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-bar select,
+        .filter-bar input {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 <div class="header">
     <div>
-        <h1 style="margin:0">MCP Router 控制面板</h1>
+        <h1 style="margin:0">MCP Bridge 控制面板</h1>
         <div class="muted" id="updatedAt">正在载入...</div>
     </div>
     <div>
@@ -176,7 +283,7 @@
         <div class="muted">当前已注册的 SSE 会话</div>
     </div>
     <div class="card">
-        <div class="muted">近 1 小时成功率</div>
+        <div class="muted">近 48 小时成功率</div>
         <div id="successRate" style="font-size:32px;font-weight:600;">-</div>
         <div class="muted">基于 routing_logs 统计</div>
     </div>
@@ -186,6 +293,12 @@
     </div>
 </div>
 
+<div class="tabs">
+    <button class="tab active" data-tab="sse">SSE 会话</button>
+    <button class="tab" data-tab="restful">RESTful 请求</button>
+</div>
+
+<div class="tab-content active" id="sse-tab">
 <div class="split">
     <div class="card sessions-panel">
         <div class="panel-header">
@@ -193,8 +306,11 @@
                 <h3>会话列表</h3>
                 <div class="muted">点击某条会话查看请求详情</div>
             </div>
-            <input id="sessionSearch" placeholder="按 sessionId / service 筛选">
         </div>
+        <div class="filter-bar" style="margin-bottom: 16px;">
+            <input id="sseServiceFilter" placeholder="服务名称（可选）" type="text">
+        </div>
+        <input id="sessionSearch" placeholder="按 sessionId 筛选" style="margin-bottom: 12px; width: 100%;">
         <table id="sessionsTable">
             <thead>
             <tr>
@@ -261,6 +377,7 @@
                 <thead>
                 <tr>
                     <th>Request ID</th>
+                    <th>Session ID</th>
                     <th>Method</th>
                     <th>Server</th>
                     <th>Status</th>
@@ -269,11 +386,91 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr><td colspan="6" class="muted">正在加载...</td></tr>
+                <tr><td colspan="7" class="muted">正在加载...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
+</div>
+</div>
+
+<div class="tab-content" id="restful-tab">
+<div class="split">
+    <div class="card sessions-panel">
+        <div class="panel-header">
+            <div>
+                <h3>RESTful 请求列表</h3>
+                <div class="muted">点击某条请求查看详情</div>
+            </div>
+        </div>
+        <div class="filter-bar">
+            <input id="restfulServiceFilter" placeholder="服务名称（可选）" type="text">
+            <select id="restfulMcpMethodFilter">
+                <option value="">所有 MCP 方法</option>
+                <option value="tools/call">tools/call</option>
+                <option value="tools/list">tools/list</option>
+                <option value="resources/list">resources/list</option>
+                <option value="resources/read">resources/read</option>
+                <option value="prompts/list">prompts/list</option>
+                <option value="prompts/get">prompts/get</option>
+                <option value="initialize">initialize</option>
+            </select>
+            <select id="restfulSessionIdFilter">
+                <option value="">所有请求</option>
+                <option value="true">有 SessionId</option>
+                <option value="false">无 SessionId</option>
+            </select>
+            <select id="restfulHoursFilter">
+                <option value="1">最近 1 小时</option>
+                <option value="6">最近 6 小时</option>
+                <option value="24">最近 24 小时</option>
+                <option value="48">最近 48 小时</option>
+            </select>
+            <button class="copy-btn" onclick="loadRestfulRequests()" style="padding: 6px 16px;">刷新</button>
+        </div>
+        <table id="restfulRequestsTable">
+            <thead>
+            <tr>
+                <th>Server</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr><td colspan="4" class="muted">正在加载...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card detail-panel">
+        <div class="card">
+            <h3>请求详情</h3>
+            <div id="restfulRequestInfo" class="muted">点击左侧请求查看详情</div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+            <h3>Request / Response</h3>
+            <div class="muted" id="restfulRequestDetailHint">选择列表中的请求查看 request / response</div>
+            <div class="request-detail">
+                <div class="payload-block">
+                    <div class="payload-toolbar">
+                        <div class="payload-header">Request</div>
+                        <button class="copy-btn" id="copyRestfulRequestPayload">复制</button>
+                    </div>
+                    <pre id="restfulRequestPayload"></pre>
+                </div>
+                <div class="payload-block">
+                    <div class="payload-toolbar">
+                        <div class="payload-header">Response</div>
+                        <button class="copy-btn" id="copyRestfulResponsePayload">复制</button>
+                    </div>
+                    <pre id="restfulResponsePayload"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <script>
@@ -382,12 +579,8 @@
 
     function renderSessions(sessions) {
         sessionCache = sessions || [];
-        const keyword = document.getElementById('sessionSearch').value?.trim().toLowerCase() ?? '';
-        const filtered = keyword
-            ? sessionCache.filter(s =>
-                (s.sessionId || '').toLowerCase().includes(keyword) ||
-                (s.serviceName || '').toLowerCase().includes(keyword))
-            : sessionCache;
+        // 不再在前端进行 sessionId 筛选，因为已经在后端完成
+        const filtered = sessionCache;
 
         const tbody = document.querySelector('#sessionsTable tbody');
         if (filtered.length === 0) {
@@ -429,12 +622,13 @@
     function renderLogs(logs) {
         const tbody = document.querySelector('#logsTable tbody');
         if (!logs || logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无日志</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="muted">暂无日志</td></tr>';
             return;
         }
         tbody.innerHTML = logs.map(log => `
-            <tr>
+            <tr data-session-id="${log.sessionId || ''}" data-request-id="${log.requestId || ''}" style="cursor: pointer;">
                 <td>${log.requestId ?? '-'}</td>
+                <td>${log.sessionId ?? '-'}</td>
                 <td>${log.mcpMethod ?? '-'}</td>
                 <td>${log.serverName ?? '-'}</td>
                 <td><span class="badge ${log.success ? 'success' : 'fail'}">${log.success ? 'SUCCESS' : 'FAILED'}</span></td>
@@ -442,6 +636,20 @@
                 <td>${formatTime(log.startTime)}</td>
             </tr>
         `).join('');
+        
+        // 为每一行添加点击事件
+        tbody.querySelectorAll('tr[data-session-id]').forEach(row => {
+            row.addEventListener('click', () => {
+                const sessionId = row.dataset.sessionId;
+                if (sessionId && sessionId !== '-') {
+                    // 加载该 session 的请求详情
+                    loadSessionLogs(sessionId);
+                    // 同时选中对应的会话行（如果存在）
+                    selectSessionRow(sessionId);
+                    highlightSessionInfo(sessionId);
+                }
+            });
+        });
     }
 
     function renderSessionRequests(logs) {
@@ -510,10 +718,28 @@
     async function loadDashboard() {
         try {
             clearError();
+            const serviceName = document.getElementById('sseServiceFilter')?.value.trim() || null;
+            const sessionId = document.getElementById('sessionSearch')?.value.trim() || null;
+            
+            const params = new URLSearchParams();
+            if (serviceName) {
+                params.append('serviceName', serviceName);
+            }
+            params.append('hours', '48'); // 路由日志默认 48 小时
+            
+            const sessionParams = new URLSearchParams();
+            if (serviceName) {
+                sessionParams.append('serviceName', serviceName);
+            }
+            // 当有 sessionId 筛选时，不传递 hours 参数（后端会查询所有时间）
+            if (sessionId) {
+                sessionParams.append('sessionId', sessionId);
+            }
+            
             const [summary, sessions, logs] = await Promise.all([
                 fetchJson(`${apiBase}/api/summary`),
-                fetchJson(`${apiBase}/api/sessions`),
-                fetchJson(`${apiBase}/api/logs`),
+                fetchJson(`${apiBase}/api/sessions?${sessionParams}`),
+                fetchJson(`${apiBase}/api/logs?${params}`),
             ]);
             renderSummary(summary);
             renderSessions(sessions);
@@ -524,8 +750,186 @@
             showError(err.message || '仪表盘数据加载失败');
         }
     }
+    
+    // SSE 会话页面的加载函数（与 loadDashboard 相同，但更明确）
+    function loadSseDashboard() {
+        loadDashboard();
+    }
 
-    document.getElementById('sessionSearch').addEventListener('input', () => renderSessions(sessionCache));
+    // 标签页切换
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`${targetTab}-tab`).classList.add('active');
+            
+            if (targetTab === 'restful') {
+                loadRestfulRequests();
+            } else if (targetTab === 'sse') {
+                loadSseDashboard();
+            }
+        });
+    });
+    
+    // RESTful 请求相关函数
+    let restfulRequestsCache = [];
+    
+    async function loadRestfulRequests() {
+        const serviceName = document.getElementById('restfulServiceFilter').value.trim() || null;
+        const mcpMethod = document.getElementById('restfulMcpMethodFilter').value || null;
+        const hasSessionId = document.getElementById('restfulSessionIdFilter').value || null;
+        const hours = parseInt(document.getElementById('restfulHoursFilter').value);
+        
+        const tbody = document.querySelector('#restfulRequestsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">正在加载...</td></tr>';
+        
+        try {
+            const params = new URLSearchParams({
+                hours: hours,
+                limit: 100
+            });
+            if (serviceName) {
+                params.append('serviceName', serviceName);
+            }
+            if (mcpMethod) {
+                params.append('mcpMethod', mcpMethod);
+            }
+            if (hasSessionId) {
+                params.append('hasSessionId', hasSessionId);
+            }
+            
+            const requests = await fetchJson(`${apiBase}/api/restful-requests?${params}`);
+            restfulRequestsCache = requests || [];
+            renderRestfulRequests(restfulRequestsCache);
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="4" class="muted">加载失败: ' + err.message + '</td></tr>';
+        }
+    }
+    
+    function renderRestfulRequests(requests) {
+        const tbody = document.querySelector('#restfulRequestsTable tbody');
+        if (!requests || requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="muted">暂无数据</td></tr>';
+            return;
+        }
+        tbody.innerHTML = requests.map(req => {
+            // 处理 toolName（可能为空字符串）
+            const hasToolName = req.toolName && req.toolName.trim() !== '';
+            
+            // 显示 Name：优先显示 toolName，其次显示 mcpMethod
+            let displayName = '-';
+            if (hasToolName) {
+                displayName = req.toolName;
+            } else if (req.mcpMethod) {
+                displayName = req.mcpMethod;
+            } else {
+                displayName = '-';
+            }
+            
+            return `
+            <tr data-request-id="${req.requestId}">
+                <td>${req.serverName ?? '-'}</td>
+                <td>${displayName}</td>
+                <td>
+                    <span class="badge ${req.success ? 'success' : 'fail'}">
+                        ${req.responseStatus ?? '-'}
+                    </span>
+                </td>
+                <td>${formatTime(req.startTime)}</td>
+            </tr>
+        `;
+        }).join('');
+        
+        tbody.querySelectorAll('tr[data-request-id]').forEach((row, index) => {
+            row.addEventListener('click', () => {
+                selectRestfulRequestRow(row.dataset.requestId);
+                showRestfulRequestDetail(requests[index]);
+            });
+        });
+    }
+    
+    function selectRestfulRequestRow(requestId) {
+        document.querySelectorAll('#restfulRequestsTable tbody tr').forEach(row => {
+            row.classList.toggle('selected', row.dataset.requestId === requestId);
+        });
+    }
+    
+    async function showRestfulRequestDetail(request) {
+        if (!request) {
+            document.getElementById('restfulRequestInfo').textContent = '无法找到该请求';
+            document.getElementById('restfulRequestPayload').textContent = '';
+            document.getElementById('restfulResponsePayload').textContent = '';
+            return;
+        }
+        
+        document.getElementById('restfulRequestInfo').innerHTML = `
+            <div><strong>Request ID:</strong> ${request.requestId}</div>
+            <div><strong>Path:</strong> ${request.path ?? '-'}</div>
+            <div><strong>Server:</strong> ${request.serverName ?? '-'}</div>
+            <div><strong>MCP Method:</strong> ${request.mcpMethod ?? '-'}</div>
+            <div><strong>Tool:</strong> ${request.toolName ?? '-'}</div>
+            <div><strong>Status:</strong> ${request.responseStatus ?? '-'} | Duration: ${request.duration ?? '-'} ms</div>
+            <div><strong>Time:</strong> ${formatTime(request.startTime)}</div>
+            <div><strong>Client IP:</strong> ${request.clientIp ?? '-'}</div>
+        `;
+        
+        try {
+            const detail = await fetchJson(`${apiBase}/api/restful-requests/${request.requestId}`);
+            if (detail) {
+                document.getElementById('restfulRequestDetailHint').textContent = 
+                    `${detail.method ?? '-'} ${detail.path ?? ''} → ${detail.responseStatus ?? '-'} | ${formatTime(detail.startTime)}`;
+                document.getElementById('restfulRequestPayload').textContent = detail.requestBody ?? '';
+                document.getElementById('restfulResponsePayload').textContent = detail.responseBody ?? '';
+            } else {
+                document.getElementById('restfulRequestPayload').textContent = '';
+                document.getElementById('restfulResponsePayload').textContent = '';
+            }
+        } catch (err) {
+            console.error('Failed to load request detail:', err);
+            document.getElementById('restfulRequestPayload').textContent = '';
+            document.getElementById('restfulResponsePayload').textContent = '';
+        }
+    }
+    
+    // 绑定 RESTful 请求筛选器事件
+    document.getElementById('restfulMcpMethodFilter').addEventListener('change', loadRestfulRequests);
+    document.getElementById('restfulSessionIdFilter').addEventListener('change', loadRestfulRequests);
+    document.getElementById('restfulHoursFilter').addEventListener('change', loadRestfulRequests);
+    document.getElementById('restfulServiceFilter').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            loadRestfulRequests();
+        }
+    });
+    
+    // 绑定 RESTful 请求的复制按钮
+    document.getElementById('copyRestfulRequestPayload').addEventListener('click', () => {
+        copyToClipboard('restfulRequestPayload', 'copyRestfulRequestPayload');
+    });
+    document.getElementById('copyRestfulResponsePayload').addEventListener('click', () => {
+        copyToClipboard('restfulResponsePayload', 'copyRestfulResponsePayload');
+    });
+    
+    // 绑定 SSE 会话页面的筛选器事件
+    const sseServiceFilter = document.getElementById('sseServiceFilter');
+    if (sseServiceFilter) {
+        sseServiceFilter.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadSseDashboard();
+            }
+        });
+    }
+    
+    // 当输入 sessionId 时，调用后端 API 重新加载数据（查询所有时间）
+    document.getElementById('sessionSearch').addEventListener('input', () => {
+        // 使用防抖，避免频繁请求
+        clearTimeout(window.sessionSearchTimeout);
+        window.sessionSearchTimeout = setTimeout(() => {
+            loadDashboard();
+        }, 300);
+    });
     attachPayloadCopyHandlers();
     loadDashboard();
     setInterval(loadDashboard, 15000);

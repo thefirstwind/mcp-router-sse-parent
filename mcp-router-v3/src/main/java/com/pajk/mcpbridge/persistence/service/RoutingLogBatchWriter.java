@@ -143,6 +143,21 @@ public class RoutingLogBatchWriter {
                 failureCount.incrementAndGet();
                 log.error("Batch insert failed for {} records", logs.size(), e);
                 
+                // 详细错误信息，帮助定位 TypeHandler 问题
+                if (e.getMessage() != null && (e.getMessage().contains("Data too long") ||
+                        e.getMessage().contains("Data truncation") ||
+                        e.getMessage().contains("column") && e.getMessage().contains("too large"))) {
+                    log.error("⚠️ Database column size limit exceeded. This usually means the truncation TypeHandler did not run. " +
+                            "Please check: 1) MyBatisConfig#setTypeHandlersPackage 是否生效, " +
+                            "2) RoutingLogMapper.xml 的 insert/batchInsert 是否显式指定了 TypeHandler, " +
+                            "3) 部署包中是否包含最新的 TypeHandler 类。 " +
+                            "Sample log entry sizes: requestHeaders={}, requestBody={}, responseHeaders={}, responseBody={}",
+                            logs.stream().mapToInt(log -> log.getRequestHeaders() != null ? log.getRequestHeaders().getBytes().length : 0).max().orElse(0),
+                            logs.stream().mapToInt(log -> log.getRequestBody() != null ? log.getRequestBody().getBytes().length : 0).max().orElse(0),
+                            logs.stream().mapToInt(log -> log.getResponseHeaders() != null ? log.getResponseHeaders().getBytes().length : 0).max().orElse(0),
+                            logs.stream().mapToInt(log -> log.getResponseBody() != null ? log.getResponseBody().getBytes().length : 0).max().orElse(0));
+                }
+                
                 // 降级处理：记录到日志文件
                 fallbackToLog(logs);
                 

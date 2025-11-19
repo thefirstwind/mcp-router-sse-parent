@@ -855,7 +855,10 @@ public class McpRouterServerConfig {
                         // initialize 方法由 router 本地处理，不路由到后端服务器
                         if ("initialize".equals(mcpMessage.getMethod())) {
                             log.info("🖐 Handling 'initialize' locally in router (no backend routing)");
-                            Mono<McpMessage> initializeResponse = routerService.routeRequest(null, mcpMessage);
+                            // 使用 finalServiceName，如果为 null 则使用 "router" 作为默认值
+                            String serviceNameForLog = (finalServiceName != null && !finalServiceName.isEmpty()) 
+                                    ? finalServiceName : "router";
+                            Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
                             
                             // 等待 SSE sink 就绪（最多等待 2 秒，处理时序问题）
                             Mono<Sinks.Many<ServerSentEvent<String>>> sseSinkMono = sessionService.waitForSseSink(sessionId, 2)

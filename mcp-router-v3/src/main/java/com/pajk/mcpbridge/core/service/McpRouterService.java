@@ -804,16 +804,12 @@ public class McpRouterService {
     private void setResponseBody(RoutingLog routingLog, McpMessage response) {
         try {
             String responseBody = objectMapper.writeValueAsString(response);
-            // 限制响应体大小为 50KB
+            // 限制响应体大小为 50KB，剩余部分交由 TypeHandler 截断
             responseBody = truncateIfNeeded(responseBody, 51200);
-            // 如果超过压缩阈值，自动压缩（压缩逻辑在 CompressionUtils 中）
-            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize response body", e);
             String responseBody = truncateIfNeeded(String.valueOf(response), 51200);
-            // 如果超过压缩阈值，自动压缩
-            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         }
     }
@@ -830,14 +826,10 @@ public class McpRouterService {
             );
             String responseBody = objectMapper.writeValueAsString(errorResponse);
             responseBody = truncateIfNeeded(responseBody, 51200);
-            // 如果超过压缩阈值，自动压缩
-            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize error response body", e);
             String responseBody = truncateIfNeeded("{\"error\":\"" + error.getMessage() + "\"}", 51200);
-            // 如果超过压缩阈值，自动压缩
-            responseBody = com.pajk.mcpbridge.persistence.util.CompressionUtils.compress(responseBody);
             routingLog.setResponseBody(responseBody);
         }
     }

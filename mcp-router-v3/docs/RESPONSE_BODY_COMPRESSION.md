@@ -1,115 +1,82 @@
-# Response Body 压缩存储方案
+# 路由日志字段压缩方案（Brotli + GZIP 兼容）
 
-## 概述
+## 背景
 
-`routing_logs` 表中的 `response_body` 字段可能超过 2048 字节，为了节省存储空间和提高性能，实现了自动压缩存储方案。
+`routing_logs` 表中的请求/响应体在高并发场景下可能远超 TEXT 列限制。为保证 **无损存储**，我们引入 Brotli 压缩作为首选方案，并对历史 `[COMPRESSED]`（GZIP）数据保持兼容。
 
-## 实现方案
+## 架构概览
 
-### 1. 压缩工具类 (`CompressionUtils`)
+1. **统一压缩工具**  
+   - `com.pajk.mcpbridge.persistence.util.CompressionUtils`
+   - 优先使用 Brotli（`brotli4j`），不可用时自动回退 GZIP
+   - 添加前缀：
+     - `[BROTLI]` + Base64(Brotli bytes)
+     - `[COMPRESSED]` + Base64(GZIP bytes) —— 兼容旧数据
 
-位置：`com.pajk.mcpbridge.persistence.util.CompressionUtils`
+2. **MyBatis TypeHandler**  
+   - `ThresholdCompressedStringTypeHandler` 负责按字段阈值决定是否压缩
+   - 四个子类对应不同阈值（单位：字节）  
+     | 字段 | TypeHandler | 阈值 |
+     | --- | --- | --- |
+     | `request_headers` | `RequestHeadersTypeHandler` | 512 |
+     | `request_body` | `RequestBodyTypeHandler` | 1024 |
+     | `response_headers` | `ResponseHeadersTypeHandler` | 512 |
+     | `response_body` | `ResponseBodyTypeHandler` | 1024 |
+   - 读取时自动解压，应用层拿到始终是原始文本
 
-**功能：**
-- 自动压缩超过 2048 字节的字符串
-- 使用 GZIP 压缩算法
-- Base64 编码压缩后的数据
-- 添加压缩标记前缀 `[COMPRESSED]` 用于识别
-- 自动解压缩带压缩标记的数据
+3. **Mapper 配置**  
+   ```xml
+   <result column="response_body"
+           property="responseBody"
+           typeHandler="com.pajk.mcpbridge.persistence.typehandler.ResponseBodyTypeHandler"/>
+   ```
+   `insert` / `batchInsert` 语句同样使用 `#{log.responseBody, typeHandler=...}`，确保批量写入也走压缩流程。
 
-**压缩阈值：** 2048 字节
-
-**压缩格式：** `[COMPRESSED]<Base64编码的GZIP压缩数据>`
-
-**特性：**
-- 如果数据已经压缩（有 `[COMPRESSED]` 前缀），不会再次压缩（避免双重压缩）
-- 如果数据小于阈值，不压缩，直接返回原数据
-- 压缩失败时，返回原数据，不会抛出异常
-
-### 2. MyBatis TypeHandler (`CompressedStringTypeHandler`)
-
-位置：`com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler`
-
-**功能：**
-- 在存储到数据库时，自动压缩 `response_body` 字段
-- 在从数据库读取时，自动解压缩 `response_body` 字段
-- 对应用层透明，无需手动处理压缩/解压缩
-
-**使用方式：**
-在 MyBatis Mapper XML 中指定 TypeHandler：
-
-```xml
-<result column="response_body" property="responseBody" 
-        typeHandler="com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler"/>
-```
-
-### 3. 业务层处理 (`McpRouterService`)
-
-位置：`com.pajk.mcpbridge.core.service.McpRouterService`
-
-**功能：**
-- 在设置 `responseBody` 时，手动调用 `CompressionUtils.compress()` 进行压缩
-- 限制响应体最大大小为 50KB（51200 字节）
-- 处理 JSON 序列化异常
-
-**注意：**
-- 由于 `CompressedStringTypeHandler` 也会自动压缩，`McpRouterService` 中的手动压缩是冗余的
-- 但 `CompressionUtils.compress()` 已经实现了防双重压缩检查，所以不会导致问题
-- 未来可以考虑移除 `McpRouterService` 中的手动压缩，统一由 TypeHandler 处理
+4. **业务层策略**  
+   - `McpRouterService` 只负责软限制（50 KB）和序列化
+   - 真正的压缩/解压完全由 TypeHandler 透明处理
 
 ## 压缩流程
 
-### 存储流程
+1. TypeHandler 判断字节长度是否超过阈值
+2. 若超过：
+   - 尝试 Brotli（质量 6，TEXT 模式）
+   - Brotli 失败则回退 GZIP
+3. 若压缩后仍超限，则 fallback 为原文截断（追加 `...[TRUNCATED]`），保证写入成功
+4. 最终写入的数据：
+   - 成功压缩 → `[BROTLI]base64` 或 `[COMPRESSED]base64`
+   - 压缩失败 → 原文（并写告警）
+   - 压缩后仍超限 → 截断标记文本
+5. 读取时：
+   - `[BROTLI]` → Brotli 解码
+   - `[COMPRESSED]` → GZIP 解码
+   - 无前缀 → 原文
 
-1. 业务层设置 `responseBody`（可能手动压缩）
-2. MyBatis TypeHandler 在存储时检查并压缩（如果未压缩）
-3. 压缩后的数据存储到数据库
-
-### 读取流程
-
-1. 从数据库读取 `response_body` 字段
-2. MyBatis TypeHandler 检查是否有压缩标记
-3. 如果有压缩标记，自动解压缩
-4. 返回解压缩后的原始数据给应用层
-
-## 压缩效果
-
-- **压缩算法：** GZIP
-- **压缩阈值：** 2048 字节
-- **压缩标记：** `[COMPRESSED]`
-- **压缩比率：** 通常可达到 50-80% 的压缩率（取决于数据内容）
-
-## 使用示例
-
-### 存储响应体
-
-```java
-RoutingLog routingLog = new RoutingLog();
-String responseBody = "{...}"; // 可能超过 2048 字节
-routingLog.setResponseBody(responseBody); // TypeHandler 会自动压缩
-routingLogMapper.insert(routingLog);
+日志示例：
+```
+TypeHandler ResponseBodyTypeHandler: Brotli compressed from 3060 bytes to 620 bytes (threshold=1024)
+TypeHandler ResponseBodyTypeHandler: compressed payload still exceeds limit (1120>1024), applying truncation fallback.
 ```
 
-### 读取响应体
+## 兼容性
 
-```java
-RoutingLog routingLog = routingLogMapper.selectById(id);
-String responseBody = routingLog.getResponseBody(); // TypeHandler 会自动解压缩
-// responseBody 是原始未压缩的数据
-```
+- 历史数据（`[COMPRESSED]`）仍可正常读取
+- 若未来需要再引入新算法，可扩展 CompressionUtils 前缀即可
 
-## 注意事项
+## FAQ
 
-1. **双重压缩防护：** `CompressionUtils.compress()` 会检查数据是否已压缩，避免双重压缩
-2. **压缩失败处理：** 如果压缩失败，返回原数据，不会抛出异常
-3. **解压缩失败处理：** 如果解压缩失败，返回原数据，不会抛出异常
-4. **性能影响：** 压缩/解压缩操作会带来一定的 CPU 开销，但可以显著减少存储空间和 I/O 开销
-5. **兼容性：** 对于已存储的未压缩数据，读取时会自动识别并返回原数据
+**Q: 如果压缩后仍超出列限制怎么办？**  
+TypeHandler 会回退到“截断原文 + `...[TRUNCATED]`”的策略，确保写入数据库成功，同时在日志中输出 WARN。
 
-## 未来优化建议
+**Q: 是否可以自定义阈值？**  
+可以在各 TypeHandler 子类中调整常量，或引入配置化参数。
 
-1. **移除冗余压缩：** 考虑移除 `McpRouterService` 中的手动压缩，统一由 TypeHandler 处理
-2. **配置化阈值：** 将压缩阈值配置化，允许根据实际情况调整
-3. **压缩算法选择：** 可以考虑支持多种压缩算法（如 LZ4、Snappy 等），根据数据特点选择最优算法
-4. **压缩统计：** 添加压缩统计信息，监控压缩效果和性能影响
+**Q: 会不会影响性能？**  
+Brotli 在质量 6 + TEXT 模式下性能与 GZIP 相当，结合阈值判断只在大 payload 执行压缩，对整体开销可控。
+
+## 参考
+
+- `CompressionUtils` —— Brotli/GZIP 编解码实现
+- `ThresholdCompressedStringTypeHandler` —— 压缩阈值控制
+- `RoutingLogBatchWriter` —— 捕获数据库 “Data too long” 时的排查日志
 

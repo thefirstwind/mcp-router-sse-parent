@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -61,16 +62,84 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/api/sessions")
-    public Mono<List<SessionOverview>> sessions() {
-        return Mono.fromCallable(sessionService::getSessionOverview)
+    public Mono<List<SessionOverview>> sessions(
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(defaultValue = "12") int hours) {
+        return Mono.fromCallable(() -> {
+                    // 当有 sessionId 筛选时，先从数据库查询该 sessionId 的会话信息
+                    if (sessionId != null && !sessionId.isEmpty()) {
+                        // 检查内存中是否有该会话（优先使用内存中的信息，因为它有最新的状态）
+                        List<SessionOverview> memorySessions = sessionService.getSessionOverview();
+                        SessionOverview memorySession = memorySessions.stream()
+                                .filter(s -> sessionId.equals(s.sessionId()))
+                                .findFirst()
+                                .orElse(null);
+                        
+                        if (memorySession != null) {
+                            // 使用内存中的会话信息（有最新的状态）
+                            return List.of(memorySession);
+                        }
+                        
+                        // 内存中没有，从数据库查询
+                        List<RoutingLog> logs = routingLogMapper.selectBySessionId(sessionId, 1);
+                        if (!logs.isEmpty()) {
+                            // 从数据库中找到该 sessionId 的记录，创建 SessionOverview
+                            RoutingLog log = logs.get(0); // selectBySessionId 已经按 start_time DESC 排序，第一条是最新的
+                            String logServiceName = log.getServerName() != null ? log.getServerName() : log.getServerKey();
+                            
+                            // 从数据库记录创建会话信息
+                            SessionOverview dbSession = new SessionOverview(
+                                    sessionId,
+                                    logServiceName,
+                                    log.getStartTime(), // 使用最新的 start_time 作为 lastActive
+                                    false // 数据库中的会话都是已关闭的
+                            );
+                            return List.of(dbSession);
+                        } else {
+                            // 数据库中没有找到，返回空列表
+                            return List.<SessionOverview>of();
+                        }
+                    }
+                    
+                    // 没有 sessionId 筛选时，从内存查询并应用其他筛选条件（不进行时间筛选）
+                    List<SessionOverview> allSessions = sessionService.getSessionOverview();
+                    
+                    List<SessionOverview> filtered = allSessions.stream()
+                            .filter(s -> {
+                                // 服务名称筛选
+                                if (serviceName != null && !serviceName.isEmpty()) {
+                                    if (!serviceName.equals(s.serviceName())) {
+                                        return false;
+                                    }
+                                }
+                                // 不进行时间筛选，显示所有内存中的会话
+                                return true;
+                            })
+                            .collect(Collectors.toList());
+                    
+                    // 限制最多返回 10 条记录
+                    return filtered.stream()
+                            .limit(10)
+                            .collect(Collectors.toList());
+                })
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @GetMapping("/api/logs")
-    public Mono<List<RoutingLogSummary>> logs() {
+    public Mono<List<RoutingLogSummary>> logs(
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(defaultValue = "48") int hours) {
         return Mono.fromCallable(() -> {
                     LocalDateTime now = LocalDateTime.now();
-                    List<RoutingLog> logs = routingLogMapper.selectByTimeRange(now.minusHours(1), now, 20);
+                    LocalDateTime startTime = now.minusHours(hours);
+                    // 限制最多返回 50 条记录
+                    List<RoutingLog> logs = routingLogMapper.selectByTimeRange(startTime, now, 50);
+                    if (serviceName != null && !serviceName.isEmpty()) {
+                        logs = logs.stream()
+                                .filter(log -> serviceName.equals(log.getServerName()) || serviceName.equals(log.getServerKey()))
+                                .collect(Collectors.toList());
+                    }
                     return logs.stream()
                             .map(RoutingLogSummary::from)
                             .collect(Collectors.toList());
@@ -85,14 +154,73 @@ public class AdminDashboardController {
                         .collect(Collectors.toList()))
                 .subscribeOn(Schedulers.boundedElastic());
     }
+    
+    /**
+     * 获取 RESTful 接口请求列表
+     * 
+     * @param serviceName 服务名称（可选）
+     * @param mcpMethod MCP 方法（可选，如 "tools/call", "tools/list"）
+     * @param hasSessionId sessionId 是否为空（可选，"true"=有sessionId, "false"=无sessionId, 其他=不筛选）
+     * @param hours 查询最近 N 小时的数据，默认 1 小时
+     * @param limit 限制返回数量，默认 100
+     * @return RESTful 请求列表
+     */
+    @GetMapping("/api/restful-requests")
+    public Mono<List<RestfulRequestSummary>> restfulRequests(
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) String mcpMethod,
+            @RequestParam(required = false) String hasSessionId,
+            @RequestParam(defaultValue = "1") int hours,
+            @RequestParam(defaultValue = "100") int limit) {
+        return Mono.fromCallable(() -> {
+                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime startTime = now.minusHours(hours);
+                    Boolean sessionIdFilter = null;
+                    if (hasSessionId != null && !hasSessionId.isEmpty()) {
+                        sessionIdFilter = Boolean.parseBoolean(hasSessionId);
+                    }
+                    List<RoutingLog> logs = routingLogMapper.selectRestfulRequests(
+                            serviceName, mcpMethod, sessionIdFilter, startTime, now, limit);
+                    return logs.stream()
+                            .map(RestfulRequestSummary::from)
+                            .collect(Collectors.toList());
+                })
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+    
+    /**
+     * 获取 RESTful 请求详情（完整内容，不截取）
+     */
+    @GetMapping("/api/restful-requests/{requestId}")
+    public Mono<SessionLogDetail> restfulRequestDetail(@PathVariable String requestId) {
+        return Mono.fromCallable(() -> {
+                    RoutingLog log = routingLogMapper.selectByRequestId(requestId);
+                    if (log == null) {
+                        return null;
+                    }
+                    // RESTful 请求详情返回完整内容，不截取
+                    return new SessionLogDetail(
+                            log.getRequestId(),
+                            log.getMethod(),
+                            log.getPath(),
+                            log.getMcpMethod(),
+                            log.getRequestBody(), // 不截取 requestBody
+                            log.getResponseBody(), // 不截取 responseBody，完整显示
+                            log.getResponseStatus(),
+                            log.getStartTime()
+                    );
+                })
+                .subscribeOn(Schedulers.boundedElastic());
+    }
 
     private DashboardSummary buildSummary(LocalDateTime now) {
         List<SessionOverview> sessions = sessionService.getSessionOverview();
         int sessionCount = (int) sessions.stream().filter(SessionOverview::active).count();
-        LocalDateTime oneHourAgo = now.minusHours(1);
+        // 默认使用 48 小时计算成功率
+        LocalDateTime startTime = now.minusHours(48);
         Double successRate = null;
         try {
-            successRate = routingLogMapper.calculateSuccessRate(oneHourAgo, now);
+            successRate = routingLogMapper.calculateSuccessRate(startTime, now);
         } catch (Exception e) {
             log.warn("Failed to calculate routing success rate", e);
         }
@@ -107,6 +235,7 @@ public class AdminDashboardController {
 
     public record RoutingLogSummary(
             String requestId,
+            String sessionId,
             String mcpMethod,
             String serverName,
             boolean success,
@@ -116,6 +245,7 @@ public class AdminDashboardController {
         static RoutingLogSummary from(RoutingLog log) {
             return new RoutingLogSummary(
                     log.getRequestId(),
+                    log.getSessionId(),
                     log.getMcpMethod(),
                     log.getServerName() != null ? log.getServerName() : log.getServerKey(),
                     Boolean.TRUE.equals(log.getIsSuccess()),
@@ -154,6 +284,36 @@ public class AdminDashboardController {
             return null;
         }
         return value.length() > maxChars ? value.substring(0, maxChars) + "..." : value;
+    }
+    
+    public record RestfulRequestSummary(
+            String requestId,
+            String method,
+            String path,
+            String serverName,
+            String mcpMethod,
+            String toolName,
+            boolean success,
+            Integer responseStatus,
+            Integer duration,
+            LocalDateTime startTime,
+            String clientIp
+    ) {
+        static RestfulRequestSummary from(RoutingLog log) {
+            return new RestfulRequestSummary(
+                    log.getRequestId(),
+                    log.getMethod(),
+                    log.getPath(),
+                    log.getServerName() != null ? log.getServerName() : log.getServerKey(),
+                    log.getMcpMethod(),
+                    log.getToolName(),
+                    Boolean.TRUE.equals(log.getIsSuccess()),
+                    log.getResponseStatus(),
+                    log.getDuration(),
+                    log.getStartTime(),
+                    log.getClientIp()
+            );
+        }
     }
 }
 

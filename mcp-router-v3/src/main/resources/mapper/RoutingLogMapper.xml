@@ -25,15 +25,18 @@
         <result column="mcp_method" property="mcpMethod"/>
         <result column="tool_name" property="toolName"/>
         <result column="query_params" property="queryParams"/>
-        <result column="request_headers" property="requestHeaders"/>
-        <result column="request_body" property="requestBody"/>
+        <result column="request_headers" property="requestHeaders" 
+                typeHandler="com.pajk.mcpbridge.persistence.typehandler.RequestHeadersTypeHandler"/>
+        <result column="request_body" property="requestBody" 
+                typeHandler="com.pajk.mcpbridge.persistence.typehandler.RequestBodyTypeHandler"/>
         <result column="request_size" property="requestSize"/>
         
         <!-- 响应信息 -->
         <result column="response_status" property="responseStatus"/>
-        <result column="response_headers" property="responseHeaders"/>
+        <result column="response_headers" property="responseHeaders" 
+                typeHandler="com.pajk.mcpbridge.persistence.typehandler.ResponseHeadersTypeHandler"/>
         <result column="response_body" property="responseBody" 
-                typeHandler="com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler"/>
+                typeHandler="com.pajk.mcpbridge.persistence.typehandler.ResponseBodyTypeHandler"/>
         <result column="response_size" property="responseSize"/>
         
         <!-- 时间信息 -->
@@ -103,9 +106,14 @@
             #{serverKey}, #{serverName}, #{loadBalanceStrategy},
             <!-- 请求信息 -->
             #{method}, #{path}, #{mcpMethod}, #{toolName}, #{queryParams},
-            #{requestHeaders}, #{requestBody}, #{requestSize},
+            #{requestHeaders, typeHandler=com.pajk.mcpbridge.persistence.typehandler.RequestHeadersTypeHandler}, 
+            #{requestBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.RequestBodyTypeHandler}, 
+            #{requestSize},
             <!-- 响应信息 -->
-            #{responseStatus}, #{responseHeaders}, #{responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler}, #{responseSize},
+            #{responseStatus}, 
+            #{responseHeaders, typeHandler=com.pajk.mcpbridge.persistence.typehandler.ResponseHeadersTypeHandler}, 
+            #{responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.ResponseBodyTypeHandler}, 
+            #{responseSize},
             <!-- 时间信息 -->
             #{startTime}, #{endTime}, #{duration}, #{queueTime}, #{connectTime}, #{processTime},
             <!-- 客户端信息 -->
@@ -156,9 +164,14 @@
                 #{log.serverKey}, #{log.serverName}, #{log.loadBalanceStrategy},
                 <!-- 请求信息 -->
                 #{log.method}, #{log.path}, #{log.mcpMethod}, #{log.toolName}, #{log.queryParams},
-                #{log.requestHeaders}, #{log.requestBody}, #{log.requestSize},
+                #{log.requestHeaders, typeHandler=com.pajk.mcpbridge.persistence.typehandler.RequestHeadersTypeHandler}, 
+                #{log.requestBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.RequestBodyTypeHandler}, 
+                #{log.requestSize},
                 <!-- 响应信息 -->
-                #{log.responseStatus}, #{log.responseHeaders}, #{log.responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.CompressedStringTypeHandler}, #{log.responseSize},
+                #{log.responseStatus}, 
+                #{log.responseHeaders, typeHandler=com.pajk.mcpbridge.persistence.typehandler.ResponseHeadersTypeHandler}, 
+                #{log.responseBody, typeHandler=com.pajk.mcpbridge.persistence.typehandler.ResponseBodyTypeHandler}, 
+                #{log.responseSize},
                 <!-- 时间信息 -->
                 #{log.startTime}, #{log.endTime}, #{log.duration}, #{log.queueTime}, #{log.connectTime}, #{log.processTime},
                 <!-- 客户端信息 -->
@@ -351,6 +364,47 @@
         SELECT * FROM routing_logs
         WHERE start_time &lt; #{cutoffTime}
     </insert>
+    
+    <!-- 查询 RESTful 接口请求 -->
+    <select id="selectRestfulRequests" resultMap="RoutingLogResultMap">
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, user_agent, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
+        WHERE path LIKE '/mcp/router%'
+        <if test="serviceName != null and serviceName != ''">
+            AND (server_name = #{serviceName} OR server_key = #{serviceName})
+        </if>
+        <if test="mcpMethod != null and mcpMethod != ''">
+            AND mcp_method = #{mcpMethod}
+        </if>
+        <if test="hasSessionId != null">
+            <choose>
+                <when test="hasSessionId == true">
+                    AND session_id IS NOT NULL AND session_id != ''
+                </when>
+                <otherwise>
+                    AND (session_id IS NULL OR session_id = '')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="startTime != null">
+            AND start_time BETWEEN #{startTime} AND #{endTime}
+        </if>
+        ORDER BY start_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
 
 </mapper>
 
