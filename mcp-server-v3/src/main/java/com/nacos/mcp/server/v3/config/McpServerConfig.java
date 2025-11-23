@@ -16,6 +16,12 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.RouterFunctions;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.reactive.function.server.RequestPredicates;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 /**
  * MCP Server配置类
@@ -46,6 +52,19 @@ public class McpServerConfig {
         String port = environment.getProperty("server.port", serverPort);
         return Integer.parseInt(port);
     }
+//    private int getServerPort() {
+//        // 优先使用实际绑定端口（RANDOM_PORT场景）
+//        String localPort = environment.getProperty("local.server.port");
+//        String portToUse = (localPort != null && !localPort.isBlank())
+//                ? localPort
+//                : environment.getProperty("server.port", serverPort);
+//        try {
+//            return Integer.parseInt(portToUse);
+//        } catch (NumberFormatException ex) {
+//            // 回退到默认端口
+//            return 8080;
+//        }
+//    }
 
     /**
      * 获取服务器IP地址
@@ -93,9 +112,9 @@ public class McpServerConfig {
     @Bean
     @ConditionalOnMissingBean
     public McpServerTransportProvider mcpServerTransportProvider(ObjectMapper objectMapper) {
-        // 构建基础URL
-        String baseUrl = "http://" + getServerIp() + ":" + getServerPort();
-        log.info("Creating MCP Server Transport with baseUrl: {}", baseUrl);
+        // 使用相对端点，避免 RANDOM_PORT 下的主机/端口不一致导致的客户端校验失败
+        String baseUrl = "";
+        log.info("Creating MCP Server Transport with relative baseUrl (empty), endpoints will be relative");
 
         // 创建WebFlux SSE Server Transport Provider
         WebFluxSseServerTransportProvider provider = new WebFluxSseServerTransportProvider(
@@ -106,8 +125,8 @@ public class McpServerConfig {
         );
 
         log.info("✅ MCP Server Transport Provider created successfully");
-        log.info("📡 SSE endpoint: {}{}", baseUrl,sseEndpoint);
-        log.info("📨 Message endpoint: {}{}", baseUrl,sseMessageEndpoint);
+        log.info("📡 SSE endpoint: {}", sseEndpoint);
+        log.info("📨 Message endpoint: {}", sseMessageEndpoint);
 
         return provider;
     }
@@ -127,4 +146,38 @@ public class McpServerConfig {
                     transportProvider.getClass().getSimpleName());
         }
     }
+//    @Bean
+//    public RouterFunction<?> mcpRouterFunction(McpServerTransportProvider transportProvider) {
+//        if (transportProvider instanceof WebFluxSseServerTransportProvider webFluxProvider) {
+//            RouterFunction<?> routerFunction = webFluxProvider.getRouterFunction();
+//            // 显式支持预检请求，确保返回 200 而不是 404
+//            RouterFunction<ServerResponse> corsOptions = RouterFunctions
+//                    .route(RequestPredicates.OPTIONS(sseEndpoint), req -> ServerResponse.ok().build())
+//                    .andRoute(RequestPredicates.OPTIONS(sseMessageEndpoint), req -> ServerResponse.ok().build());
+//            routerFunction = routerFunction.andOther(corsOptions);
+//            log.info("✅ MCP Router Function created successfully");
+//            return routerFunction;
+//        } else {
+//            throw new IllegalStateException("Expected WebFluxSseServerTransportProvider but got: " +
+//                    transportProvider.getClass().getSimpleName());
+//        }
+//    }
+//
+//    /**
+//     * CORS 配置：允许 /sse 与 /mcp/message 的跨域与预检请求（测试需要）
+//     */
+//    @Bean
+//    public CorsWebFilter corsWebFilter() {
+//        CorsConfiguration cors = new CorsConfiguration();
+//        cors.addAllowedOriginPattern("*");
+//        cors.addAllowedHeader("*");
+//        cors.addAllowedMethod("GET");
+//        cors.addAllowedMethod("POST");
+//        cors.addAllowedMethod("OPTIONS");
+//        cors.setAllowCredentials(false);
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", cors);
+//        return new CorsWebFilter(source);
+//    }
 }
