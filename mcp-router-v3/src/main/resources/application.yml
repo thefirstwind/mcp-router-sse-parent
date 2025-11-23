@@ -5,6 +5,8 @@ server:
 spring:
   application:
     name: mcp-router-v3.01
+
+  # Redis configuration moved to mcp.session.redis
   
   # 数据源配置
   datasource:
@@ -77,6 +79,29 @@ mcp:
     async: true
     batch-size: 100
     flush-interval: 5000
+  session:
+    redis-prefix: mcp
+    ttl: PT30M
+    # Redis 客户端类型: local (使用 Jedis) 或 production (使用 PajkJedisClient)
+    # 默认使用 local，适合本地开发环境
+    redis:
+      type: local  # local 或 production
+      # 本地环境配置（type=local 时使用）
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+      timeout: 2000
+      pool:
+        max-total: 20
+        max-idle: 10
+        min-idle: 5
+      # 生产环境配置（type=production 时使用）
+      production:
+        cluster-name: mcpbridge
+        category: MCP
+        app-name: mcp-bridge
+#    instance-id: router-instance-1
         
 # 日志配置现在由 logback-spring.xml 管理
 # 这里只保留必要的 Spring Boot 日志配置

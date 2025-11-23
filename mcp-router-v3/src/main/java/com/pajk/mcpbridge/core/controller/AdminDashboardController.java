@@ -67,59 +67,19 @@ public class AdminDashboardController {
             @RequestParam(required = false) String sessionId,
             @RequestParam(defaultValue = "12") int hours) {
         return Mono.fromCallable(() -> {
-                    // 当有 sessionId 筛选时，先从数据库查询该 sessionId 的会话信息
-                    if (sessionId != null && !sessionId.isEmpty()) {
-                        // 检查内存中是否有该会话（优先使用内存中的信息，因为它有最新的状态）
-                        List<SessionOverview> memorySessions = sessionService.getSessionOverview();
-                        SessionOverview memorySession = memorySessions.stream()
-                                .filter(s -> sessionId.equals(s.sessionId()))
-                                .findFirst()
-                                .orElse(null);
-                        
-                        if (memorySession != null) {
-                            // 使用内存中的会话信息（有最新的状态）
-                            return List.of(memorySession);
-                        }
-                        
-                        // 内存中没有，从数据库查询
-                        List<RoutingLog> logs = routingLogMapper.selectBySessionId(sessionId, 1);
-                        if (!logs.isEmpty()) {
-                            // 从数据库中找到该 sessionId 的记录，创建 SessionOverview
-                            RoutingLog log = logs.get(0); // selectBySessionId 已经按 start_time DESC 排序，第一条是最新的
-                            String logServiceName = log.getServerName() != null ? log.getServerName() : log.getServerKey();
-                            
-                            // 从数据库记录创建会话信息
-                            SessionOverview dbSession = new SessionOverview(
-                                    sessionId,
-                                    logServiceName,
-                                    log.getStartTime(), // 使用最新的 start_time 作为 lastActive
-                                    false // 数据库中的会话都是已关闭的
-                            );
-                            return List.of(dbSession);
-                        } else {
-                            // 数据库中没有找到，返回空列表
-                            return List.<SessionOverview>of();
-                        }
-                    }
-                    
-                    // 没有 sessionId 筛选时，从内存查询并应用其他筛选条件（不进行时间筛选）
                     List<SessionOverview> allSessions = sessionService.getSessionOverview();
-                    
-                    List<SessionOverview> filtered = allSessions.stream()
+                    if (sessionId != null && !sessionId.isEmpty()) {
+                        return allSessions.stream()
+                                .filter(s -> sessionId.equals(s.sessionId()))
+                                .collect(Collectors.toList());
+                    }
+                    return allSessions.stream()
                             .filter(s -> {
-                                // 服务名称筛选
                                 if (serviceName != null && !serviceName.isEmpty()) {
-                                    if (!serviceName.equals(s.serviceName())) {
-                                        return false;
-                                    }
+                                    return serviceName.equals(s.serviceName());
                                 }
-                                // 不进行时间筛选，显示所有内存中的会话
                                 return true;
                             })
-                            .collect(Collectors.toList());
-                    
-                    // 限制最多返回 10 条记录
-                    return filtered.stream()
                             .limit(10)
                             .collect(Collectors.toList());
                 })

@@ -135,15 +135,19 @@ public class McpSessionBridgeService {
     private final WebClient.Builder webClientBuilder;
     private final McpServerService serverService;
     private final ObjectMapper objectMapper; // 注入 ObjectMapper
+    private final McpSessionService sessionService;
 
     // 服务器会话有效时间：10分钟
     private static final Duration SERVER_SESSION_TIMEOUT = Duration.ofMinutes(10);
     
     public McpSessionBridgeService(WebClient.Builder webClientBuilder,
-                                  McpServerService serverService, ObjectMapper objectMapper) {
+                                  McpServerService serverService,
+                                  ObjectMapper objectMapper,
+                                  McpSessionService sessionService) {
         this.webClientBuilder = webClientBuilder;
         this.serverService = serverService;
         this.objectMapper = objectMapper;
+        this.sessionService = sessionService;
         
         // 启动定期清理任务
         startCleanupTask();
@@ -263,6 +267,7 @@ public class McpSessionBridgeService {
                                         String backendSessionId = extractSessionIdFromEndpoint(endpointData);
                                         if (backendSessionId != null) {
                                             serverSession.setBackendSessionId(backendSessionId); // 设置 backendSessionId
+                                            sessionService.updateBackendSessionId(clientSessionId, backendSessionId);
                                             backendSessionIdSink.tryEmitValue(backendSessionId); // 发送信号
                                             log.info("✅ Extracted backend sessionId: serverSessionId={}, backendSessionId={}",
                                                     serverSessionId, backendSessionId);
