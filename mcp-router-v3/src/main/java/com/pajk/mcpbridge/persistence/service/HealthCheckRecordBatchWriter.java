@@ -60,25 +60,25 @@ public class HealthCheckRecordBatchWriter {
         log.info("Starting HealthCheckRecord batch writer with batchSize={}, window={}", BATCH_SIZE, BATCH_WINDOW);
         
         try {
-            subscription = eventPublisher.getHealthCheckSink()
-                .asFlux()
+        subscription = eventPublisher.getHealthCheckSink()
+            .asFlux()
                 .doOnSubscribe(sub -> log.info("✅ HealthCheckRecord batch writer subscribed to event stream"))
                 .doOnNext(record -> log.trace("📥 Received health check record: {}", record))
-                .cast(HealthCheckRecord.class)
-                .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
-                .filter(batch -> !batch.isEmpty())
+            .cast(HealthCheckRecord.class)
+            .bufferTimeout(BATCH_SIZE, BATCH_WINDOW)
+            .filter(batch -> !batch.isEmpty())
                 .doOnNext(batch -> log.debug("📦 Batching {} health check records for write", batch.size()))
-                .flatMap(this::writeBatch, 1)
-                .subscribeOn(Schedulers.boundedElastic())
-                .subscribe(
+            .flatMap(this::writeBatch, 1)
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe(
                     count -> log.debug("✅ Batch write completed: {} records", count),
                     error -> {
                         log.error("❌ Batch write error in HealthCheckRecordBatchWriter", error);
                         failureCount.incrementAndGet();
                     },
                     () -> log.warn("⚠️ HealthCheckRecord batch writer stream completed (unexpected)")
-                );
-            
+            );
+        
             log.info("✅ HealthCheckRecord batch writer started successfully and subscribed to event stream");
         } catch (Exception e) {
             log.error("❌ Failed to start HealthCheckRecord batch writer", e);

@@ -63,7 +63,7 @@ mvn spring-boot:run
 
 所有技术细节、架构设计、代码实现、性能调优、故障排查，请查看：
 
-👉 **[PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md)**
+👉 **[PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md)**
 
 ---
 
@@ -140,5 +140,5 @@ mvn spring-boot:run
 
 ---
 
-**开始使用**: 👉 [PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md)
+**开始使用**: 👉 [PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md)
 

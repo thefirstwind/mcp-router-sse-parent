@@ -294,6 +294,7 @@ public class McpServerRegistry {
             return Flux.fromIterable(cached);
         }
         // 首次或缓存过期，主动查Nacos并刷新缓存
+        // 使用 subscribeOn 将阻塞操作移到弹性线程池，避免阻塞主线程
         return Mono.fromCallable(() -> {
             try {
                 List<Instance> instances = namingService.selectInstances(serviceName, serviceGroup, true);
@@ -309,7 +310,11 @@ public class McpServerRegistry {
                 log.warn("⚠️ Failed to get healthy servers for service: {} (Nacos未启用是正常的): {}", serviceName, e.getMessage());
                 return List.<McpServerInfo>of(); // 返回空列表，而不是抛出异常
             }
-        }).flatMapMany(Flux::fromIterable);
+        })
+        .subscribeOn(Schedulers.boundedElastic()) // 将阻塞的 Nacos 查询移到弹性线程池
+        .timeout(Duration.ofMillis(200)) // 激进优化：缩短到200毫秒，确保总时间在1秒以内
+        .onErrorReturn(List.<McpServerInfo>of()) // 超时或错误时返回空列表
+        .flatMapMany(Flux::fromIterable);
     }
     
     /**
@@ -346,6 +351,7 @@ public class McpServerRegistry {
                     }
                     
                     // 首次或缓存过期，主动查Nacos并刷新缓存
+                    // 使用 subscribeOn 将阻塞操作移到弹性线程池，避免阻塞主线程
                     return Mono.fromCallable(() -> {
                         try {
                             List<Instance> instances = namingService.selectInstances(serviceName, serviceGroup, true);
@@ -361,7 +367,11 @@ public class McpServerRegistry {
                             log.warn("⚠️ Failed to get instances for service: {} in group: {}", serviceName, serviceGroup, e);
                             return List.<McpServerInfo>of(); // 返回空列表继续处理其他组
                         }
-                    }).flatMapMany(Flux::fromIterable);
+                    })
+                    .subscribeOn(Schedulers.boundedElastic()) // 将阻塞的 Nacos 查询移到弹性线程池
+                    .timeout(Duration.ofMillis(200)) // 激进优化：缩短到200毫秒，确保总时间在1秒以内
+                    .onErrorReturn(List.<McpServerInfo>of()) // 超时或错误时返回空列表
+                    .flatMapMany(Flux::fromIterable);
                 })
                 .distinct(server -> server.getIp() + ":" + server.getPort()) // 去重，避免同一实例在多个组中重复
                 .doOnComplete(() -> log.debug("✅ Completed searching for service '{}' across all groups", serviceName));

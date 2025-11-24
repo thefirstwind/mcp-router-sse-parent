@@ -25,6 +25,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.List;
@@ -271,8 +272,20 @@ public class McpRouterServerConfig {
         // 从路径变量中提取 serviceName
         String serviceName = request.pathVariable("serviceName");
         
-        log.info("📡 SSE connection request: serviceName={}, path={}, queryParams={}", 
-                serviceName, request.path(), request.queryParams());
+        // 增强日志：记录所有请求头，特别是代理相关头（不区分大小写）
+        String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
+        if (forwardedHost == null) {
+            forwardedHost = request.headers().firstHeader("x-forwarded-host");
+        }
+        String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
+        if (forwardedProto == null) {
+            forwardedProto = request.headers().firstHeader("x-forwarded-proto");
+        }
+        String host = request.headers().firstHeader("Host");
+        // 调试：记录所有请求头
+        log.debug("All request headers in handleSseWithServiceName: {}", request.headers().asHttpHeaders());
+        log.info("📡 SSE connection request: serviceName={}, path={}, queryParams={}, Host={}, X-Forwarded-Host={}, X-Forwarded-Proto={}", 
+                serviceName, request.path(), request.queryParams(), host, forwardedHost, forwardedProto);
         
         // 调用 Spring AI 的标准实现
         // 但是我们不能直接调用，因为 RouterFunction 是函数式的
@@ -293,18 +306,41 @@ public class McpRouterServerConfig {
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
         
         // 记录关联关系（路径参数方式必须提供服务名称）
+        // 激进优化：同步执行 Redis 操作，确保立即完成
         if (serviceName == null || serviceName.isEmpty()) {
             log.warn("⚠️ No serviceName found in path, path={}", request.path());
         } else {
+            try {
             sessionService.registerSessionService(sessionId, serviceName);
             log.info("✅ Registered service for SSE connection: sessionId={}, serviceName={}", sessionId, serviceName);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to register session service: {}, will retry asynchronously", e.getMessage());
+                // 异步重试
+                Mono.fromRunnable(() -> sessionService.registerSessionService(sessionId, serviceName))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe(
+                                null,
+                                error -> log.warn("⚠️ Failed to register session service asynchronously: {}", error.getMessage())
+                        );
+            }
         }
         
-        // 注册 SSE sink
+        // 注册 SSE sink（本地操作，不阻塞，立即完成）
         sessionService.registerSseSink(sessionId, sink);
         log.info("✅ Registered SSE sink for session: sessionId={}", sessionId);
-        // 触发会话活跃
+        // 激进优化：同步touch，确保立即完成
+        try {
         sessionService.touch(sessionId);
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to touch session: {}, will retry asynchronously", e.getMessage());
+            // 异步重试
+            Mono.fromRunnable(() -> sessionService.touch(sessionId))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe(
+                            null,
+                            error -> log.warn("⚠️ Failed to touch session asynchronously: {}", error.getMessage())
+                    );
+        }
         
         // 注册客户端会话到会话桥接服务
         if (serviceName != null && !serviceName.isEmpty()) {
@@ -320,38 +356,72 @@ public class McpRouterServerConfig {
                 .build();
         
         // 创建心跳流保持连接
-        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(30))
+        // 改进：使用数据事件而不是注释，确保所有客户端都能识别，并缩短间隔到15秒
+        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
                 .map(tick -> ServerSentEvent.<String>builder()
-                        .comment("heartbeat")
+                        .event("heartbeat")
+                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
                         .build())
                 .doOnNext(tick -> {
-                    sessionService.touch(sessionId);
+                    // 异步触发会话活跃，避免阻塞心跳
+                    Mono.fromRunnable(() -> sessionService.touch(sessionId))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe(
+                                    null,
+                                    error -> log.debug("⚠️ Failed to touch session in heartbeat: {}", error.getMessage())
+                            );
                     log.debug("💓 SSE heartbeat: sessionId={}", sessionId);
                 });
         
         // 合并 endpoint 消息、sink 的消息流和心跳流
         // 使用 merge 来同时处理多个流：先发送 endpoint，然后合并 sink 消息和心跳
+        // 关键：使用 publish().autoConnect() 确保流可以被多个订阅者共享，并且不会过早完成
+        // 使用 onBackpressureBuffer() 防止背压导致连接关闭
         Flux<ServerSentEvent<String>> eventFlux = Flux.concat(
                 Flux.just(endpointEvent),
                 Flux.merge(
-                        sink.asFlux(),  // 通过 sink 发送的响应消息
-                        heartbeatFlux   // 心跳流
+                        sink.asFlux()
+                                .doOnSubscribe(s -> log.debug("🔌 Sink flux subscribed: sessionId={}", sessionId))
+                                .onBackpressureBuffer(1000),  // 缓冲背压
+                        heartbeatFlux
+                                .doOnSubscribe(s -> log.debug("💓 Heartbeat flux subscribed: sessionId={}", sessionId))
+                                .onBackpressureBuffer(100)  // 心跳流缓冲
                 )
         )
+        // 不使用 publish().autoConnect()，直接使用流，避免过早完成
+        // 使用 share() 确保流可以被多个订阅者共享，但不会在第一个订阅者取消时立即完成
+        .share()
+        .doOnSubscribe(subscription -> {
+            log.info("✅ SSE connection subscribed: sessionId={}, serviceName={}, baseUrl={}", 
+                    sessionId, serviceName, baseUrl);
+        })
         .doOnCancel(() -> {
-            log.info("❌ SSE connection cancelled: sessionId={}", sessionId);
-            sessionService.removeSession(sessionId);
-            sessionBridgeService.removeClientSession(sessionId);
-            sink.tryEmitComplete();
+            log.warn("❌ SSE connection cancelled: sessionId={}, serviceName={}, baseUrl={}, reason=client_disconnect", 
+                    sessionId, serviceName, baseUrl);
+            // 防止重复清理：检查会话是否还存在
+            if (sessionService.getSseSink(sessionId) != null) {
+                sessionService.removeSession(sessionId);
+                sessionBridgeService.removeClientSession(sessionId);
+                sink.tryEmitComplete();
+            } else {
+                log.debug("⚠️ Session {} already cleaned up, skipping duplicate cleanup", sessionId);
+            }
         })
         .doOnError(error -> {
-            log.error("❌ SSE connection error: sessionId={}", sessionId, error);
-            sessionService.removeSession(sessionId);
-            sessionBridgeService.removeClientSession(sessionId);
-            sink.tryEmitError(error);
+            log.error("❌ SSE connection error: sessionId={}, serviceName={}, baseUrl={}, error={}", 
+                    sessionId, serviceName, baseUrl, error.getMessage(), error);
+            // 防止重复清理：检查会话是否还存在
+            if (sessionService.getSseSink(sessionId) != null) {
+                sessionService.removeSession(sessionId);
+                sessionBridgeService.removeClientSession(sessionId);
+                sink.tryEmitError(error);
+            } else {
+                log.debug("⚠️ Session {} already cleaned up due to error, skipping duplicate cleanup", sessionId);
+            }
         })
         .doOnComplete(() -> {
-            log.info("✅ SSE connection completed: sessionId={}", sessionId);
+            log.info("✅ SSE connection completed: sessionId={}, serviceName={}, reason=normal_completion", 
+                    sessionId, serviceName);
         });
         
         return ServerResponse.ok()
@@ -370,8 +440,12 @@ public class McpRouterServerConfig {
         // 从查询参数中提取 serviceName（可选）
         String serviceName = request.queryParam("serviceName").orElse(null);
         
-        log.info("📡 SSE connection request (query param): serviceName={}, path={}, queryParams={}", 
-                serviceName, request.path(), request.queryParams());
+        // 增强日志：记录所有请求头，特别是代理相关头
+        String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
+        String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
+        String host = request.headers().firstHeader("Host");
+        log.info("📡 SSE connection request (query param): serviceName={}, path={}, queryParams={}, Host={}, X-Forwarded-Host={}, X-Forwarded-Proto={}", 
+                serviceName, request.path(), request.queryParams(), host, forwardedHost, forwardedProto);
         
         // 如果没有提供 serviceName，仍然处理但记录警告（向后兼容）
         if (serviceName == null || serviceName.isEmpty()) {
@@ -392,18 +466,41 @@ public class McpRouterServerConfig {
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
         
         // 记录关联关系（如果有 serviceName）
+        // 激进优化：同步执行 Redis 操作，确保立即完成
         if (serviceName != null && !serviceName.isEmpty()) {
+            try {
             sessionService.registerSessionService(sessionId, serviceName);
             log.info("✅ Registered service for SSE connection: sessionId={}, serviceName={}", sessionId, serviceName);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to register session service: {}, will retry asynchronously", e.getMessage());
+                // 异步重试
+                Mono.fromRunnable(() -> sessionService.registerSessionService(sessionId, serviceName))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe(
+                                null,
+                                error -> log.warn("⚠️ Failed to register session service asynchronously: {}", error.getMessage())
+                        );
+            }
         } else {
             log.info("ℹ️ SSE connection without serviceName: sessionId={}", sessionId);
         }
         
-        // 注册 SSE sink
+        // 注册 SSE sink（本地操作，不阻塞，立即完成）
         sessionService.registerSseSink(sessionId, sink);
         log.info("✅ Registered SSE sink for session: sessionId={}", sessionId);
-        // 触发会话活跃
+        // 激进优化：同步touch，确保立即完成
+        try {
         sessionService.touch(sessionId);
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to touch session: {}, will retry asynchronously", e.getMessage());
+            // 异步重试
+            Mono.fromRunnable(() -> sessionService.touch(sessionId))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe(
+                            null,
+                            error -> log.warn("⚠️ Failed to touch session asynchronously: {}", error.getMessage())
+                    );
+        }
         
         // 注册客户端会话到会话桥接服务（如果有 serviceName）
         if (serviceName != null && !serviceName.isEmpty()) {
@@ -419,37 +516,71 @@ public class McpRouterServerConfig {
                 .build();
         
         // 创建心跳流保持连接
-        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(30))
+        // 改进：使用数据事件而不是注释，确保所有客户端都能识别，并缩短间隔到15秒
+        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
                 .map(tick -> ServerSentEvent.<String>builder()
-                        .comment("heartbeat")
+                        .event("heartbeat")
+                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
                         .build())
                 .doOnNext(tick -> {
-                    sessionService.touch(sessionId);
+                    // 异步触发会话活跃，避免阻塞心跳
+                    Mono.fromRunnable(() -> sessionService.touch(sessionId))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe(
+                                    null,
+                                    error -> log.debug("⚠️ Failed to touch session in heartbeat: {}", error.getMessage())
+                            );
                     log.debug("💓 SSE heartbeat: sessionId={}", sessionId);
                 });
         
         // 合并 endpoint 消息、sink 的消息流和心跳流
+        // 关键：使用 publish().autoConnect() 确保流可以被多个订阅者共享，并且不会过早完成
+        // 使用 onBackpressureBuffer() 防止背压导致连接关闭
         Flux<ServerSentEvent<String>> eventFlux = Flux.concat(
                 Flux.just(endpointEvent),
                 Flux.merge(
-                        sink.asFlux(),  // 通过 sink 发送的响应消息
-                        heartbeatFlux   // 心跳流
+                        sink.asFlux()
+                                .doOnSubscribe(s -> log.debug("🔌 Sink flux subscribed: sessionId={}", sessionId))
+                                .onBackpressureBuffer(1000),  // 缓冲背压
+                        heartbeatFlux
+                                .doOnSubscribe(s -> log.debug("💓 Heartbeat flux subscribed: sessionId={}", sessionId))
+                                .onBackpressureBuffer(100)  // 心跳流缓冲
                 )
         )
+        // 不使用 publish().autoConnect()，直接使用流，避免过早完成
+        // 使用 share() 确保流可以被多个订阅者共享，但不会在第一个订阅者取消时立即完成
+        .share()
+        .doOnSubscribe(subscription -> {
+            log.info("✅ SSE connection subscribed: sessionId={}, serviceName={}, baseUrl={}", 
+                    sessionId, serviceName, baseUrl);
+        })
         .doOnCancel(() -> {
-            log.info("❌ SSE connection cancelled: sessionId={}", sessionId);
-            sessionService.removeSession(sessionId);
-            sessionBridgeService.removeClientSession(sessionId);
-            sink.tryEmitComplete();
+            log.warn("❌ SSE connection cancelled: sessionId={}, serviceName={}, baseUrl={}, reason=client_disconnect", 
+                    sessionId, serviceName, baseUrl);
+            // 防止重复清理：检查会话是否还存在
+            if (sessionService.getSseSink(sessionId) != null) {
+                sessionService.removeSession(sessionId);
+                sessionBridgeService.removeClientSession(sessionId);
+                sink.tryEmitComplete();
+            } else {
+                log.debug("⚠️ Session {} already cleaned up, skipping duplicate cleanup", sessionId);
+            }
         })
         .doOnError(error -> {
-            log.error("❌ SSE connection error: sessionId={}", sessionId, error);
-            sessionService.removeSession(sessionId);
-            sessionBridgeService.removeClientSession(sessionId);
-            sink.tryEmitError(error);
+            log.error("❌ SSE connection error: sessionId={}, serviceName={}, baseUrl={}, error={}", 
+                    sessionId, serviceName, baseUrl, error.getMessage(), error);
+            // 防止重复清理：检查会话是否还存在
+            if (sessionService.getSseSink(sessionId) != null) {
+                sessionService.removeSession(sessionId);
+                sessionBridgeService.removeClientSession(sessionId);
+                sink.tryEmitError(error);
+            } else {
+                log.debug("⚠️ Session {} already cleaned up due to error, skipping duplicate cleanup", sessionId);
+            }
         })
         .doOnComplete(() -> {
-            log.info("✅ SSE connection completed: sessionId={}", sessionId);
+            log.info("✅ SSE connection completed: sessionId={}, serviceName={}, reason=normal_completion", 
+                    sessionId, serviceName);
         });
         
         return ServerResponse.ok()
@@ -469,20 +600,33 @@ public class McpRouterServerConfig {
             // 提取 context-path（从请求路径中推断）
             String contextPath = extractContextPath(request);
             
-            // 优先读取代理相关头
+            // 优先读取代理相关头（不区分大小写）
+            // WebFlux 的 headers() 是大小写不敏感的，但为了保险，也尝试小写
             String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
+            if (forwardedProto == null) {
+                forwardedProto = request.headers().firstHeader("x-forwarded-proto");
+            }
             String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
+            if (forwardedHost == null) {
+                forwardedHost = request.headers().firstHeader("x-forwarded-host");
+            }
             String forwardedPort = request.headers().firstHeader("X-Forwarded-Port");
+            if (forwardedPort == null) {
+                forwardedPort = request.headers().firstHeader("x-forwarded-port");
+            }
+            
+            // 调试：记录所有请求头
+            log.debug("All request headers: {}", request.headers().asHttpHeaders());
             String scheme;
             String hostPort;
             
-            log.debug("Building base URL - forwardedProto: {}, forwardedHost: {}, forwardedPort: {}, contextPath: {}", 
-                    forwardedProto, forwardedHost, forwardedPort, contextPath);
+            log.info("🔍 Building base URL - forwardedProto: {}, forwardedHost: {}, forwardedPort: {}, contextPath: {}, Host: {}", 
+                    forwardedProto, forwardedHost, forwardedPort, contextPath, request.headers().firstHeader("Host"));
             
             if (forwardedHost != null && !forwardedHost.isEmpty()) {
                 scheme = (forwardedProto != null && !forwardedProto.isEmpty()) ? forwardedProto : "http";
                 // X-Forwarded-Host 可能已包含端口
-                hostPort = forwardedHost;
+                    hostPort = forwardedHost;
                 // 如果 X-Forwarded-Host 不包含端口，且 X-Forwarded-Port 存在，则添加端口
                 // 但如果是标准端口（80/443），则不添加
                 if (!hostPort.contains(":") && forwardedPort != null && !forwardedPort.isEmpty()) {
@@ -529,7 +673,7 @@ public class McpRouterServerConfig {
                 // 添加 context-path（如果存在）
                 if (contextPath != null && !contextPath.isEmpty()) {
                     baseUrl = baseUrl + contextPath;
-                }
+            }
                 log.debug("Built base URL from Host header: {}", baseUrl);
                 return baseUrl;
             }
@@ -858,10 +1002,12 @@ public class McpRouterServerConfig {
                             // 使用 finalServiceName，如果为 null 则使用 "router" 作为默认值
                             String serviceNameForLog = (finalServiceName != null && !finalServiceName.isEmpty()) 
                                     ? finalServiceName : "router";
-                            Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
                             
-                            // 等待 SSE sink 就绪（最多等待 2 秒，处理时序问题）
-                            Mono<Sinks.Many<ServerSentEvent<String>>> sseSinkMono = sessionService.waitForSseSink(sessionId, 2)
+                            // 关键修复：先等待 SSE sink 就绪，然后再处理 initialize 请求
+                            // 这样可以确保响应能够立即通过 SSE 发送
+                            // 激进优化：缩短等待时间到0.5秒，SSE sink注册应该立即完成
+                            Mono<Sinks.Many<ServerSentEvent<String>>> sseSinkMono = sessionService.waitForSseSink(sessionId, 0)
+                                    .timeout(Duration.ofMillis(500))
                                     .doOnNext(sink -> log.debug("✅ SSE sink found for sessionId={}", sessionId))
                                     .doOnError(error -> log.warn("⚠️ Error waiting for SSE sink: sessionId={}, error={}", sessionId, error.getMessage()))
                                     .switchIfEmpty(Mono.defer(() -> {
@@ -875,6 +1021,11 @@ public class McpRouterServerConfig {
                                         return Mono.empty();
                                     }));
                             
+                            // 先等待 SSE sink 就绪，然后再处理 initialize 请求
+                            return sseSinkMono
+                                    .flatMap(sseSink -> {
+                                        // SSE sink 已就绪，现在处理 initialize 请求
+                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
                             return initializeResponse
                                     .flatMap(response -> {
                                         try {
@@ -882,74 +1033,49 @@ public class McpRouterServerConfig {
                                             String responseJson = convertToJsonRpcResponse(response);
                                             log.info("📤 Sending initialize response via SSE (length={}): {}", responseJson.length(), responseJson);
                                             
-                                            // 等待 SSE sink 就绪后发送响应
-                                            return sseSinkMono
-                                                    .flatMap(sseSink -> {
-                                                        ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
-                                                                .data(responseJson)
-                                                                .build();
-                                                        Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
-                                                        if (emitResult.isSuccess()) {
-                                                            log.info("✅ Successfully sent initialize response via SSE: sessionId={}", sessionId);
-                                                        } else {
-                                                            if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
-                                                                log.debug("ℹ️ SSE sink closed, drop initialize response: sessionId={}, result={}", sessionId, emitResult);
-                                                            } else {
-                                                                log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
-                                                            }
-                                                        }
-                                                        
-                                                        // POST 请求立即返回 202 Accepted（符合 MCP 协议）
-                                                        return ServerResponse.accepted()
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
-                                                    })
-                                                    .switchIfEmpty(Mono.defer(() -> {
-                                                        // 如果没有 SSE sink，回退到 HTTP 响应（向后兼容）
-                                                        java.util.Set<String> allSessions = sessionService.getAllSessionIds();
-                                                        log.warn("⚠️ No SSE sink found for sessionId={}, falling back to HTTP response. " +
-                                                                "Registered sessions: {}. " +
-                                                                "Possible causes: 1) SSE connection not established, " +
-                                                                "2) sessionId mismatch, 3) SSE connection closed.",
-                                                                sessionId, allSessions);
-                                                        return ServerResponse.ok()
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue(responseJson);
-                                                    }));
+                                                        // SSE sink 已经就绪，直接发送响应
+                                                ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
+                                                        .data(responseJson)
+                                                        .build();
+                                                 Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
+                                                 if (emitResult.isSuccess()) {
+                                                    log.info("✅ Successfully sent initialize response via SSE: sessionId={}", sessionId);
+                                                } else {
+                                                     if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
+                                                         log.debug("ℹ️ SSE sink closed, drop initialize response: sessionId={}, result={}", sessionId, emitResult);
+                                                     } else {
+                                                         log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
+                                                     }
+                                                }
+                                                
+                                                // POST 请求立即返回 202 Accepted（符合 MCP 协议）
+                                                return ServerResponse.accepted()
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
                                         } catch (Exception e) {
                                             log.error("❌ Failed to convert initialize response to JSON", e);
                                             String errorJson = "{\"jsonrpc\":\"2.0\",\"id\":\"" + mcpMessage.getId() + "\",\"error\":{\"code\":-32603,\"message\":\"Internal error\"}}";
                                             
                                             // 尝试通过 SSE 发送错误响应
-                                            return sseSinkMono
-                                                    .flatMap(sseSink -> {
-                                                        ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                                .data(errorJson)
-                                                                .build();
-                                                        Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                        if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                            log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                        }
-                                                        return ServerResponse.accepted()
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue("{\"status\":\"accepted\",\"error\":\"Internal error, error response sent via SSE\"}");
-                                                    })
-                                                    .switchIfEmpty(Mono.defer(() -> {
-                                                        return ServerResponse.status(500)
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue(errorJson);
-                                                    }));
-                                        }
-                                    })
-                                    .onErrorResume(error -> {
-                                        log.error("❌ Initialize error: {}", error.getMessage(), error);
-                                        try {
-                                            String errorResponse = createErrorResponse(mcpMessage, error);
-                                            log.info("📤 Sending initialize error response via SSE: {}", errorResponse);
-                                            
-                                            // 尝试通过 SSE 发送错误响应
-                                            return sseSinkMono
-                                                    .flatMap(sseSink -> {
+                                                ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                        .data(errorJson)
+                                                        .build();
+                                                 Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                                 if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                     log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                                 }
+                                                return ServerResponse.accepted()
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue("{\"status\":\"accepted\",\"error\":\"Internal error, error response sent via SSE\"}");
+                                                    }
+                                                })
+                                                .onErrorResume(error -> {
+                                                    log.error("❌ Initialize error: {}", error.getMessage(), error);
+                                                    try {
+                                                        String errorResponse = createErrorResponse(mcpMessage, error);
+                                                        log.info("📤 Sending initialize error response via SSE: {}", errorResponse);
+                                                        
+                                                        // 尝试通过 SSE 发送错误响应
                                                         ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
                                                                 .data(errorResponse)
                                                                 .build();
@@ -960,11 +1086,62 @@ public class McpRouterServerConfig {
                                                         return ServerResponse.accepted()
                                                                 .contentType(MediaType.APPLICATION_JSON)
                                                                 .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
-                                                    })
-                                                    .switchIfEmpty(Mono.defer(() -> {
+                                                    } catch (Exception e) {
+                                                        log.error("❌ Failed to create error response", e);
+                                                return ServerResponse.status(500)
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                                .bodyValue("{\"jsonrpc\":\"2.0\",\"id\":\"" + mcpMessage.getId() + "\",\"error\":{\"code\":-32603,\"message\":\"Internal error\"}}");
+                                                    }
+                                                });
+                                    })
+                                    .switchIfEmpty(Mono.defer(() -> {
+                                        // 如果没有 SSE sink，先处理 initialize 请求，然后回退到 HTTP 响应
+                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
+                                        return initializeResponse
+                                                .flatMap(response -> {
+                                                    try {
+                                                        String responseJson = convertToJsonRpcResponse(response);
+                                                        java.util.Set<String> allSessions = sessionService.getAllSessionIds();
+                                                        log.warn("⚠️ No SSE sink found for sessionId={}, falling back to HTTP response. " +
+                                                                "Registered sessions: {}. " +
+                                                                "Possible causes: 1) SSE connection not established, " +
+                                                                "2) sessionId mismatch, 3) SSE connection closed.",
+                                                                sessionId, allSessions);
+                                                        return ServerResponse.ok()
+                                                                .contentType(MediaType.APPLICATION_JSON)
+                                                                .bodyValue(responseJson);
+                                                    } catch (Exception e) {
+                                                        log.error("❌ Failed to convert initialize response to JSON", e);
                                                         return ServerResponse.status(500)
                                                                 .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue(errorResponse);
+                                                                .bodyValue("{\"jsonrpc\":\"2.0\",\"id\":\"" + mcpMessage.getId() + "\",\"error\":{\"code\":-32603,\"message\":\"Internal error\"}}");
+                                                    }
+                                                });
+                                    }))
+                                    .onErrorResume(error -> {
+                                        log.error("❌ Initialize error: {}", error.getMessage(), error);
+                                        try {
+                                            String errorResponse = createErrorResponse(mcpMessage, error);
+                                            log.info("📤 Sending initialize error response via SSE: {}", errorResponse);
+                                            
+                                            // 尝试通过 SSE 发送错误响应
+                                            return sseSinkMono
+                                                    .flatMap(sseSink -> {
+                                                ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                        .data(errorResponse)
+                                                        .build();
+                                                 Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                                 if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                     log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                                 }
+                                                return ServerResponse.accepted()
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
+                                                    })
+                                                    .switchIfEmpty(Mono.defer(() -> {
+                                                return ServerResponse.status(500)
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue(errorResponse);
                                                     }));
                                         } catch (Exception e) {
                                             log.error("❌ Failed to create initialize error response", e);
@@ -972,21 +1149,21 @@ public class McpRouterServerConfig {
                                             
                                             return sseSinkMono
                                                     .flatMap(sseSink -> {
-                                                        ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                                .data(errorJson)
-                                                                .build();
-                                                        Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                        if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                            log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                        }
-                                                        return ServerResponse.accepted()
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
+                                                ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                        .data(errorJson)
+                                                        .build();
+                                                 Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                                 if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                     log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                                 }
+                                                return ServerResponse.accepted()
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
                                                     })
                                                     .switchIfEmpty(Mono.defer(() -> {
-                                                        return ServerResponse.status(500)
-                                                                .contentType(MediaType.APPLICATION_JSON)
-                                                                .bodyValue(errorJson);
+                                                return ServerResponse.status(500)
+                                                        .contentType(MediaType.APPLICATION_JSON)
+                                                        .bodyValue(errorJson);
                                                     }));
                                         }
                                     });
@@ -1033,8 +1210,9 @@ public class McpRouterServerConfig {
                             serverSessionMono = Mono.empty();
                         }
                         
-                        // 等待 SSE sink 就绪（最多等待 2 秒，处理时序问题）
-                        Mono<Sinks.Many<ServerSentEvent<String>>> sseSinkMono = sessionService.waitForSseSink(sessionId, 2)
+                        // 激进优化：缩短等待时间到0.5秒，SSE sink注册应该立即完成
+                        Mono<Sinks.Many<ServerSentEvent<String>>> sseSinkMono = sessionService.waitForSseSink(sessionId, 0)
+                                .timeout(Duration.ofMillis(500))
                                 .doOnNext(sink -> log.debug("✅ SSE sink found for sessionId={}", sessionId))
                                 .switchIfEmpty(Mono.defer(() -> {
                                     java.util.Set<String> allSessions = sessionService.getAllSessionIds();
@@ -1064,43 +1242,43 @@ public class McpRouterServerConfig {
                                         
                                         // 使用 sendMessageToBackendServer 方法发送消息
                                         return sessionBridgeService.sendMessageToBackendServer(sessionId, requestJson)
-                                                .timeout(Duration.ofSeconds(10))
+                                                .timeout(Duration.ofMillis(500))
                                                 .flatMap(responseJson -> {
                                                     log.info("✅ Received response from backend server: {}", responseJson);
                                                     
                                                     // 等待 SSE sink 就绪后发送响应
                                                     return sseSinkMono
                                                             .flatMap(sseSink -> {
-                                                                ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
-                                                                        .data(responseJson)
-                                                                        .build();
-                                                                Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
-                                                                if (emitResult.isSuccess()) {
-                                                                    log.info("✅ Successfully sent response via SSE: sessionId={}", sessionId);
-                                                                } else {
-                                                                    if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
-                                                                        log.debug("ℹ️ SSE sink closed, drop response: sessionId={}, result={}", sessionId, emitResult);
-                                                                    } else {
-                                                                        log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
-                                                                    }
-                                                                }
-                                                                
-                                                                // POST 请求立即返回 202 Accepted（符合 MCP 协议）
-                                                                return ServerResponse.accepted()
-                                                                        .contentType(MediaType.APPLICATION_JSON)
-                                                                        .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
+                                                        ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
+                                                                .data(responseJson)
+                                                                .build();
+                                                         Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
+                                                         if (emitResult.isSuccess()) {
+                                                            log.info("✅ Successfully sent response via SSE: sessionId={}", sessionId);
+                                                        } else {
+                                                             if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
+                                                                 log.debug("ℹ️ SSE sink closed, drop response: sessionId={}, result={}", sessionId, emitResult);
+                                                             } else {
+                                                                 log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
+                                                             }
+                                                        }
+                                                        
+                                                        // POST 请求立即返回 202 Accepted（符合 MCP 协议）
+                                                        return ServerResponse.accepted()
+                                                                .contentType(MediaType.APPLICATION_JSON)
+                                                                .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
                                                             })
                                                             .switchIfEmpty(Mono.defer(() -> {
-                                                                // 如果没有 SSE sink，回退到 HTTP 响应（向后兼容）
+                                                        // 如果没有 SSE sink，回退到 HTTP 响应（向后兼容）
                                                                 java.util.Set<String> allSessions = sessionService.getAllSessionIds();
                                                                 log.warn("⚠️ No SSE sink found for sessionId={}, falling back to HTTP response. " +
                                                                         "Registered sessions: {}. " +
                                                                         "Possible causes: 1) SSE connection not established, " +
                                                                         "2) sessionId mismatch, 3) SSE connection closed.",
                                                                         sessionId, allSessions);
-                                                                return ServerResponse.ok()
-                                                                        .contentType(MediaType.APPLICATION_JSON)
-                                                                        .bodyValue(responseJson);
+                                                        return ServerResponse.ok()
+                                                                .contentType(MediaType.APPLICATION_JSON)
+                                                                .bodyValue(responseJson);
                                                             }));
                                                 })
                                                 .onErrorResume(error -> {
@@ -1118,21 +1296,21 @@ public class McpRouterServerConfig {
                                                         // 尝试通过 SSE 发送错误响应
                                                         return sseSinkMono
                                                                 .flatMap(sseSink -> {
-                                                                    ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                                            .data(errorResponse)
-                                                                            .build();
-                                                                    Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                                    if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                                        log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                                    }
-                                                                    return ServerResponse.accepted()
-                                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                                            .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
+                                                            ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                                    .data(errorResponse)
+                                                                    .build();
+                                                             Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                                             if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                                 log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                                             }
+                                                            return ServerResponse.accepted()
+                                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                                    .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
                                                                 })
                                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                                    return ServerResponse.status(500)
-                                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                                            .bodyValue(errorResponse);
+                                                            return ServerResponse.status(500)
+                                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                                    .bodyValue(errorResponse);
                                                                 }));
                                                     } catch (Exception e) {
                                                         log.error("❌ Failed to create error response", e);
@@ -1152,7 +1330,13 @@ public class McpRouterServerConfig {
                                     if (targetServiceName != null && !targetServiceName.isEmpty()) {
                                         // 路由到指定服务
                                         log.info("🔄 Routing to specified service: {}, method: {}", targetServiceName, mcpMessage.getMethod());
-                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage);
+                                        // 对于 list 方法，使用较短的超时时间（10秒），避免长时间等待
+                                        // 激进优化：缩短超时时间，确保总时间在1秒以内
+                                        // tools/list 等 list 方法：500ms（连接300ms + 调用200ms）
+                                        Duration timeout = (mcpMessage.getMethod() != null && 
+                                                (mcpMessage.getMethod().endsWith("/list") || "tools/call".equals(mcpMessage.getMethod())))
+                                                ? Duration.ofMillis(500) : Duration.ofSeconds(60);
+                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, Map.of());
                                     } else {
                                         // 智能路由（自动发现服务）
                                         log.info("🧠 Smart routing (auto-discover service), method: {}", mcpMessage.getMethod());
@@ -1160,7 +1344,7 @@ public class McpRouterServerConfig {
                                                 Duration.ofSeconds(60), Map.of()); // 使用60秒超时，与默认超时一致
                                     }
                                     
-                                        // 将路由结果转换为标准 MCP 响应格式，并通过 SSE 发送
+                                    // 将路由结果转换为标准 MCP 响应格式，并通过 SSE 发送
                                     return routeResult
                                 .doOnNext(response -> log.info("✅ Received routing response: id={}, hasResult={}, hasError={}", 
                                         response.getId(), response.getResult() != null, response.getError() != null))
@@ -1173,36 +1357,36 @@ public class McpRouterServerConfig {
                                         // 等待 SSE sink 就绪后发送响应
                                         return sseSinkMono
                                                 .flatMap(sseSink -> {
-                                                    ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
-                                                            .data(responseJson)
-                                                            .build();
-                                                    Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
-                                                    if (emitResult.isSuccess()) {
-                                                        log.info("✅ Successfully sent response via SSE: sessionId={}", sessionId);
-                                                    } else {
-                                                        if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
-                                                            log.debug("ℹ️ SSE sink closed, drop response: sessionId={}, result={}", sessionId, emitResult);
-                                                        } else {
-                                                            log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
-                                                        }
-                                                    }
-                                                    
-                                                    // POST 请求立即返回 202 Accepted（符合 MCP 协议）
-                                                    return ServerResponse.accepted()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
+                                            ServerSentEvent<String> sseEvent = ServerSentEvent.<String>builder()
+                                                    .data(responseJson)
+                                                    .build();
+                                             Sinks.EmitResult emitResult = sseSink.tryEmitNext(sseEvent);
+                                             if (emitResult.isSuccess()) {
+                                                log.info("✅ Successfully sent response via SSE: sessionId={}", sessionId);
+                                            } else {
+                                                 if (emitResult == Sinks.EmitResult.FAIL_TERMINATED || emitResult == Sinks.EmitResult.FAIL_CANCELLED) {
+                                                     log.debug("ℹ️ SSE sink closed, drop response: sessionId={}, result={}", sessionId, emitResult);
+                                                 } else {
+                                                     log.warn("⚠️ Failed to emit SSE event: sessionId={}, result={}", sessionId, emitResult);
+                                                 }
+                                            }
+                                            
+                                            // POST 请求立即返回 202 Accepted（符合 MCP 协议）
+                                            return ServerResponse.accepted()
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue("{\"status\":\"accepted\",\"message\":\"Request accepted, response will be sent via SSE\"}");
                                                 })
                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                    // 如果没有 SSE sink，回退到 HTTP 响应（向后兼容）
+                                            // 如果没有 SSE sink，回退到 HTTP 响应（向后兼容）
                                                     java.util.Set<String> allSessions = sessionService.getAllSessionIds();
                                                     log.warn("⚠️ No SSE sink found for sessionId={}, falling back to HTTP response. " +
                                                             "Registered sessions: {}. " +
                                                             "Possible causes: 1) SSE connection not established, " +
                                                             "2) sessionId mismatch, 3) SSE connection closed.",
                                                             sessionId, allSessions);
-                                                    return ServerResponse.ok()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue(responseJson);
+                                            return ServerResponse.ok()
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue(responseJson);
                                                 }));
                                     } catch (Exception e) {
                                         log.error("❌ Failed to convert response to JSON", e);
@@ -1211,21 +1395,21 @@ public class McpRouterServerConfig {
                                         // 尝试通过 SSE 发送错误响应
                                         return sseSinkMono
                                                 .flatMap(sseSink -> {
-                                                    ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                            .data(errorJson)
-                                                            .build();
-                                                    Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                    if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                        log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                    }
-                                                    return ServerResponse.accepted()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue("{\"status\":\"accepted\",\"error\":\"Internal error, error response sent via SSE\"}");
+                                            ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                    .data(errorJson)
+                                                    .build();
+                                             Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                             if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                 log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                             }
+                                            return ServerResponse.accepted()
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue("{\"status\":\"accepted\",\"error\":\"Internal error, error response sent via SSE\"}");
                                                 })
                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                    return ServerResponse.status(500)
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue(errorJson);
+                                            return ServerResponse.status(500)
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue(errorJson);
                                                 }));
                                     }
                                 })
@@ -1238,21 +1422,21 @@ public class McpRouterServerConfig {
                                         // 尝试通过 SSE 发送错误响应
                                         return sseSinkMono
                                                 .flatMap(sseSink -> {
-                                                    ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                            .data(errorResponse)
-                                                            .build();
-                                                    Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                    if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                        log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                    }
-                                                    return ServerResponse.accepted()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
+                                            ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                    .data(errorResponse)
+                                                    .build();
+                                             Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                             if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                 log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                             }
+                                            return ServerResponse.accepted()
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
                                                 })
                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                    return ServerResponse.status(500)
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue(errorResponse);
+                                            return ServerResponse.status(500)
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue(errorResponse);
                                                 }));
                                     } catch (Exception e) {
                                         log.error("❌ Failed to create error response", e);
@@ -1260,21 +1444,21 @@ public class McpRouterServerConfig {
                                         
                                         return sseSinkMono
                                                 .flatMap(sseSink -> {
-                                                    ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
-                                                            .data(errorJson)
-                                                            .build();
-                                                    Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
-                                                    if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
-                                                        log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
-                                                    }
-                                                    return ServerResponse.accepted()
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
+                                            ServerSentEvent<String> errorEvent = ServerSentEvent.<String>builder()
+                                                    .data(errorJson)
+                                                    .build();
+                                             Sinks.EmitResult emitResult = sseSink.tryEmitNext(errorEvent);
+                                             if (!emitResult.isSuccess() && emitResult != Sinks.EmitResult.FAIL_TERMINATED && emitResult != Sinks.EmitResult.FAIL_CANCELLED) {
+                                                 log.warn("⚠️ Failed to emit SSE error event: sessionId={}, result={}", sessionId, emitResult);
+                                             }
+                                            return ServerResponse.accepted()
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue("{\"status\":\"accepted\",\"error\":\"Error response sent via SSE\"}");
                                                 })
                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                    return ServerResponse.status(500)
-                                                            .contentType(MediaType.APPLICATION_JSON)
-                                                            .bodyValue(errorJson);
+                                            return ServerResponse.status(500)
+                                                    .contentType(MediaType.APPLICATION_JSON)
+                                                    .bodyValue(errorJson);
                                                 }));
                                     }
                                 });
@@ -1396,8 +1580,8 @@ public class McpRouterServerConfig {
                     }
                     jsonRpcResponse.put("result", initializeResult);
                 } else if ("tools/list".equals(method) || 
-                           "resources/list".equals(method) || 
-                           "prompts/list".equals(method) ||
+                    "resources/list".equals(method) || 
+                    "prompts/list".equals(method) ||
                            "resources/templates/list".equals(method)) {
                     // 对于这些列表方法，如果后端没有返回数据，强制返回空数组
                     if (result == null) {
@@ -1406,7 +1590,7 @@ public class McpRouterServerConfig {
                         jsonRpcResponse.put("result", result);
                     }
                 } else if ("resources/read".equals(method) ||
-                           "prompts/get".equals(method)) {
+                    "prompts/get".equals(method)) {
                     // 这些方法：直接返回 result（已经是标准 MCP 格式）
                     jsonRpcResponse.put("result", result);
                 } else if ("tools/call".equals(method)) {

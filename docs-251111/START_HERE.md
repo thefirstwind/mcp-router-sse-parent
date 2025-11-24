@@ -10,11 +10,11 @@
 
 | 需求 | 文档 | 时间 |
 |------|------|------|
-| **快速了解** 持久化功能 | [PERSISTENCE_README.md](./PERSISTENCE_README.md) | 3分钟 |
-| **快速集成** 到项目 | [PERSISTENCE_README.md](./PERSISTENCE_README.md) → `setup.sh` | 5分钟 |
-| **深入学习** 技术细节 | [PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md) | 30分钟 |
-| **查找** 特定功能 | [DOCS_INDEX.md](./DOCS_INDEX.md) | <1分钟 |
-| **排查** 问题 | [PERSISTENCE_GUIDE.md#故障排查](./PERSISTENCE_GUIDE.md#故障排查) | 按需 |
+| **快速了解** 持久化功能 | [PERSISTENCE_README.md](PERSISTENCE_README.md) | 3分钟 |
+| **快速集成** 到项目 | [PERSISTENCE_README.md](PERSISTENCE_README.md) → `setup.sh` | 5分钟 |
+| **深入学习** 技术细节 | [PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md) | 30分钟 |
+| **查找** 特定功能 | [DOCS_INDEX.md](DOCS_INDEX.md) | <1分钟 |
+| **排查** 问题 | [PERSISTENCE_GUIDE.md#故障排查](PERSISTENCE_GUIDE.md#故障排查) | 按需 |
 
 ---
 
@@ -55,17 +55,17 @@ START_HERE.md (本文档)
 
 | 文档 | 用途 | 优先级 |
 |------|------|--------|
-| [PERSISTENCE_README.md](./PERSISTENCE_README.md) | 📋 入口文档 | ⭐⭐⭐⭐⭐ |
-| [PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md) | 📖 完整技术指南 | ⭐⭐⭐⭐⭐ |
-| [DOCS_INDEX.md](./DOCS_INDEX.md) | 📚 所有文档索引 | ⭐⭐⭐⭐ |
-| [CONSOLIDATION_SUMMARY.md](./CONSOLIDATION_SUMMARY.md) | 📝 整合说明 | ⭐⭐⭐ |
+| [PERSISTENCE_README.md](PERSISTENCE_README.md) | 📋 入口文档 | ⭐⭐⭐⭐⭐ |
+| [PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md) | 📖 完整技术指南 | ⭐⭐⭐⭐⭐ |
+| [DOCS_INDEX.md](DOCS_INDEX.md) | 📚 所有文档索引 | ⭐⭐⭐⭐ |
+| [CONSOLIDATION_SUMMARY.md](CONSOLIDATION_SUMMARY.md) | 📝 整合说明 | ⭐⭐⭐ |
 
 ### 数据库文件
 
 | 文件 | 用途 |
 |------|------|
-| [mcp-router-v3/database/schema.sql](./mcp-router-v3/database/schema.sql) | 🗄️ 数据库Schema |
-| [mcp-router-v3/database/setup.sh](./mcp-router-v3/database/setup.sh) | 🔧 一键安装脚本 |
+| [mcp-router-v3/database/schema.sql](../mcp-router-v3/database/schema.sql) | 🗄️ 数据库Schema |
+| [mcp-router-v3/database/setup.sh](../mcp-router-v3/database/setup.sh) | 🔧 一键安装脚本 |
 
 ---
 
@@ -93,15 +93,15 @@ START_HERE.md (本文档)
 
 ## 🆘 需要帮助？
 
-1. 查看 [PERSISTENCE_README.md](./PERSISTENCE_README.md) 常见问题
-2. 查看 [PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md) 故障排查
-3. 查看 [DOCS_INDEX.md](./DOCS_INDEX.md) 文档索引
+1. 查看 [PERSISTENCE_README.md](PERSISTENCE_README.md) 常见问题
+2. 查看 [PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md) 故障排查
+3. 查看 [DOCS_INDEX.md](DOCS_INDEX.md) 文档索引
 
 ---
 
 ## ✨ 开始使用
 
-👉 **下一步**: [PERSISTENCE_README.md](./PERSISTENCE_README.md)
+👉 **下一步**: [PERSISTENCE_README.md](PERSISTENCE_README.md)
 
 ---
 

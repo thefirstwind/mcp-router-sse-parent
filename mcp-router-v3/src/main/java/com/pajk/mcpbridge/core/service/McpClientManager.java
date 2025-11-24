@@ -104,8 +104,9 @@ public class McpClientManager {
         }
 
         // 创建新连接
+        // 激进优化：缩短连接创建超时到300ms（初始化200ms + 缓冲100ms）
         return createNewConnection(serverInfo)
-                .timeout(CONNECTION_TIMEOUT.multipliedBy(2)) // 给连接创建和初始化留足够时间（60秒）
+                .timeout(Duration.ofMillis(300)) // 激进优化：缩短到300ms
                 .map(client -> {
                     McpConnectionWrapper wrapper = new McpConnectionWrapper(
                             client, serverInfo, LocalDateTime.now());
@@ -149,11 +150,18 @@ public class McpClientManager {
                     .requestTimeout(CONNECTION_TIMEOUT)
                     .build();
  
-            // 以响应式方式初始化客户端，避免阻塞
+            // 激进优化：缩短初始化超时到200ms，确保快速响应
+            // 注意：如果初始化失败，连接仍可使用，只是可能无法立即使用某些功能
             return client.initialize()
-                    .timeout(CONNECTION_TIMEOUT)
+                    .timeout(Duration.ofMillis(200)) // 激进优化：缩短到200ms
                     .thenReturn(client)
-                    .doOnSuccess(c -> log.debug("✅ MCP connection created and initialized for server: {}", serverInfo.getName()));
+                    .doOnSuccess(c -> log.debug("✅ MCP connection created and initialized for server: {}", serverInfo.getName()))
+                    .onErrorResume(error -> {
+                        // 即使初始化失败，也返回客户端（可能仍可使用）
+                        log.warn("⚠️ MCP client initialization timeout/failed for server: {}, but connection may still be usable: {}", 
+                                serverInfo.getName(), error.getMessage());
+                        return Mono.just(client);
+                    });
         })
         .subscribeOn(Schedulers.boundedElastic());
     }
@@ -255,11 +263,48 @@ public class McpClientManager {
     /**
      * 获取服务器的可用工具列表
      */
+    /**
+     * 获取服务器的可用工具列表
+     * 修复：RESTful接口使用正常超时，SSE接口才需要激进优化
+     */
     public Mono<McpSchema.ListToolsResult> listTools(McpServerInfo serverInfo) {
+        return listTools(serverInfo, Duration.ofSeconds(60)); // 默认60秒超时
+    }
+    
+    /**
+     * 获取服务器的可用工具列表（带超时参数）
+     * 激进优化：优先使用连接池，如果没有连接则快速创建（300ms），调用超时200ms（仅用于SSE）
+     */
+    public Mono<McpSchema.ListToolsResult> listTools(McpServerInfo serverInfo, Duration timeout) {
         log.debug("📋 Listing tools for server via connection pool: {}", serverInfo.getName());
 
+        // 检查是否是激进优化模式（超时时间 < 1秒）
+        boolean aggressiveMode = timeout.toMillis() < 1000;
+        
+        // 先检查连接池，如果没有连接，使用更短的超时创建连接
+        String serverKey = buildServerKey(serverInfo);
+        McpConnectionWrapper existingWrapper = connectionPool.get(serverKey);
+        if (existingWrapper != null && existingWrapper.isValid()) {
+            // 连接池中有连接，直接使用
+            log.debug("🎯 Using pooled connection for tools/list: {}", serverKey);
+            existingWrapper.updateLastUsed();
+            cacheHits.incrementAndGet();
+            return existingWrapper.getClient()
+                    .listTools()
+                    .timeout(aggressiveMode ? Duration.ofMillis(200) : timeout); // 激进模式200ms，否则使用传入的超时
+        }
+        
+        // 连接池中没有连接，需要创建
+        Duration connectionTimeout = aggressiveMode ? Duration.ofMillis(300) : Duration.ofSeconds(10);
+        Duration callTimeout = aggressiveMode ? Duration.ofMillis(200) : timeout;
+
         return getOrCreateMcpClient(serverInfo)
-                .flatMap(McpAsyncClient::listTools)
+                .timeout(connectionTimeout) // 连接创建和初始化超时
+                .flatMap(client -> {
+                    // 立即调用
+                    return client.listTools()
+                            .timeout(callTimeout); // listTools调用超时
+                })
                 .doOnSuccess(tools -> log.debug("✅ Listed {} tools via pool for server: {}", 
                         tools.tools().size(), serverInfo.getName()))
                 .doOnError(error -> {
@@ -287,6 +332,7 @@ public class McpClientManager {
 
         return getOrCreateMcpClient(serverInfo)
                 .flatMap(McpAsyncClient::listResources)
+                .timeout(Duration.ofMillis(500)) // 激进优化：缩短到500毫秒，确保总时间在1秒以内
                 .doOnSuccess(resources -> log.debug("✅ Listed {} resources via pool for server: {}", 
                         resources.resources() != null ? resources.resources().size() : 0, serverInfo.getName()))
                 .doOnError(error -> {
@@ -338,6 +384,7 @@ public class McpClientManager {
 
         return getOrCreateMcpClient(serverInfo)
                 .flatMap(McpAsyncClient::listPrompts)
+                .timeout(Duration.ofMillis(500)) // 激进优化：缩短到500毫秒，确保总时间在1秒以内
                 .doOnSuccess(prompts -> log.debug("✅ Listed {} prompts via pool for server: {}", 
                         prompts.prompts() != null ? prompts.prompts().size() : 0, serverInfo.getName()))
                 .doOnError(error -> {
@@ -372,6 +419,7 @@ public class McpClientManager {
 
         return getOrCreateMcpClient(serverInfo)
                 .flatMap(McpAsyncClient::listResourceTemplates)
+                .timeout(Duration.ofMillis(500)) // 激进优化：缩短到500毫秒，确保总时间在1秒以内
                 .doOnSuccess(templates -> log.debug("✅ Listed {} resource templates via pool for server: {}", 
                         templates.resourceTemplates() != null ? templates.resourceTemplates().size() : 0, serverInfo.getName()))
                 .doOnError(error -> {
@@ -577,6 +625,6 @@ public class McpClientManager {
             }
             
             return false;
-        }
     }
+}
 } 

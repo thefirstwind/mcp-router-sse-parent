@@ -156,3 +156,20 @@ echo "   3. 检查数据库: mysql -umcp_user -pmcp_user mcp_bridge"
 echo ""
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

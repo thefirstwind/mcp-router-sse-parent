@@ -382,10 +382,10 @@ Week 3:
 
 | 文档 | 说明 |
 |------|------|
-| [PERSISTENCE_DESIGN_PLAN.md](./PERSISTENCE_DESIGN_PLAN.md) | 📘 完整设计文档 (本文的详细版) |
-| [PERSISTENCE_GUIDE.md](./PERSISTENCE_GUIDE.md) | 📖 持久化技术指南 |
-| [database/schema.sql](./mcp-router-v3/database/schema.sql) | 🗄️ 数据库Schema |
-| [PERSISTENCE_README.md](./PERSISTENCE_README.md) | 📋 快速开始 |
+| [PERSISTENCE_DESIGN_PLAN.md](PERSISTENCE_DESIGN_PLAN.md) | 📘 完整设计文档 (本文的详细版) |
+| [PERSISTENCE_GUIDE.md](PERSISTENCE_GUIDE.md) | 📖 持久化技术指南 |
+| [database/schema.sql](../mcp-router-v3/database/schema.sql) | 🗄️ 数据库Schema |
+| [PERSISTENCE_README.md](PERSISTENCE_README.md) | 📋 快速开始 |
 
 ---
 

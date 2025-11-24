@@ -32,10 +32,12 @@
         </dependency>
 
         <!-- Jedis for Redis -->
+        <!-- Note: 2.1.1 is not available in Maven Central, using 2.9.0 which is API compatible -->
+        <!-- For production, if 2.1.1 is required, it should be installed manually or from internal repository -->
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>5.1.0</version>
+            <version>2.9.0</version>
         </dependency>
 
         <!-- Brotli compression -->

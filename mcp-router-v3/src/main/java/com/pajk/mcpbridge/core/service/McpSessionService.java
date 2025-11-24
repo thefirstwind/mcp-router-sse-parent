@@ -68,11 +68,17 @@ public class McpSessionService {
         if (!StringUtils.hasText(sessionId)) {
             return Mono.empty();
         }
+        // 激进优化：立即检查，不延迟
         Sinks.Many<ServerSentEvent<String>> sink = sessionIdToSseSink.get(sessionId);
         if (sink != null) {
             return Mono.just(sink);
         }
-        return Mono.delay(java.time.Duration.ofMillis(100))
+        // 如果 maxWaitSeconds 为 0，立即返回空（不等待）
+        if (maxWaitSeconds <= 0) {
+            return Mono.empty();
+        }
+        // 使用更短的延迟（10毫秒）进行重试
+        return Mono.delay(java.time.Duration.ofMillis(10))
                 .flatMap(delay -> {
                     Sinks.Many<ServerSentEvent<String>> retrySink = sessionIdToSseSink.get(sessionId);
                     if (retrySink != null) {
@@ -84,7 +90,8 @@ public class McpSessionService {
 
     private Mono<Sinks.Many<ServerSentEvent<String>>> waitForSseSinkWithRetry(
             String sessionId, int maxWaitSeconds, int currentAttempt) {
-        if (currentAttempt >= maxWaitSeconds * 10) {
+        // 激进优化：减少重试次数，使用更短的延迟
+        if (currentAttempt >= maxWaitSeconds * 20) { // 如果 maxWaitSeconds=0，这个条件不会触发
             sessionRepository.findSession(sessionId).ifPresent(meta -> {
                 if (!instanceId.equals(meta.getInstanceId())) {
                     log.warn("Session {} 属于实例 {}，当前实例 {} 未找到 SSE sink，可能是请求被路由到不同实例。",
@@ -99,7 +106,8 @@ public class McpSessionService {
             return Mono.just(sink);
         }
 
-        return Mono.delay(java.time.Duration.ofMillis(100))
+        // 激进优化：使用更短的延迟（10毫秒）
+        return Mono.delay(java.time.Duration.ofMillis(10))
                 .flatMap(delay -> waitForSseSinkWithRetry(sessionId, maxWaitSeconds, currentAttempt + 1));
     }
 

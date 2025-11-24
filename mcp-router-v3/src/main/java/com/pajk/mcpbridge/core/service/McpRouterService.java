@@ -211,7 +211,8 @@ public class McpRouterService {
                     Mono<Object> resultMono;
                     if ("tools/list".equals(method)) {
                         // 处理 tools/list 请求
-                        resultMono = mcpClientManager.listTools(serverInfo)
+                        // 使用传入的timeout参数，不进行激进优化（RESTful接口需要正常超时）
+                        resultMono = mcpClientManager.listTools(serverInfo, timeout)
                                 .map(listToolsResult -> {
                                     // 将 ListToolsResult 转换为 Map 格式
                                     Map<String, Object> result = new java.util.HashMap<>();
@@ -302,7 +303,8 @@ public class McpRouterService {
                                 loadBalancer.decrementConnectionCount(instance);
                             });
                 })
-                .timeout(timeout.multipliedBy(9).dividedBy(10)) // 使用 90% 的超时时间，给连接建立和请求处理留足够时间
+                // 修复：RESTful接口使用完整的超时时间，不缩短（SSE接口才需要激进优化）
+                .timeout(timeout.multipliedBy(9).dividedBy(10))
                 .onErrorResume(error -> {
                     // 记录错误指标
                     long responseTime = System.currentTimeMillis() - startTime;
@@ -878,5 +880,5 @@ public class McpRouterService {
         }
         
         return metadata;
-    }
+}
 } 
