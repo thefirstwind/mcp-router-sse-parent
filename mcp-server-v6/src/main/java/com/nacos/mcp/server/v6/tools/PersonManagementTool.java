@@ -23,124 +23,120 @@ public class PersonManagementTool {
 
 
     private static final List<Person> MOCK_USER = new ArrayList<>();
+    
+    private static Person createPerson(long id, String firstName, String lastName, int age,
+                                       String nationality, Person.Gender gender) {
+        Person person = new Person();
+        person.setId(id);
+        person.setFirstName(firstName);
+        person.setLastName(lastName);
+        person.setAge(age);
+        person.setNationality(nationality);
+        person.setGender(gender);
+        return person;
+    }
 
     static {
-        Person person1 = new Person();
-        person1.setId(1L);
-        person1.setFirstName("John");
-        person1.setLastName("Doe");
-        person1.setAge(30);
-        person1.setNationality("American");
-        person1.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person1);
-
-        Person person2 = new Person();
-        person2.setId(2L);
-        person2.setFirstName("Jane");
-        person2.setLastName("Smith");
-        person2.setAge(25);
-        person2.setNationality("British");
-        person2.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person2);
-
-        Person person3 = new Person();
-        person3.setId(3L);
-        person3.setFirstName("Hans");
-        person3.setLastName("Mueller");
-        person3.setAge(35);
-        person3.setNationality("German");
-        person3.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person3);
-
-        Person person4 = new Person();
-        person4.setId(4L);
-        person4.setFirstName("Maria");
-        person4.setLastName("Schmidt");
-        person4.setAge(28);
-        person4.setNationality("German");
-        person4.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person4);
-
-        Person person5 = new Person();
-        person5.setId(5L);
-        person5.setFirstName("Pierre");
-        person5.setLastName("Dubois");
-        person5.setAge(40);
-        person5.setNationality("French");
-        person5.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person5);
-
-        Person person6 = new Person();
-        person6.setId(6L);
-        person6.setFirstName("Sophie");
-        person6.setLastName("Martin");
-        person6.setAge(32);
-        person6.setNationality("French");
-        person6.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person6);
-
-        Person person7 = new Person();
-        person7.setId(7L);
-        person7.setFirstName("Akira");
-        person7.setLastName("Tanaka");
-        person7.setAge(29);
-        person7.setNationality("Japanese");
-        person7.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person7);
-
-        Person person8 = new Person();
-        person8.setId(8L);
-        person8.setFirstName("Yuki");
-        person8.setLastName("Sato");
-        person8.setAge(26);
-        person8.setNationality("Japanese");
-        person8.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person8);
-
-        Person person9 = new Person();
-        person9.setId(9L);
-        person9.setFirstName("Marco");
-        person9.setLastName("Rossi");
-        person9.setAge(33);
-        person9.setNationality("Italian");
-        person9.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person9);
-
-        Person person10 = new Person();
-        person10.setId(10L);
-        person10.setFirstName("Elena");
-        person10.setLastName("Garcia");
-        person10.setAge(27);
-        person10.setNationality("Spanish");
-        person10.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person10);
-
-        Person person11 = new Person();
-        person11.setId(11L);
-        person11.setFirstName("Tomas");
-        person11.setLastName("Hernandez");
-        person11.setAge(31);
-        person11.setNationality("Spanish");
-        person11.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person11);
-
-        Person person12 = new Person();
-        person12.setId(12L);
-        person12.setFirstName("Li");
-        person12.setLastName("Wang");
-        person12.setAge(24);
-        person12.setNationality("Chinese");
-        person12.setGender(Person.Gender.MALE);
-        MOCK_USER.add(person12);
-
-        Person person13 = new Person();
-        person13.setId(13L);
-        person13.setFirstName("Zhang");
-        person13.setLastName("Li");
-        person13.setAge(28);
-        person13.setNationality("Chinese");
-        person13.setGender(Person.Gender.FEMALE);
-        MOCK_USER.add(person13);
+        MOCK_USER.add(createPerson(1L, "John", "Doe", 30, "American", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(2L, "Jane", "Smith", 25, "British", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(3L, "Hans", "Mueller", 35, "German", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(4L, "Maria", "Schmidt", 28, "German", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(5L, "Pierre", "Dubois", 40, "French", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(6L, "Sophie", "Martin", 32, "French", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(7L, "Akira", "Tanaka", 29, "Japanese", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(8L, "Yuki", "Sato", 26, "Japanese", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(9L, "Marco", "Rossi", 33, "Italian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(10L, "Elena", "Garcia", 27, "Spanish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(11L, "Tomas", "Hernandez", 31, "Spanish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(12L, "Li", "Wang", 24, "Chinese", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(13L, "Zhang", "Li", 28, "Chinese", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(14L, "Carlos", "Silva", 34, "Brazilian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(15L, "Ana", "Costa", 27, "Brazilian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(16L, "Olga", "Ivanova", 36, "Russian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(17L, "Sergei", "Petrov", 38, "Russian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(18L, "Amir", "Khan", 33, "Indian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(19L, "Priya", "Singh", 29, "Indian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(20L, "Noah", "Johnson", 31, "Canadian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(21L, "Emma", "Wilson", 26, "Canadian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(22L, "Lars", "Andersen", 37, "Danish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(23L, "Freja", "Nielsen", 30, "Danish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(24L, "Mateo", "Lopez", 35, "Mexican", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(25L, "Camila", "Lopez", 33, "Mexican", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(26L, "Omar", "Mahmoud", 34, "Egyptian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(27L, "Layla", "Hassan", 27, "Egyptian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(28L, "Musa", "Abiola", 32, "Nigerian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(29L, "Ada", "Okafor", 29, "Nigerian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(30L, "Ethan", "Brown", 34, "Australian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(31L, "Olivia", "Taylor", 27, "Australian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(32L, "Lucas", "Miller", 33, "American", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(33L, "Isabella", "Anderson", 25, "American", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(34L, "Hugo", "Lambert", 36, "French", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(35L, "Claire", "Bernard", 29, "French", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(36L, "Rafael", "Fernandez", 34, "Argentinian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(37L, "Valentina", "Perez", 28, "Argentinian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(38L, "Jonas", "Kristensen", 31, "Norwegian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(39L, "Ingrid", "Larsen", 27, "Norwegian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(40L, "Sebastian", "Weber", 32, "German", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(41L, "Greta", "Fischer", 30, "German", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(42L, "Mateusz", "Kowalski", 35, "Polish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(43L, "Agnieszka", "Nowak", 28, "Polish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(44L, "Tariq", "Hussain", 33, "Pakistani", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(45L, "Sana", "Qureshi", 26, "Pakistani", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(46L, "Nikos", "Papadopoulos", 37, "Greek", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(47L, "Eleni", "Katsaros", 31, "Greek", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(48L, "Lucas", "Silveira", 29, "Portuguese", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(49L, "Beatriz", "Morais", 27, "Portuguese", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(50L, "Andres", "Gomez", 34, "Colombian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(51L, "Sofia", "Gomez", 32, "Colombian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(52L, "Liam", "O'Connor", 33, "Irish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(53L, "Aoife", "Murphy", 26, "Irish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(54L, "Yusuf", "Ali", 31, "Kenyan", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(55L, "Amina", "Njeri", 29, "Kenyan", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(56L, "Andrei", "Popescu", 35, "Romanian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(57L, "Ioana", "Marin", 28, "Romanian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(58L, "Mikhail", "Sidorov", 34, "Russian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(59L, "Daria", "Volkova", 27, "Russian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(60L, "Chen", "Yao", 29, "Chinese", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(61L, "Mei", "Zhou", 26, "Chinese", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(62L, "Min-Jun", "Park", 32, "South Korean", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(63L, "Seo-yeon", "Kim", 28, "South Korean", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(64L, "Farid", "Aziz", 33, "Indonesian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(65L, "Putri", "Rahma", 25, "Indonesian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(66L, "Mohammed", "Al Saud", 36, "Saudi Arabian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(67L, "Aisha", "Al Rashid", 29, "Saudi Arabian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(68L, "David", "Levy", 34, "Israeli", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(69L, "Yael", "Cohen", 27, "Israeli", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(70L, "Ian", "Campbell", 35, "Scottish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(71L, "Fiona", "MacDonald", 30, "Scottish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(72L, "Leon", "van Dijk", 33, "Dutch", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(73L, "Eva", "Bakker", 27, "Dutch", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(74L, "Filip", "Novak", 32, "Czech", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(75L, "Tereza", "Svoboda", 28, "Czech", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(76L, "Javier", "Torres", 37, "Chilean", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(77L, "Gabriela", "Torres", 31, "Chilean", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(78L, "Ben", "Williams", 29, "New Zealander", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(79L, "Mia", "Thompson", 26, "New Zealander", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(80L, "Kwame", "Mensah", 34, "Ghanaian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(81L, "Akosua", "Boateng", 28, "Ghanaian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(82L, "Samir", "Darwish", 33, "Jordanian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(83L, "Maya", "Farah", 27, "Jordanian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(84L, "Zane", "Cooper", 31, "South African", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(85L, "Naledi", "Dlamini", 29, "South African", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(86L, "Victor", "Hernandez", 32, "Venezuelan", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(87L, "Isabel", "Rivas", 27, "Venezuelan", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(88L, "Juan", "Paredes", 34, "Peruvian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(89L, "Lucia", "Rojas", 28, "Peruvian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(90L, "Arman", "Hakobyan", 35, "Armenian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(91L, "Nare", "Petrosyan", 30, "Armenian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(92L, "Viktor", "Horvath", 33, "Hungarian", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(93L, "Reka", "Farkas", 27, "Hungarian", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(94L, "Anders", "Johansson", 36, "Swedish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(95L, "Astrid", "Lindberg", 29, "Swedish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(96L, "Jakub", "Horak", 34, "Slovak", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(97L, "Zuzana", "Bielik", 28, "Slovak", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(98L, "Mustafa", "Bekir", 33, "Turkish", Person.Gender.MALE));
+        MOCK_USER.add(createPerson(99L, "Selin", "Demir", 26, "Turkish", Person.Gender.FEMALE));
+        MOCK_USER.add(createPerson(100L, "Alex", "Novak", 31, "Croatian", Person.Gender.MALE));
     }
 
     /**
