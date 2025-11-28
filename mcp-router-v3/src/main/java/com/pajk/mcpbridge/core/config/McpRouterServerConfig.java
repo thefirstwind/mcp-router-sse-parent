@@ -891,13 +891,9 @@ public class McpRouterServerConfig {
                                 mcpMessage.setMetadata(new java.util.HashMap<>());
                             }
                             mcpMessage.getMetadata().put("sessionId", sessionId);
-                            log.info("✅ Set sessionId in MCP message: sessionId={}, method={}", sessionId, mcpMessage.getMethod());
-                        } else {
-                            log.warn("⚠️ WARNING: sessionId is null or empty when processing MCP message! method={}, path={}", 
-                                    mcpMessage.getMethod(), request.path());
                         }
-                        log.info("✅ Parsed MCP message: id={}, method={}, jsonrpc={}, sessionId={}", 
-                                mcpMessage.getId(), mcpMessage.getMethod(), mcpMessage.getJsonrpc(), mcpMessage.getSessionId());
+                        log.info("✅ Parsed MCP message: id={}, method={}, jsonrpc={}",
+                                mcpMessage.getId(), mcpMessage.getMethod(), mcpMessage.getJsonrpc());
                         
                         // 验证 JSON-RPC 版本
                         if (mcpMessage.getJsonrpc() == null || !"2.0".equals(mcpMessage.getJsonrpc())) {
@@ -1282,31 +1278,22 @@ public class McpRouterServerConfig {
                                 })
                                 .switchIfEmpty(Mono.defer(() -> {
                                     // 不存在服务器会话，使用原来的路由逻辑
-                                    // 构建包含 sessionId 的 headers，确保日志能正确记录 sessionId
-                                    Map<String, String> routeHeaders = new java.util.HashMap<>();
-                                    if (sessionId != null && !sessionId.isEmpty()) {
-                                        routeHeaders.put("sessionId", sessionId);
-                                        routeHeaders.put("Mcp-Session-Id", sessionId);
-                                    }
-                                    
                                     Mono<McpMessage> routeResult;
                                     if (targetServiceName != null && !targetServiceName.isEmpty()) {
                                         // 路由到指定服务
-                                        log.info("🔄 Routing to specified service: {}, method: {}, sessionId: {}", 
-                                                targetServiceName, mcpMessage.getMethod(), sessionId);
+                                        log.info("🔄 Routing to specified service: {}, method: {}", targetServiceName, mcpMessage.getMethod());
                                         // 对于 list 方法，使用较短的超时时间（10秒），避免长时间等待
                                         // 激进优化：缩短超时时间，确保总时间在1秒以内
                                         // tools/list 等 list 方法：500ms（连接300ms + 调用200ms）
                                         Duration timeout = (mcpMessage.getMethod() != null && 
                                                 (mcpMessage.getMethod().endsWith("/list") || "tools/call".equals(mcpMessage.getMethod())))
                                                 ? Duration.ofMillis(500) : Duration.ofSeconds(60);
-                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, routeHeaders);
+                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, Map.of());
                                     } else {
                                         // 智能路由（自动发现服务）
-                                        log.info("🧠 Smart routing (auto-discover service), method: {}, sessionId: {}", 
-                                                mcpMessage.getMethod(), sessionId);
+                                        log.info("🧠 Smart routing (auto-discover service), method: {}", mcpMessage.getMethod());
                                         routeResult = routerService.smartRoute(mcpMessage, 
-                                                Duration.ofSeconds(60), routeHeaders); // 使用60秒超时，与默认超时一致
+                                                Duration.ofSeconds(60), Map.of()); // 使用60秒超时，与默认超时一致
                                     }
                                     
                                     // 将路由结果转换为标准 MCP 响应格式，并通过 SSE 发送
