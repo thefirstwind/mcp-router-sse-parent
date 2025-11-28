@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-router-v3
+  namespace: default
+  labels:
+    app: mcp-router-v3
+spec:
+  replicas: 3  # 3个实例
+  selector:
+    matchLabels:
+      app: mcp-router-v3
+  template:
+    metadata:
+      labels:
+        app: mcp-router-v3
+    spec:
+      containers:
+      - name: mcp-router-v3
+        image: mcp-router-v3:latest  # 替换为实际镜像
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        # 实例ID（用于会话管理）
+        - name: MCP_SESSION_INSTANCE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name  # 使用 Pod 名称作为实例ID
+        # Redis 配置
+        - name: MCP_SESSION_REDIS_HOST
+          value: "redis-service"  # Redis Service 名称
+        - name: MCP_SESSION_REDIS_PORT
+          value: "6379"
+        - name: MCP_SESSION_REDIS_TYPE
+          value: "production"  # 生产环境使用 production Redis
+        # 应用配置
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SPRING_PROFILES_ACTIVE
+          value: "multi-instance,production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
