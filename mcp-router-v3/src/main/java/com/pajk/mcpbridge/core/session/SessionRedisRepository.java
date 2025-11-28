@@ -35,6 +35,7 @@ public class SessionRedisRepository {
         map.put("instanceId", meta.getInstanceId());
         map.put("serviceName", Optional.ofNullable(meta.getServiceName()).orElse(""));
         map.put("backendSessionId", Optional.ofNullable(meta.getBackendSessionId()).orElse(""));
+        map.put("transportType", Optional.ofNullable(meta.getTransportType()).orElse(""));
         map.put("lastActive", FORMATTER.format(Optional.ofNullable(meta.getLastActive()).orElse(LocalDateTime.now())));
         map.put("active", Boolean.toString(meta.isActive()));
         

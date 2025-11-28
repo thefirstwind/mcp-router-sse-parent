@@ -85,3 +85,5 @@ proxy_set_header X-Accel-Buffering "no";  # 禁用 Nginx 缓冲
 因此，Nginx 必须正确传递 `X-Forwarded-Host` 头，应用才能生成正确的 endpoint URL。
 
 
+
+

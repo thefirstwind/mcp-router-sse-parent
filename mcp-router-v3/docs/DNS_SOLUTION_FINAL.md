@@ -160,3 +160,5 @@ time curl http://mcp-bridge.test/mcp/router/tools/mcp-server-v6
 - **方案 1**：配置系统 DNS → 使用 `mcp-bridge.local`
 - **方案 2**：直接使用 `mcp-bridge.test`（推荐）
 
+
+

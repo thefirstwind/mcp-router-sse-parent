@@ -7,6 +7,8 @@ import com.pajk.mcpbridge.core.service.McpRouterService;
 import com.pajk.mcpbridge.core.service.McpSessionService;
 import com.pajk.mcpbridge.core.service.McpSessionBridgeService;
 import com.pajk.mcpbridge.core.service.McpSseTransportProvider;
+import com.pajk.mcpbridge.core.transport.TransportPreferenceResolver;
+import com.pajk.mcpbridge.core.transport.TransportType;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -51,12 +54,22 @@ public class McpRouterServerConfig {
     @Value("${mcp.router.context-path:}")
     private String configuredContextPath;
 
+    private static final String SSE_BASE_PATH = "/sse";
+    private static final String STREAMABLE_BASE_PATH = "/mcp";
+    private static final java.util.List<String> SESSION_ID_HEADER_CANDIDATES = java.util.List.of(
+            "Mcp-Session-Id",
+            "mcp-session-id",
+            "X-Mcp-Session-Id",
+            "x-mcp-session-id"
+    );
+
     private final McpRouterService routerService;
     private final ObjectMapper objectMapper;
     private final McpSessionService sessionService;
     private final McpRequestValidator requestValidator;
     private final McpSessionBridgeService sessionBridgeService;
     private final McpSseTransportProvider sseTransportProvider;
+    private final TransportPreferenceResolver transportPreferenceResolver;
 
     public McpRouterServerConfig(McpRouterService routerService, ObjectMapper objectMapper, 
                                  McpSessionService sessionService, McpRequestValidator requestValidator,
@@ -68,6 +81,7 @@ public class McpRouterServerConfig {
         this.requestValidator = requestValidator;
         this.sessionBridgeService = sessionBridgeService;
         this.sseTransportProvider = sseTransportProvider;
+        this.transportPreferenceResolver = new TransportPreferenceResolver();
     }
 
     /**
@@ -128,12 +142,12 @@ public class McpRouterServerConfig {
                 objectMapper,
                 baseUrl,
                 "/mcp/message",  // 消息端点（与 mcp-server-v6 相同）
-                "/sse"          // SSE端点（与 mcp-server-v6 相同）
+                SSE_BASE_PATH          // SSE端点（对外暴露为 /sse）
         );
 
         log.info("✅ MCP Router Server Transport Provider created successfully");
-        log.info("📡 SSE endpoint: {}/sse (Spring AI standard)", baseUrl);
-        log.info("📡 SSE endpoint with service: {}/sse/{{serviceName}}", baseUrl);
+        log.info("📡 SSE endpoint: {}{}", baseUrl, SSE_BASE_PATH);
+        log.info("📡 SSE endpoint with service: {}{}/{{serviceName}}", baseUrl, SSE_BASE_PATH);
         log.info("📨 Message endpoint: {}/mcp/message?sessionId=xxx (compatible with mcp-server-v6)", baseUrl);
 
         return provider;
@@ -157,15 +171,15 @@ public class McpRouterServerConfig {
             // 获取标准的路由函数（处理 SSE 连接和消息）
             RouterFunction<?> standardRouter = webFluxProvider.getRouterFunction();
             
-            // 拦截 SSE 路由，提取 serviceName 并记录，但使用 Spring AI 的标准实现
-            // 支持路径参数方式：GET /sse/{serviceName}
-            // 支持查询参数方式：GET /sse?serviceName=xxx（用于 MCP Inspector 等工具）
-            // 为避免与基于注解的 /sse 管理类接口冲突（如 /sse/sessions、/sse/session/{id} 等），
+            // 拦截传输路由，提取 serviceName 并记录，但使用 Spring AI 的标准实现
+            // 支持路径参数方式：GET /mcp/{serviceName}
+            // 支持查询参数方式：GET /mcp?serviceName=xxx（用于 MCP Inspector 等工具）
+            // 为避免与基于注解的 /mcp 管理类接口冲突（如 /mcp/sessions、/mcp/session/{id} 等），
             // 显式排除这些保留路径，仅对真实的 serviceName 进行匹配
             // 负向前瞻排除：sessions, session, connect, message, broadcast, cleanup, admin
             RouterFunction<ServerResponse> sseRouter = route()
-                    // Mirror controller endpoints to avoid conflicts with /sse/{serviceName}
-                    .GET("/sse/connect", req -> {
+                    // Mirror controller endpoints to avoid conflicts with /mcp/{serviceName}
+                    .GET(SSE_BASE_PATH + "/connect", req -> {
                         String clientId = req.queryParam("clientId").orElse("");
                         String metadata = req.queryParam("metadata").orElse(null);
                         Map<String, String> metadataMap = parseSimpleMetadata(metadata);
@@ -175,7 +189,7 @@ public class McpRouterServerConfig {
                                 .contentType(MediaType.TEXT_EVENT_STREAM)
                                 .body(BodyInserters.fromPublisher(body, String.class));
                     })
-                    .POST("/sse/message/{sessionId}", req -> {
+                    .POST(SSE_BASE_PATH + "/message/{sessionId}", req -> {
                         String sessionId = req.pathVariable("sessionId");
                         String eventType = req.queryParam("eventType").orElse("");
                         Mono<String> dataMono = req.bodyToMono(String.class);
@@ -184,7 +198,7 @@ public class McpRouterServerConfig {
                                         .then(ServerResponse.ok().bodyValue("Message sent successfully"))
                         );
                     })
-                    .POST("/sse/message/client/{clientId}", req -> {
+                    .POST(SSE_BASE_PATH + "/message/client/{clientId}", req -> {
                         String clientId = req.pathVariable("clientId");
                         String eventType = req.queryParam("eventType").orElse("");
                         Mono<String> dataMono = req.bodyToMono(String.class);
@@ -193,7 +207,7 @@ public class McpRouterServerConfig {
                                         .then(ServerResponse.ok().bodyValue("Message sent successfully"))
                         );
                     })
-                    .POST("/sse/broadcast", req -> {
+                    .POST(SSE_BASE_PATH + "/broadcast", req -> {
                         String eventType = req.queryParam("eventType").orElse("");
                         Mono<String> dataMono = req.bodyToMono(String.class);
                         return dataMono.flatMap(data ->
@@ -201,7 +215,7 @@ public class McpRouterServerConfig {
                                         .then(ServerResponse.ok().bodyValue("Message broadcasted successfully"))
                         );
                     })
-                    .GET("/sse/session/{sessionId}", req -> {
+                    .GET(SSE_BASE_PATH + "/session/{sessionId}", req -> {
                         String sessionId = req.pathVariable("sessionId");
                         com.pajk.mcpbridge.core.model.SseSession session = sseTransportProvider.getSession(sessionId);
                         if (session == null) {
@@ -209,20 +223,24 @@ public class McpRouterServerConfig {
                         }
                         return ServerResponse.ok().bodyValue(session);
                     })
-                    .GET("/sse/sessions", req ->
+                    .GET(SSE_BASE_PATH + "/sessions", req ->
                             ServerResponse.ok().bodyValue(sseTransportProvider.getAllSessions())
                     )
-                    .DELETE("/sse/session/{sessionId}", req -> {
+                    .DELETE(SSE_BASE_PATH + "/session/{sessionId}", req -> {
                         String sessionId = req.pathVariable("sessionId");
                         return sseTransportProvider.closeSession(sessionId)
                                 .then(ServerResponse.ok().bodyValue("Session closed successfully"));
                     })
-                    .POST("/sse/cleanup", req ->
+                    .POST(SSE_BASE_PATH + "/cleanup", req ->
                             sseTransportProvider.cleanupTimeoutSessions()
                                     .then(ServerResponse.ok().bodyValue("Timeout sessions cleaned up successfully"))
                     )
-                    .GET("/sse/{serviceName}", this::handleSseWithServiceName)
-                    .GET("/sse", this::handleSseWithQueryParam)
+                    .GET(SSE_BASE_PATH + "/{serviceName}", this::handleSseWithServiceName)
+                    .GET(SSE_BASE_PATH, this::handleSseWithQueryParam)
+                    .GET(STREAMABLE_BASE_PATH + "/{serviceName}", this::handleStreamableWithServiceName)
+                    .POST(STREAMABLE_BASE_PATH + "/{serviceName}", this::handleMcpMessageWithPath)
+                    .GET(STREAMABLE_BASE_PATH, this::handleStreamableWithQueryParam)
+                    .POST(STREAMABLE_BASE_PATH, this::handleMcpMessage)
                     .build();
             
             // 创建自定义的消息处理路由（支持路径参数方式：/mcp/{serviceName}/message?sessionId=xxx）
@@ -237,8 +255,9 @@ public class McpRouterServerConfig {
                     .build();
             
             log.info("✅ MCP Router Function created successfully");
-            log.info("📡 SSE endpoint: GET /sse (with optional ?serviceName=xxx query param for MCP Inspector)");
-            log.info("📡 SSE endpoint with service: GET /sse/{serviceName}");
+            log.info("📡 SSE endpoint: GET {} (with optional ?serviceName=xxx query param for MCP Inspector)", SSE_BASE_PATH);
+            log.info("📡 SSE endpoint with service: GET {}/{{serviceName}}", SSE_BASE_PATH);
+            log.info("📡 Streamable endpoint: GET {} (NDJSON stream)", STREAMABLE_BASE_PATH);
             log.info("📨 Message endpoint: POST /mcp/message?sessionId=xxx (routed by sessionId)");
             log.info("📨 Message endpoint: POST /mcp/{serviceName}/message?sessionId=xxx (routed by path)");
             
@@ -248,6 +267,8 @@ public class McpRouterServerConfig {
                     .OPTIONS("/sse/{serviceName}", req -> ServerResponse.ok().build())
                     .OPTIONS("/mcp/message", req -> ServerResponse.ok().build())
                     .OPTIONS("/mcp/{serviceName}/message", req -> ServerResponse.ok().build())
+                    .OPTIONS(STREAMABLE_BASE_PATH, req -> ServerResponse.ok().build())
+                    .OPTIONS(STREAMABLE_BASE_PATH + "/{serviceName}", req -> ServerResponse.ok().build())
                     .build();
 
             // 合并路由：自定义路由（优先级最高）+ 标准路由 + 预检处理
@@ -269,327 +290,51 @@ public class McpRouterServerConfig {
      * 路径参数方式：GET /sse/{serviceName}
      */
     private Mono<ServerResponse> handleSseWithServiceName(ServerRequest request) {
-        // 从路径变量中提取 serviceName
         String serviceName = request.pathVariable("serviceName");
-        
-        // 增强日志：记录所有请求头，特别是代理相关头（不区分大小写）
-        String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
-        if (forwardedHost == null) {
-            forwardedHost = request.headers().firstHeader("x-forwarded-host");
+        TransportType transportType = transportPreferenceResolver.resolve(request);
+        if (transportType == TransportType.STREAMABLE) {
+            return handleStreamable(request, serviceName, "sse-path");
         }
-        String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
-        if (forwardedProto == null) {
-            forwardedProto = request.headers().firstHeader("x-forwarded-proto");
-        }
-        String host = request.headers().firstHeader("Host");
-        // 调试：记录所有请求头
-        log.debug("All request headers in handleSseWithServiceName: {}", request.headers().asHttpHeaders());
-        log.info("📡 SSE connection request: serviceName={}, path={}, queryParams={}, Host={}, X-Forwarded-Host={}, X-Forwarded-Proto={}", 
-                serviceName, request.path(), request.queryParams(), host, forwardedHost, forwardedProto);
-        
-        // 调用 Spring AI 的标准实现
-        // 但是我们不能直接调用，因为 RouterFunction 是函数式的
-        // 所以我们需要重新实现，但使用 Spring AI 的格式
-        
-        // 方案：使用 Spring AI 的标准格式，但记录 serviceName 和 SSE sink
-        // Spring AI 的标准格式是：event:endpoint\ndata:http://.../mcp/message?sessionId=xxx
-        String baseUrl = buildBaseUrlFromRequest(request);
-        String sessionId = UUID.randomUUID().toString();
-        String messageEndpoint = (serviceName != null && !serviceName.isEmpty())
-                ? String.format("%s/mcp/%s/message?sessionId=%s", baseUrl, serviceName, sessionId)
-                : String.format("%s/mcp/message?sessionId=%s", baseUrl, sessionId);
-        
-        log.info("📡 Generated endpoint for SSE connection: serviceName={}, baseUrl={}, messageEndpoint={}", 
-                serviceName, baseUrl, messageEndpoint);
-        
-        // 创建 SSE sink 用于后续通过 SSE 发送响应
-        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
-        
-        // 记录关联关系（路径参数方式必须提供服务名称）
-        // 激进优化：同步执行 Redis 操作，确保立即完成
-        if (serviceName == null || serviceName.isEmpty()) {
-            log.warn("⚠️ No serviceName found in path, path={}", request.path());
-        } else {
-            try {
-            sessionService.registerSessionService(sessionId, serviceName);
-            log.info("✅ Registered service for SSE connection: sessionId={}, serviceName={}", sessionId, serviceName);
-            } catch (Exception e) {
-                log.warn("⚠️ Failed to register session service: {}, will retry asynchronously", e.getMessage());
-                // 异步重试
-                Mono.fromRunnable(() -> sessionService.registerSessionService(sessionId, serviceName))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe(
-                                null,
-                                error -> log.warn("⚠️ Failed to register session service asynchronously: {}", error.getMessage())
-                        );
-            }
-        }
-        
-        // 注册 SSE sink（本地操作，不阻塞，立即完成）
-        sessionService.registerSseSink(sessionId, sink);
-        log.info("✅ Registered SSE sink for session: sessionId={}", sessionId);
-        // 激进优化：同步touch，确保立即完成
-        try {
-        sessionService.touch(sessionId);
-        } catch (Exception e) {
-            log.warn("⚠️ Failed to touch session: {}, will retry asynchronously", e.getMessage());
-            // 异步重试
-            Mono.fromRunnable(() -> sessionService.touch(sessionId))
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe(
-                            null,
-                            error -> log.warn("⚠️ Failed to touch session asynchronously: {}", error.getMessage())
-                    );
-        }
-        
-        // 注册客户端会话到会话桥接服务
-        if (serviceName != null && !serviceName.isEmpty()) {
-            sessionBridgeService.registerClientSession(sessionId, serviceName, sink);
-            log.info("✅ Registered client session in bridge service: sessionId={}, serviceName={}", 
-                    sessionId, serviceName);
-        }
-        
-        // 使用 Spring AI 的标准格式返回
-        ServerSentEvent<String> endpointEvent = ServerSentEvent.<String>builder()
-                .event("endpoint")
-                .data(messageEndpoint)
-                .build();
-        
-        // 创建心跳流保持连接
-        // 改进：使用数据事件而不是注释，确保所有客户端都能识别，并缩短间隔到15秒
-        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
-                .map(tick -> ServerSentEvent.<String>builder()
-                        .event("heartbeat")
-                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
-                        .build())
-                .doOnNext(tick -> {
-                    // 异步触发会话活跃，避免阻塞心跳
-                    Mono.fromRunnable(() -> sessionService.touch(sessionId))
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .subscribe(
-                                    null,
-                                    error -> log.debug("⚠️ Failed to touch session in heartbeat: {}", error.getMessage())
-                            );
-                    log.debug("💓 SSE heartbeat: sessionId={}", sessionId);
-                });
-        
-        // 合并 endpoint 消息、sink 的消息流和心跳流
-        // 使用 merge 来同时处理多个流：先发送 endpoint，然后合并 sink 消息和心跳
-        // 关键：使用 publish().autoConnect() 确保流可以被多个订阅者共享，并且不会过早完成
-        // 使用 onBackpressureBuffer() 防止背压导致连接关闭
-        Flux<ServerSentEvent<String>> eventFlux = Flux.concat(
-                Flux.just(endpointEvent),
-                Flux.merge(
-                        sink.asFlux()
-                                .doOnSubscribe(s -> log.debug("🔌 Sink flux subscribed: sessionId={}", sessionId))
-                                .onBackpressureBuffer(1000),  // 缓冲背压
-                        heartbeatFlux
-                                .doOnSubscribe(s -> log.debug("💓 Heartbeat flux subscribed: sessionId={}", sessionId))
-                                .onBackpressureBuffer(100)  // 心跳流缓冲
-                )
-        )
-        // 不使用 publish().autoConnect()，直接使用流，避免过早完成
-        // 使用 share() 确保流可以被多个订阅者共享，但不会在第一个订阅者取消时立即完成
-        .share()
-        .doOnSubscribe(subscription -> {
-            log.info("✅ SSE connection subscribed: sessionId={}, serviceName={}, baseUrl={}", 
-                    sessionId, serviceName, baseUrl);
-        })
-        .doOnCancel(() -> {
-            log.warn("❌ SSE connection cancelled: sessionId={}, serviceName={}, baseUrl={}, reason=client_disconnect", 
-                    sessionId, serviceName, baseUrl);
-            // 防止重复清理：检查会话是否还存在
-            if (sessionService.getSseSink(sessionId) != null) {
-                sessionService.removeSession(sessionId);
-                sessionBridgeService.removeClientSession(sessionId);
-                sink.tryEmitComplete();
-            } else {
-                log.debug("⚠️ Session {} already cleaned up, skipping duplicate cleanup", sessionId);
-            }
-        })
-        .doOnError(error -> {
-            log.error("❌ SSE connection error: sessionId={}, serviceName={}, baseUrl={}, error={}", 
-                    sessionId, serviceName, baseUrl, error.getMessage(), error);
-            // 防止重复清理：检查会话是否还存在
-            if (sessionService.getSseSink(sessionId) != null) {
-                sessionService.removeSession(sessionId);
-                sessionBridgeService.removeClientSession(sessionId);
-                sink.tryEmitError(error);
-            } else {
-                log.debug("⚠️ Session {} already cleaned up due to error, skipping duplicate cleanup", sessionId);
-            }
-        })
-        .doOnComplete(() -> {
-            log.info("✅ SSE connection completed: sessionId={}, serviceName={}, reason=normal_completion", 
-                    sessionId, serviceName);
-        });
-        
-        return ServerResponse.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .header("Cache-Control", "no-cache, no-transform")
-                .header("Connection", "keep-alive")
-                .header("X-Accel-Buffering", "no")
-                .body(BodyInserters.fromServerSentEvents(eventFlux));
+        SessionContext context = initializeSession("sse-path", request, serviceName, TransportType.SSE);
+        Flux<ServerSentEvent<String>> eventFlux = buildEventFlux(context);
+        return buildSseResponse(eventFlux);
     }
+
 
     /**
      * 处理 SSE 连接请求，从查询参数中提取 serviceName
      * 查询参数方式：GET /sse?serviceName=xxx（用于 MCP Inspector 等工具）
      */
     private Mono<ServerResponse> handleSseWithQueryParam(ServerRequest request) {
-        // 从查询参数中提取 serviceName（可选）
         String serviceName = request.queryParam("serviceName").orElse(null);
-        
-        // 增强日志：记录所有请求头，特别是代理相关头
-        String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
-        String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
-        String host = request.headers().firstHeader("Host");
-        log.info("📡 SSE connection request (query param): serviceName={}, path={}, queryParams={}, Host={}, X-Forwarded-Host={}, X-Forwarded-Proto={}", 
-                serviceName, request.path(), request.queryParams(), host, forwardedHost, forwardedProto);
-        
-        // 如果没有提供 serviceName，仍然处理但记录警告（向后兼容）
-        if (serviceName == null || serviceName.isEmpty()) {
-            log.warn("⚠️ No serviceName in query params for /sse endpoint, connection will work but routing may fail");
+        TransportType transportType = transportPreferenceResolver.resolve(request);
+        if (transportType == TransportType.STREAMABLE) {
+            return handleStreamable(request, serviceName, "sse-query");
         }
-        
-        // 使用自定义处理逻辑（与路径参数方式相同）
-        String baseUrl = buildBaseUrlFromRequest(request);
-        String sessionId = UUID.randomUUID().toString();
-        String messageEndpoint = (serviceName != null && !serviceName.isEmpty())
-                ? String.format("%s/mcp/%s/message?sessionId=%s", baseUrl, serviceName, sessionId)
-                : String.format("%s/mcp/message?sessionId=%s", baseUrl, sessionId);
-        
-        log.info("📡 Generated endpoint for SSE connection (query param): serviceName={}, baseUrl={}, messageEndpoint={}", 
-                serviceName, baseUrl, messageEndpoint);
-        
-        // 创建 SSE sink 用于后续通过 SSE 发送响应
-        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
-        
-        // 记录关联关系（如果有 serviceName）
-        // 激进优化：同步执行 Redis 操作，确保立即完成
-        if (serviceName != null && !serviceName.isEmpty()) {
-            try {
-            sessionService.registerSessionService(sessionId, serviceName);
-            log.info("✅ Registered service for SSE connection: sessionId={}, serviceName={}", sessionId, serviceName);
-            } catch (Exception e) {
-                log.warn("⚠️ Failed to register session service: {}, will retry asynchronously", e.getMessage());
-                // 异步重试
-                Mono.fromRunnable(() -> sessionService.registerSessionService(sessionId, serviceName))
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe(
-                                null,
-                                error -> log.warn("⚠️ Failed to register session service asynchronously: {}", error.getMessage())
-                        );
-            }
-        } else {
-            log.info("ℹ️ SSE connection without serviceName: sessionId={}", sessionId);
-        }
-        
-        // 注册 SSE sink（本地操作，不阻塞，立即完成）
-        sessionService.registerSseSink(sessionId, sink);
-        log.info("✅ Registered SSE sink for session: sessionId={}", sessionId);
-        // 激进优化：同步touch，确保立即完成
-        try {
-        sessionService.touch(sessionId);
-        } catch (Exception e) {
-            log.warn("⚠️ Failed to touch session: {}, will retry asynchronously", e.getMessage());
-            // 异步重试
-            Mono.fromRunnable(() -> sessionService.touch(sessionId))
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe(
-                            null,
-                            error -> log.warn("⚠️ Failed to touch session asynchronously: {}", error.getMessage())
-                    );
-        }
-        
-        // 注册客户端会话到会话桥接服务（如果有 serviceName）
-        if (serviceName != null && !serviceName.isEmpty()) {
-            sessionBridgeService.registerClientSession(sessionId, serviceName, sink);
-            log.info("✅ Registered client session in bridge service: sessionId={}, serviceName={}", 
-                    sessionId, serviceName);
-        }
-        
-        // 使用 Spring AI 的标准格式返回
-        ServerSentEvent<String> endpointEvent = ServerSentEvent.<String>builder()
-                .event("endpoint")
-                .data(messageEndpoint)
-                .build();
-        
-        // 创建心跳流保持连接
-        // 改进：使用数据事件而不是注释，确保所有客户端都能识别，并缩短间隔到15秒
-        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
-                .map(tick -> ServerSentEvent.<String>builder()
-                        .event("heartbeat")
-                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
-                        .build())
-                .doOnNext(tick -> {
-                    // 异步触发会话活跃，避免阻塞心跳
-                    Mono.fromRunnable(() -> sessionService.touch(sessionId))
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .subscribe(
-                                    null,
-                                    error -> log.debug("⚠️ Failed to touch session in heartbeat: {}", error.getMessage())
-                            );
-                    log.debug("💓 SSE heartbeat: sessionId={}", sessionId);
-                });
-        
-        // 合并 endpoint 消息、sink 的消息流和心跳流
-        // 关键：使用 publish().autoConnect() 确保流可以被多个订阅者共享，并且不会过早完成
-        // 使用 onBackpressureBuffer() 防止背压导致连接关闭
-        Flux<ServerSentEvent<String>> eventFlux = Flux.concat(
-                Flux.just(endpointEvent),
-                Flux.merge(
-                        sink.asFlux()
-                                .doOnSubscribe(s -> log.debug("🔌 Sink flux subscribed: sessionId={}", sessionId))
-                                .onBackpressureBuffer(1000),  // 缓冲背压
-                        heartbeatFlux
-                                .doOnSubscribe(s -> log.debug("💓 Heartbeat flux subscribed: sessionId={}", sessionId))
-                                .onBackpressureBuffer(100)  // 心跳流缓冲
-                )
-        )
-        // 不使用 publish().autoConnect()，直接使用流，避免过早完成
-        // 使用 share() 确保流可以被多个订阅者共享，但不会在第一个订阅者取消时立即完成
-        .share()
-        .doOnSubscribe(subscription -> {
-            log.info("✅ SSE connection subscribed: sessionId={}, serviceName={}, baseUrl={}", 
-                    sessionId, serviceName, baseUrl);
-        })
-        .doOnCancel(() -> {
-            log.warn("❌ SSE connection cancelled: sessionId={}, serviceName={}, baseUrl={}, reason=client_disconnect", 
-                    sessionId, serviceName, baseUrl);
-            // 防止重复清理：检查会话是否还存在
-            if (sessionService.getSseSink(sessionId) != null) {
-                sessionService.removeSession(sessionId);
-                sessionBridgeService.removeClientSession(sessionId);
-                sink.tryEmitComplete();
-            } else {
-                log.debug("⚠️ Session {} already cleaned up, skipping duplicate cleanup", sessionId);
-            }
-        })
-        .doOnError(error -> {
-            log.error("❌ SSE connection error: sessionId={}, serviceName={}, baseUrl={}, error={}", 
-                    sessionId, serviceName, baseUrl, error.getMessage(), error);
-            // 防止重复清理：检查会话是否还存在
-            if (sessionService.getSseSink(sessionId) != null) {
-                sessionService.removeSession(sessionId);
-                sessionBridgeService.removeClientSession(sessionId);
-                sink.tryEmitError(error);
-            } else {
-                log.debug("⚠️ Session {} already cleaned up due to error, skipping duplicate cleanup", sessionId);
-            }
-        })
-        .doOnComplete(() -> {
-            log.info("✅ SSE connection completed: sessionId={}, serviceName={}, reason=normal_completion", 
-                    sessionId, serviceName);
-        });
-        
-        return ServerResponse.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .header("Cache-Control", "no-cache, no-transform")
-                .header("Connection", "keep-alive")
-                .header("X-Accel-Buffering", "no")
-                .body(BodyInserters.fromServerSentEvents(eventFlux));
+        SessionContext context = initializeSession("sse-query", request, serviceName, TransportType.SSE);
+        Flux<ServerSentEvent<String>> eventFlux = buildEventFlux(context);
+        return buildSseResponse(eventFlux);
     }
+
+    private Mono<ServerResponse> handleStreamableWithServiceName(ServerRequest request) {
+        String serviceName = request.pathVariable("serviceName");
+        return handleStreamable(request, serviceName, "streamable-path");
+    }
+
+    private Mono<ServerResponse> handleStreamableWithQueryParam(ServerRequest request) {
+        String serviceName = request.queryParam("serviceName").orElse(null);
+        return handleStreamable(request, serviceName, "streamable-query");
+    }
+
+    private Mono<ServerResponse> handleStreamable(ServerRequest request, String serviceName, String source) {
+        SessionContext context = initializeSession(source, request, serviceName, TransportType.STREAMABLE);
+        MediaType mediaType = resolveStreamableMediaType(request);
+        Flux<String> streamFlux = buildEventFlux(context)
+                .map(this::toStreamableJson);
+        return buildStreamableResponse(context, streamFlux, mediaType);
+    }
+
+
 
     /**
      * 从请求推断 Base URL，优先使用代理头。形式如：http(s)://host[:port][/context-path]
@@ -713,6 +458,193 @@ public class McpRouterServerConfig {
             return baseUrl;
         }
     }
+
+    private SessionContext initializeSession(String connectionSource, ServerRequest request, String serviceName, TransportType transportType) {
+        String host = request.headers().firstHeader("Host");
+        String forwardedHost = request.headers().firstHeader("X-Forwarded-Host");
+        String forwardedProto = request.headers().firstHeader("X-Forwarded-Proto");
+        log.info("📡 {} connection request: serviceName={}, path={}, queryParams={}, Host={}, X-Forwarded-Host={}, X-Forwarded-Proto={}",
+                connectionSource, serviceName, request.path(), request.queryParams(), host, forwardedHost, forwardedProto);
+        String baseUrl = buildBaseUrlFromRequest(request);
+        String sessionId = UUID.randomUUID().toString();
+        String messageEndpoint = (serviceName != null && !serviceName.isEmpty())
+                ? String.format("%s/mcp/%s/message?sessionId=%s", baseUrl, serviceName, sessionId)
+                : String.format("%s/mcp/message?sessionId=%s", baseUrl, sessionId);
+        log.info("📡 Generated endpoint: serviceName={}, baseUrl={}, messageEndpoint={}",
+                serviceName, baseUrl, messageEndpoint);
+
+        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+        if (serviceName == null || serviceName.isEmpty()) {
+            log.warn("⚠️ No serviceName provided (source={}), path={}", connectionSource, request.path());
+        } else {
+            try {
+                sessionService.registerSessionService(sessionId, serviceName, transportType);
+                log.info("✅ Registered service for connection: sessionId={}, serviceName={}", sessionId, serviceName);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to register session service: {}, will retry asynchronously", e.getMessage());
+                Mono.fromRunnable(() -> sessionService.registerSessionService(sessionId, serviceName, transportType))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe(
+                                null,
+                                error -> log.warn("⚠️ Failed to register session service asynchronously: {}", error.getMessage())
+                        );
+            }
+        }
+
+        sessionService.registerSseSink(sessionId, sink);
+        sessionBridgeService.registerClientSession(sessionId, serviceName, sink);
+        log.info("✅ Registered sink & bridge session: sessionId={}, serviceName={}", sessionId, serviceName);
+
+        try {
+            sessionService.touch(sessionId);
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to touch session: {}, will retry asynchronously", e.getMessage());
+            Mono.fromRunnable(() -> sessionService.touch(sessionId))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe(
+                            null,
+                            error -> log.warn("⚠️ Failed to touch session asynchronously: {}", error.getMessage())
+                    );
+        }
+
+        return new SessionContext(sessionId, serviceName, baseUrl, messageEndpoint, sink, connectionSource, transportType);
+    }
+
+    private Flux<ServerSentEvent<String>> buildEventFlux(SessionContext context) {
+        ServerSentEvent<String> endpointEvent = ServerSentEvent.<String>builder()
+                .event("endpoint")
+                .data(context.messageEndpoint())
+                .build();
+
+        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
+                .map(tick -> ServerSentEvent.<String>builder()
+                        .event("heartbeat")
+                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
+                        .build())
+                .doOnNext(tick -> {
+                    Mono.fromRunnable(() -> sessionService.touch(context.sessionId()))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe(
+                                    null,
+                                    error -> log.debug("⚠️ Failed to touch session in heartbeat: {}", error.getMessage())
+                            );
+                    log.debug("💓 heartbeat: sessionId={}, connectionSource={}", context.sessionId(), context.connectionSource());
+                });
+
+        return Flux.concat(
+                Flux.just(endpointEvent),
+                Flux.merge(
+                        context.sink().asFlux()
+                                .doOnSubscribe(s -> log.debug("🔌 Sink subscribed: sessionId={}", context.sessionId()))
+                                .onBackpressureBuffer(1000),
+                        heartbeatFlux
+                                .doOnSubscribe(s -> log.debug("💓 Heartbeat subscribed: sessionId={}", context.sessionId()))
+                                .onBackpressureBuffer(100)
+                )
+        )
+        .share()
+        .doOnSubscribe(subscription -> log.info("✅ Connection subscribed: sessionId={}, serviceName={}, baseUrl={}",
+                context.sessionId(), context.serviceName(), context.baseUrl()))
+        .doOnCancel(() -> {
+            log.warn("❌ Connection cancelled: sessionId={}, serviceName={}, baseUrl={}, reason=client_disconnect",
+                    context.sessionId(), context.serviceName(), context.baseUrl());
+            if (sessionService.getSseSink(context.sessionId()) != null) {
+                sessionService.removeSession(context.sessionId());
+                sessionBridgeService.removeClientSession(context.sessionId());
+                context.sink().tryEmitComplete();
+            } else {
+                log.debug("⚠️ Session {} already cleaned up, skip duplicate cancel", context.sessionId());
+            }
+        })
+        .doOnError(error -> {
+            log.error("❌ Connection error: sessionId={}, serviceName={}, baseUrl={}",
+                    context.sessionId(), context.serviceName(), context.baseUrl(), error);
+            if (sessionService.getSseSink(context.sessionId()) != null) {
+                sessionService.removeSession(context.sessionId());
+                sessionBridgeService.removeClientSession(context.sessionId());
+                context.sink().tryEmitError(error);
+            } else {
+                log.debug("⚠️ Session {} already cleaned up due to error, skip duplicate cleanup", context.sessionId());
+            }
+        })
+        .doOnComplete(() -> log.info("✅ Connection completed: sessionId={}, serviceName={}, source={}",
+                context.sessionId(), context.serviceName(), context.connectionSource()));
+    }
+
+    private Mono<ServerResponse> buildSseResponse(Flux<ServerSentEvent<String>> eventFlux) {
+        return ServerResponse.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .header("Cache-Control", "no-cache, no-transform")
+                .header("Connection", "keep-alive")
+                .header("X-Accel-Buffering", "no")
+                .body(BodyInserters.fromServerSentEvents(eventFlux));
+    }
+
+    private Mono<ServerResponse> buildStreamableResponse(SessionContext context, Flux<String> streamFlux, MediaType mediaType) {
+        ServerResponse.BodyBuilder builder = ServerResponse.ok()
+                .contentType(mediaType)
+                .header("Cache-Control", "no-cache, no-transform")
+                .header("Connection", "keep-alive");
+
+        if (context != null && StringUtils.hasText(context.sessionId())) {
+            builder.header("Mcp-Session-Id", context.sessionId());
+            builder.header("Mcp-Transport", context.transportType().name().toLowerCase());
+        }
+
+        return builder.body(BodyInserters.fromPublisher(streamFlux, String.class));
+    }
+
+    private MediaType resolveStreamableMediaType(ServerRequest request) {
+        String accept = request.headers().firstHeader("Accept");
+        log.info("📡 Streamable request Accept header: {}", accept);
+        if (accept != null) {
+            accept = accept.toLowerCase();
+            if (accept.contains("application/x-ndjson+stream")) {
+                return MediaType.parseMediaType("application/x-ndjson+stream");
+            }
+            if (accept.contains("application/x-ndjson")) {
+                return MediaType.parseMediaType("application/x-ndjson");
+            }
+            if (accept.contains("application/json")) {
+                return MediaType.APPLICATION_JSON;
+            }
+        }
+        return MediaType.parseMediaType("application/x-ndjson");
+    }
+
+    private String toStreamableJson(ServerSentEvent<String> event) {
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("type", "event");
+        payload.put("event", event.event() != null ? event.event() : "message");
+        if (event.id() != null) {
+            payload.put("id", event.id());
+        }
+        java.util.Map<String, Object> dataNode = new java.util.LinkedHashMap<>();
+        dataNode.put("data", event.data());
+        if (event.retry() != null) {
+            dataNode.put("retry", event.retry());
+        }
+        if (event.comment() != null) {
+            dataNode.put("comment", event.comment());
+        }
+        payload.put("payload", dataNode);
+        try {
+            return objectMapper.writeValueAsString(payload) + "\n";
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to encode streamable payload, fallback to error stub: {}", e.getMessage());
+            return "{\"type\":\"event\",\"event\":\"error\",\"payload\":{\"data\":\"encoding failure\"}}\n";
+        }
+    }
+
+    private record SessionContext(
+            String sessionId,
+            String serviceName,
+            String baseUrl,
+            String messageEndpoint,
+            Sinks.Many<ServerSentEvent<String>> sink,
+            String connectionSource,
+            TransportType transportType) {}
     
     /**
      * 从请求路径中提取 context-path
@@ -725,6 +657,9 @@ public class McpRouterServerConfig {
         try {
             // 1. 优先从 X-Forwarded-Prefix 头中获取（反向代理通常设置此头）
             String forwardedPrefix = request.headers().firstHeader("X-Forwarded-Prefix");
+            if (forwardedPrefix == null || forwardedPrefix.isEmpty()) {
+                forwardedPrefix = request.headers().firstHeader("x-forwarded-prefix");
+            }
             if (forwardedPrefix != null && !forwardedPrefix.isEmpty()) {
                 String contextPath = forwardedPrefix.trim();
                 // 确保以 / 开头
@@ -735,7 +670,7 @@ public class McpRouterServerConfig {
                 if (contextPath.endsWith("/") && contextPath.length() > 1) {
                     contextPath = contextPath.substring(0, contextPath.length() - 1);
                 }
-                log.debug("Extracted context-path from X-Forwarded-Prefix: {}", contextPath);
+                log.info("✅ Extracted context-path from X-Forwarded-Prefix: {}", contextPath);
                 return contextPath;
             }
             
@@ -839,8 +774,8 @@ public class McpRouterServerConfig {
     private Mono<ServerResponse> handleMcpMessageWithPath(ServerRequest request) {
         // 从路径变量中提取服务名称
         String serviceName = request.pathVariable("serviceName");
-        // 从查询参数中提取 sessionId（可选，如果不提供则自动生成）
-        String sessionId = request.queryParam("sessionId").orElse(null);
+        // 优先从请求头提取 sessionId，兼容 Streamable 官方规范
+        String sessionId = resolveSessionId(request);
         
         log.info("📥 Received MCP message request (path): path={}, serviceName={}, sessionId={}, queryParams={}", 
                 request.path(), serviceName, sessionId, request.queryParams());
@@ -866,8 +801,8 @@ public class McpRouterServerConfig {
      * 注意：这个路由会拦截 Spring AI 的标准消息路由，实现路由功能
      */
     private Mono<ServerResponse> handleMcpMessage(ServerRequest request) {
-        // 从查询参数中提取 sessionId（必需）
-        String sessionId = request.queryParam("sessionId").orElse(null);
+        // 优先从请求头提取 sessionId（Mcp-Session-Id），再回退到查询参数
+        String sessionId = resolveSessionId(request);
         
         // 从查询参数中提取 serviceName（可选，如果提供则优先使用）
         // 使用 queryParams().get() 作为备用方案，确保能正确提取
@@ -907,6 +842,23 @@ public class McpRouterServerConfig {
     }
 
     /**
+     * 优先按照 Streamable 官方说明从请求头解析 sessionId，
+     * 兼容历史查询参数 ?sessionId= 的使用方式。
+     */
+    private String resolveSessionId(ServerRequest request) {
+        for (String headerName : SESSION_ID_HEADER_CANDIDATES) {
+            String headerValue = request.headers().firstHeader(headerName);
+            if (StringUtils.hasText(headerValue)) {
+                log.debug("📎 Resolved sessionId from header {}: {}", headerName, headerValue);
+                return headerValue;
+            }
+        }
+        return request.queryParam("sessionId")
+                .filter(StringUtils::hasText)
+                .orElse(null);
+    }
+
+    /**
      * 处理 MCP 消息的核心逻辑
      */
     private Mono<ServerResponse> processMcpMessage(ServerRequest request, String serviceName, String sessionId) {
@@ -939,9 +891,13 @@ public class McpRouterServerConfig {
                                 mcpMessage.setMetadata(new java.util.HashMap<>());
                             }
                             mcpMessage.getMetadata().put("sessionId", sessionId);
+                            log.info("✅ Set sessionId in MCP message: sessionId={}, method={}", sessionId, mcpMessage.getMethod());
+                        } else {
+                            log.warn("⚠️ WARNING: sessionId is null or empty when processing MCP message! method={}, path={}", 
+                                    mcpMessage.getMethod(), request.path());
                         }
-                        log.info("✅ Parsed MCP message: id={}, method={}, jsonrpc={}", 
-                                mcpMessage.getId(), mcpMessage.getMethod(), mcpMessage.getJsonrpc());
+                        log.info("✅ Parsed MCP message: id={}, method={}, jsonrpc={}, sessionId={}", 
+                                mcpMessage.getId(), mcpMessage.getMethod(), mcpMessage.getJsonrpc(), mcpMessage.getSessionId());
                         
                         // 验证 JSON-RPC 版本
                         if (mcpMessage.getJsonrpc() == null || !"2.0".equals(mcpMessage.getJsonrpc())) {
@@ -1326,22 +1282,31 @@ public class McpRouterServerConfig {
                                 })
                                 .switchIfEmpty(Mono.defer(() -> {
                                     // 不存在服务器会话，使用原来的路由逻辑
+                                    // 构建包含 sessionId 的 headers，确保日志能正确记录 sessionId
+                                    Map<String, String> routeHeaders = new java.util.HashMap<>();
+                                    if (sessionId != null && !sessionId.isEmpty()) {
+                                        routeHeaders.put("sessionId", sessionId);
+                                        routeHeaders.put("Mcp-Session-Id", sessionId);
+                                    }
+                                    
                                     Mono<McpMessage> routeResult;
                                     if (targetServiceName != null && !targetServiceName.isEmpty()) {
                                         // 路由到指定服务
-                                        log.info("🔄 Routing to specified service: {}, method: {}", targetServiceName, mcpMessage.getMethod());
+                                        log.info("🔄 Routing to specified service: {}, method: {}, sessionId: {}", 
+                                                targetServiceName, mcpMessage.getMethod(), sessionId);
                                         // 对于 list 方法，使用较短的超时时间（10秒），避免长时间等待
                                         // 激进优化：缩短超时时间，确保总时间在1秒以内
                                         // tools/list 等 list 方法：500ms（连接300ms + 调用200ms）
                                         Duration timeout = (mcpMessage.getMethod() != null && 
                                                 (mcpMessage.getMethod().endsWith("/list") || "tools/call".equals(mcpMessage.getMethod())))
                                                 ? Duration.ofMillis(500) : Duration.ofSeconds(60);
-                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, Map.of());
+                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, routeHeaders);
                                     } else {
                                         // 智能路由（自动发现服务）
-                                        log.info("🧠 Smart routing (auto-discover service), method: {}", mcpMessage.getMethod());
+                                        log.info("🧠 Smart routing (auto-discover service), method: {}, sessionId: {}", 
+                                                mcpMessage.getMethod(), sessionId);
                                         routeResult = routerService.smartRoute(mcpMessage, 
-                                                Duration.ofSeconds(60), Map.of()); // 使用60秒超时，与默认超时一致
+                                                Duration.ofSeconds(60), routeHeaders); // 使用60秒超时，与默认超时一致
                                     }
                                     
                                     // 将路由结果转换为标准 MCP 响应格式，并通过 SSE 发送

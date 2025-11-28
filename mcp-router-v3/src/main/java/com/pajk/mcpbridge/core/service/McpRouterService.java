@@ -669,6 +669,12 @@ public class McpRouterService {
             String toolName = extractToolName(message);
             String sessionId = resolveSessionId(message, headers);
             
+            // 记录 sessionId 解析日志，用于排查问题
+            log.info("📝 Creating routing log: requestId={}, serviceName={}, method={}, sessionId={}, message.sessionId={}, headers.sessionId={}", 
+                    requestId, serviceName, message.getMethod(), sessionId, 
+                    message.getSessionId(), 
+                    headers != null ? headers.get("sessionId") : null);
+            
             // 序列化请求头
             String requestHeadersJson = "{}";
             if (headers != null && !headers.isEmpty()) {
@@ -679,7 +685,7 @@ public class McpRouterService {
                 }
             }
             
-            return RoutingLog.builder()
+            RoutingLog log = RoutingLog.builder()
                 .requestId(requestId)
                 .method(message.getMethod())
                 .path("/mcp/router/route/" + serviceName)  // 设置请求路径
@@ -695,6 +701,16 @@ public class McpRouterService {
                 .isRetry(false)
                 .retryCount(0)
                 .build();
+            
+            // 验证 sessionId 是否正确设置
+            if (log.getSessionId() == null || log.getSessionId().trim().isEmpty()) {
+                log.warn("⚠️ WARNING: Routing log created with empty sessionId! requestId={}, serviceName={}, method={}, message.sessionId={}", 
+                        requestId, serviceName, message.getMethod(), message.getSessionId());
+            } else {
+                log.debug("✅ Routing log created with sessionId: requestId={}, sessionId={}", requestId, log.getSessionId());
+            }
+            
+            return log;
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize request params", e);
             String params = truncateIfNeeded(String.valueOf(message.getParams()), 10240);

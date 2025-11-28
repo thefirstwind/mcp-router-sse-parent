@@ -73,3 +73,5 @@ tail -f logs/router-8051.log | grep -E "(SSE connection|Host=|forwardedHost|endp
 如果看到 `X-Forwarded-Host=null`，说明 Nginx 没有传递头，需要重载 Nginx 配置。
 
 
+
+

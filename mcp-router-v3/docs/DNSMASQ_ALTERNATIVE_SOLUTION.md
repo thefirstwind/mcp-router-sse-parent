@@ -150,3 +150,5 @@ echo "现在使用: http://${DOMAIN}/mcp/router/tools/mcp-server-v6"
 - 立即生效
 - 所有客户端都支持
 
+
+

@@ -139,3 +139,5 @@ A: Nginx 默认的 `proxy_read_timeout` 是 60 秒，但对于 SSE 长连接，�
 A: 如果 SSE 连接已断开，响应无法通过 SSE sink 发送。需要确保 SSE 连接保持活跃。
 
 
+
+

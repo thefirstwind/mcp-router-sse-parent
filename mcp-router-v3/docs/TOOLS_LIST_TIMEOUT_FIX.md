@@ -57,3 +57,5 @@ routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout,
 重启应用后，通过域名建立 SSE 连接并调用 `tools/list`，应该能在 10 秒内返回结果（正常情况下应该在几毫秒到几秒之间）。
 
 
+
+

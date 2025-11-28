@@ -80,3 +80,5 @@ time curl http://mcp-bridge.local/mcp/router/tools/mcp-server-v6
 - `scripts/verify-all-clients.sh` - 验证所有客户端
 - `scripts/diagnose-domain-slow.sh` - 详细诊断
 
+
+

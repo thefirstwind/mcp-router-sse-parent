@@ -134,3 +134,5 @@ nginx -s reload -c "$(pwd)/nginx/nginx.conf"
 - `logs/nginx-error.log` - 错误日志
 - `logs/nginx-access.log` - 访问日志
 
+
+

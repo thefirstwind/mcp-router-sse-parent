@@ -3,6 +3,7 @@ package com.pajk.mcpbridge.core.service;
 import com.pajk.mcpbridge.core.session.SessionInstanceIdProvider;
 import com.pajk.mcpbridge.core.session.SessionMeta;
 import com.pajk.mcpbridge.core.session.SessionRedisRepository;
+import com.pajk.mcpbridge.core.transport.TransportType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
@@ -35,11 +36,12 @@ public class McpSessionService {
         this.instanceId = instanceIdProvider.getInstanceId();
     }
 
-    public void registerSessionService(String sessionId, String serviceName) {
+    public void registerSessionService(String sessionId, String serviceName, TransportType transportType) {
         if (!StringUtils.hasText(sessionId)) {
             return;
         }
-        SessionMeta meta = new SessionMeta(sessionId, instanceId, serviceName, null, LocalDateTime.now(), true);
+        String transport = transportType != null ? transportType.name() : null;
+        SessionMeta meta = new SessionMeta(sessionId, instanceId, serviceName, null, transport, LocalDateTime.now(), true);
         sessionRepository.saveSessionMeta(meta);
     }
 
@@ -47,6 +49,19 @@ public class McpSessionService {
         return sessionRepository.findSession(sessionId)
                 .map(SessionMeta::getServiceName)
                 .orElse(null);
+    }
+
+    public TransportType getTransportType(String sessionId) {
+        return sessionRepository.findSession(sessionId)
+                .map(SessionMeta::getTransportType)
+                .map(value -> {
+                    try {
+                        return TransportType.valueOf(value);
+                    } catch (Exception e) {
+                        return TransportType.SSE;
+                    }
+                })
+                .orElse(TransportType.SSE);
     }
 
     public void registerSseSink(String sessionId, Sinks.Many<ServerSentEvent<String>> sink) {
@@ -120,6 +135,7 @@ public class McpSessionService {
                 .map(meta -> new SessionOverview(
                         meta.getSessionId(),
                         meta.getServiceName(),
+                        meta.getTransportType(),
                         meta.getLastActive(),
                         meta.isActive()))
                 .sorted((a, b) -> {
@@ -161,6 +177,6 @@ public class McpSessionService {
         sessionRepository.updateBackendSessionId(sessionId, backendSessionId);
     }
 
-    public record SessionOverview(String sessionId, String serviceName, LocalDateTime lastActive, boolean active) { }
+    public record SessionOverview(String sessionId, String serviceName, String transportType, LocalDateTime lastActive, boolean active) { }
 }
 

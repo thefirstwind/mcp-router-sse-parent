@@ -99,3 +99,5 @@ time curl -s -o /dev/null -w "连接时间: %{time_connect}s\n总时间: %{time_
 - `resolver_timeout 1s` 表示 DNS 查询超时 1 秒
 
 
+
+

@@ -149,3 +149,5 @@ time curl -N --resolve mcp-bridge.local:80:127.0.0.1 http://mcp-bridge.local/sse
 4. **使用更快的服务发现**：如果 Nacos 慢，考虑使用本地缓存或更快的服务发现机制
 
 
+
+

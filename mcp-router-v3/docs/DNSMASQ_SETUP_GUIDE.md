@@ -211,3 +211,5 @@ sudo networksetup -setdnsservers Ethernet "Empty"
 
 **关键点**：必须配置系统 DNS 为 `127.0.0.1`，否则系统仍然会优先使用 mDNS。
 
+
+

@@ -13,6 +13,7 @@ public class SessionMeta {
     private String instanceId;
     private String serviceName;
     private String backendSessionId;
+    private String transportType;
     private LocalDateTime lastActive;
     private boolean active;
 
@@ -20,11 +21,13 @@ public class SessionMeta {
     }
 
     public SessionMeta(String sessionId, String instanceId, String serviceName,
-                       String backendSessionId, LocalDateTime lastActive, boolean active) {
+                       String backendSessionId, String transportType,
+                       LocalDateTime lastActive, boolean active) {
         this.sessionId = sessionId;
         this.instanceId = instanceId;
         this.serviceName = serviceName;
         this.backendSessionId = backendSessionId;
+        this.transportType = transportType;
         this.lastActive = lastActive;
         this.active = active;
     }
@@ -38,6 +41,7 @@ public class SessionMeta {
         meta.setInstanceId((String) map.get("instanceId"));
         meta.setServiceName((String) map.get("serviceName"));
         meta.setBackendSessionId((String) map.get("backendSessionId"));
+        meta.setTransportType((String) map.get("transportType"));
         String lastActiveStr = (String) map.get("lastActive");
         if (lastActiveStr != null) {
             meta.setLastActive(LocalDateTime.parse(lastActiveStr, FORMATTER));
@@ -53,6 +57,7 @@ public class SessionMeta {
                 "instanceId", Objects.toString(instanceId, ""),
                 "serviceName", Objects.toString(serviceName, ""),
                 "backendSessionId", Objects.toString(backendSessionId, ""),
+                "transportType", Objects.toString(transportType, ""),
                 "lastActive", FORMATTER.format(lastActive != null ? lastActive : LocalDateTime.now()),
                 "active", Boolean.toString(active)
         );
@@ -89,6 +94,14 @@ public class SessionMeta {
 
     public void setBackendSessionId(String backendSessionId) {
         this.backendSessionId = backendSessionId;
+    }
+
+    public String getTransportType() {
+        return transportType;
+    }
+
+    public void setTransportType(String transportType) {
+        this.transportType = transportType;
     }
 
     public LocalDateTime getLastActive() {

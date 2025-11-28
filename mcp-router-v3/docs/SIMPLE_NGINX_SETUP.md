@@ -70,3 +70,5 @@ curl http://mcp-bridge.local/actuator/health
 就这么简单，Nginx 会自动将请求负载均衡到 3 个后端实例。
 
 
+
+

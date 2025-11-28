@@ -299,178 +299,178 @@
 </div>
 
 <div class="tab-content active" id="sse-tab">
-<div class="split">
-    <div class="card sessions-panel">
-        <div class="panel-header">
-            <div>
-                <h3>会话列表</h3>
-                <div class="muted">点击某条会话查看请求详情</div>
+    <div class="split">
+        <div class="card sessions-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>会话列表</h3>
+                    <div class="muted">点击某条会话查看请求详情</div>
+                </div>
+            </div>
+            <div class="filter-bar" style="margin-bottom: 16px;">
+                <input id="sseServiceFilter" placeholder="服务名称（可选）" type="text">
+            </div>
+            <input id="sessionSearch" placeholder="按 sessionId 筛选" style="margin-bottom: 12px; width: 100%;">
+            <table id="sessionsTable">
+                <thead>
+                <tr>
+                    <th>Session ID</th>
+                    <th>Service</th>
+                    <th>Status</th>
+                    <th>Last Active</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td colspan="4" class="muted">正在加载...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card detail-panel">
+            <div class="card">
+                <h3>当前选中会话</h3>
+                <div id="currentSessionInfo" class="muted">尚未选择任何会话</div>
+            </div>
+
+            <div class="card" style="margin-top:16px;">
+                <h3>Session 请求详情</h3>
+                <div class="muted" id="sessionLogHint">点击左侧会话以加载请求流水</div>
+                <div class="request-columns">
+                    <div class="request-list">
+                        <table id="sessionLogsTable">
+                            <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Path</th>
+                                <th>Status</th>
+                                <th>开始时间</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr><td colspan="4" class="muted">尚未选择会话</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="request-detail">
+                        <div class="muted" id="requestDetailHint">选择列表中的请求查看 request / response</div>
+                        <div class="payload-block">
+                            <div class="payload-toolbar">
+                                <div class="payload-header">Request</div>
+                                <button class="copy-btn" data-target="requestPayload">复制</button>
+                            </div>
+                            <pre id="requestPayload"></pre>
+                        </div>
+                        <div class="payload-block">
+                            <div class="payload-toolbar">
+                                <div class="payload-header">Response</div>
+                                <button class="copy-btn" data-target="responsePayload">复制</button>
+                            </div>
+                            <pre id="responsePayload"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:16px;">
+                <h3>最近路由日志</h3>
+                <table id="logsTable">
+                    <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Session ID</th>
+                        <th>Method</th>
+                        <th>Server</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                        <th>Start Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr><td colspan="7" class="muted">正在加载...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div class="filter-bar" style="margin-bottom: 16px;">
-            <input id="sseServiceFilter" placeholder="服务名称（可选）" type="text">
-        </div>
-        <input id="sessionSearch" placeholder="按 sessionId 筛选" style="margin-bottom: 12px; width: 100%;">
-        <table id="sessionsTable">
-            <thead>
-            <tr>
-                <th>Session ID</th>
-                <th>Service</th>
-                <th>Status</th>
-                <th>Last Active</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td colspan="4" class="muted">正在加载...</td></tr>
-            </tbody>
-        </table>
     </div>
+</div>
 
-    <div class="card detail-panel">
-        <div class="card">
-            <h3>当前选中会话</h3>
-            <div id="currentSessionInfo" class="muted">尚未选择任何会话</div>
+<div class="tab-content" id="restful-tab">
+    <div class="split">
+        <div class="card sessions-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>RESTful 请求列表</h3>
+                    <div class="muted">点击某条请求查看详情</div>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <input id="restfulServiceFilter" placeholder="服务名称（可选）" type="text">
+                <select id="restfulMcpMethodFilter">
+                    <option value="">所有 MCP 方法</option>
+                    <option value="tools/call">tools/call</option>
+                    <option value="tools/list">tools/list</option>
+                    <option value="resources/list">resources/list</option>
+                    <option value="resources/read">resources/read</option>
+                    <option value="prompts/list">prompts/list</option>
+                    <option value="prompts/get">prompts/get</option>
+                    <option value="initialize">initialize</option>
+                </select>
+                <select id="restfulSessionIdFilter">
+                    <option value="">所有请求</option>
+                    <option value="true">有 SessionId</option>
+                    <option value="false">无 SessionId</option>
+                </select>
+                <select id="restfulHoursFilter">
+                    <option value="1">最近 1 小时</option>
+                    <option value="6">最近 6 小时</option>
+                    <option value="24">最近 24 小时</option>
+                    <option value="48">最近 48 小时</option>
+                </select>
+                <button class="copy-btn" onclick="loadRestfulRequests()" style="padding: 6px 16px;">刷新</button>
+            </div>
+            <table id="restfulRequestsTable">
+                <thead>
+                <tr>
+                    <th>Server</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td colspan="4" class="muted">正在加载...</td></tr>
+                </tbody>
+            </table>
         </div>
 
-        <div class="card" style="margin-top:16px;">
-            <h3>Session 请求详情</h3>
-            <div class="muted" id="sessionLogHint">点击左侧会话以加载请求流水</div>
-            <div class="request-columns">
-                <div class="request-list">
-                    <table id="sessionLogsTable">
-                        <thead>
-                        <tr>
-                            <th>Method</th>
-                            <th>Path</th>
-                            <th>Status</th>
-                            <th>开始时间</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr><td colspan="4" class="muted">尚未选择会话</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div class="card detail-panel">
+            <div class="card">
+                <h3>请求详情</h3>
+                <div id="restfulRequestInfo" class="muted">点击左侧请求查看详情</div>
+            </div>
+
+            <div class="card" style="margin-top:16px;">
+                <h3>Request / Response</h3>
+                <div class="muted" id="restfulRequestDetailHint">选择列表中的请求查看 request / response</div>
                 <div class="request-detail">
-                    <div class="muted" id="requestDetailHint">选择列表中的请求查看 request / response</div>
                     <div class="payload-block">
                         <div class="payload-toolbar">
                             <div class="payload-header">Request</div>
-                            <button class="copy-btn" data-target="requestPayload">复制</button>
+                            <button class="copy-btn" id="copyRestfulRequestPayload">复制</button>
                         </div>
-                        <pre id="requestPayload"></pre>
+                        <pre id="restfulRequestPayload"></pre>
                     </div>
                     <div class="payload-block">
                         <div class="payload-toolbar">
                             <div class="payload-header">Response</div>
-                            <button class="copy-btn" data-target="responsePayload">复制</button>
+                            <button class="copy-btn" id="copyRestfulResponsePayload">复制</button>
                         </div>
-                        <pre id="responsePayload"></pre>
+                        <pre id="restfulResponsePayload"></pre>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="card" style="margin-top:16px;">
-            <h3>最近路由日志</h3>
-            <table id="logsTable">
-                <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Session ID</th>
-                    <th>Method</th>
-                    <th>Server</th>
-                    <th>Status</th>
-                    <th>Duration</th>
-                    <th>Start Time</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr><td colspan="7" class="muted">正在加载...</td></tr>
-                </tbody>
-            </table>
-        </div>
     </div>
-</div>
-</div>
-
-<div class="tab-content" id="restful-tab">
-<div class="split">
-    <div class="card sessions-panel">
-        <div class="panel-header">
-            <div>
-                <h3>RESTful 请求列表</h3>
-                <div class="muted">点击某条请求查看详情</div>
-            </div>
-        </div>
-        <div class="filter-bar">
-            <input id="restfulServiceFilter" placeholder="服务名称（可选）" type="text">
-            <select id="restfulMcpMethodFilter">
-                <option value="">所有 MCP 方法</option>
-                <option value="tools/call">tools/call</option>
-                <option value="tools/list">tools/list</option>
-                <option value="resources/list">resources/list</option>
-                <option value="resources/read">resources/read</option>
-                <option value="prompts/list">prompts/list</option>
-                <option value="prompts/get">prompts/get</option>
-                <option value="initialize">initialize</option>
-            </select>
-            <select id="restfulSessionIdFilter">
-                <option value="">所有请求</option>
-                <option value="true">有 SessionId</option>
-                <option value="false">无 SessionId</option>
-            </select>
-            <select id="restfulHoursFilter">
-                <option value="1">最近 1 小时</option>
-                <option value="6">最近 6 小时</option>
-                <option value="24">最近 24 小时</option>
-                <option value="48">最近 48 小时</option>
-            </select>
-            <button class="copy-btn" onclick="loadRestfulRequests()" style="padding: 6px 16px;">刷新</button>
-        </div>
-        <table id="restfulRequestsTable">
-            <thead>
-            <tr>
-                <th>Server</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Time</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td colspan="4" class="muted">正在加载...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card detail-panel">
-        <div class="card">
-            <h3>请求详情</h3>
-            <div id="restfulRequestInfo" class="muted">点击左侧请求查看详情</div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-            <h3>Request / Response</h3>
-            <div class="muted" id="restfulRequestDetailHint">选择列表中的请求查看 request / response</div>
-            <div class="request-detail">
-                <div class="payload-block">
-                    <div class="payload-toolbar">
-                        <div class="payload-header">Request</div>
-                        <button class="copy-btn" id="copyRestfulRequestPayload">复制</button>
-                    </div>
-                    <pre id="restfulRequestPayload"></pre>
-                </div>
-                <div class="payload-block">
-                    <div class="payload-toolbar">
-                        <div class="payload-header">Response</div>
-                        <button class="copy-btn" id="copyRestfulResponsePayload">复制</button>
-                    </div>
-                    <pre id="restfulResponsePayload"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 </div>
 
 <script>
@@ -636,7 +636,7 @@
                 <td>${formatTime(log.startTime)}</td>
             </tr>
         `).join('');
-        
+
         // 为每一行添加点击事件
         tbody.querySelectorAll('tr[data-session-id]').forEach(row => {
             row.addEventListener('click', () => {
@@ -720,13 +720,13 @@
             clearError();
             const serviceName = document.getElementById('sseServiceFilter')?.value.trim() || null;
             const sessionId = document.getElementById('sessionSearch')?.value.trim() || null;
-            
+
             const params = new URLSearchParams();
             if (serviceName) {
                 params.append('serviceName', serviceName);
             }
             params.append('hours', '48'); // 路由日志默认 48 小时
-            
+
             const sessionParams = new URLSearchParams();
             if (serviceName) {
                 sessionParams.append('serviceName', serviceName);
@@ -735,7 +735,7 @@
             if (sessionId) {
                 sessionParams.append('sessionId', sessionId);
             }
-            
+
             const [summary, sessions, logs] = await Promise.all([
                 fetchJson(`${apiBase}/api/summary`),
                 fetchJson(`${apiBase}/api/sessions?${sessionParams}`),
@@ -750,7 +750,7 @@
             showError(err.message || '仪表盘数据加载失败');
         }
     }
-    
+
     // SSE 会话页面的加载函数（与 loadDashboard 相同，但更明确）
     function loadSseDashboard() {
         loadDashboard();
@@ -764,7 +764,7 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(`${targetTab}-tab`).classList.add('active');
-            
+
             if (targetTab === 'restful') {
                 loadRestfulRequests();
             } else if (targetTab === 'sse') {
@@ -772,19 +772,19 @@
             }
         });
     });
-    
+
     // RESTful 请求相关函数
     let restfulRequestsCache = [];
-    
+
     async function loadRestfulRequests() {
         const serviceName = document.getElementById('restfulServiceFilter').value.trim() || null;
         const mcpMethod = document.getElementById('restfulMcpMethodFilter').value || null;
         const hasSessionId = document.getElementById('restfulSessionIdFilter').value || null;
         const hours = parseInt(document.getElementById('restfulHoursFilter').value);
-        
+
         const tbody = document.querySelector('#restfulRequestsTable tbody');
         tbody.innerHTML = '<tr><td colspan="4" class="muted">正在加载...</td></tr>';
-        
+
         try {
             const params = new URLSearchParams({
                 hours: hours,
@@ -799,7 +799,7 @@
             if (hasSessionId) {
                 params.append('hasSessionId', hasSessionId);
             }
-            
+
             const requests = await fetchJson(`${apiBase}/api/restful-requests?${params}`);
             restfulRequestsCache = requests || [];
             renderRestfulRequests(restfulRequestsCache);
@@ -808,7 +808,7 @@
             tbody.innerHTML = '<tr><td colspan="4" class="muted">加载失败: ' + err.message + '</td></tr>';
         }
     }
-    
+
     function renderRestfulRequests(requests) {
         const tbody = document.querySelector('#restfulRequestsTable tbody');
         if (!requests || requests.length === 0) {
@@ -818,7 +818,7 @@
         tbody.innerHTML = requests.map(req => {
             // 处理 toolName（可能为空字符串）
             const hasToolName = req.toolName && req.toolName.trim() !== '';
-            
+
             // 显示 Name：优先显示 toolName，其次显示 mcpMethod
             let displayName = '-';
             if (hasToolName) {
@@ -828,7 +828,7 @@
             } else {
                 displayName = '-';
             }
-            
+
             return `
             <tr data-request-id="${req.requestId}">
                 <td>${req.serverName ?? '-'}</td>
@@ -842,7 +842,7 @@
             </tr>
         `;
         }).join('');
-        
+
         tbody.querySelectorAll('tr[data-request-id]').forEach((row, index) => {
             row.addEventListener('click', () => {
                 selectRestfulRequestRow(row.dataset.requestId);
@@ -850,13 +850,13 @@
             });
         });
     }
-    
+
     function selectRestfulRequestRow(requestId) {
         document.querySelectorAll('#restfulRequestsTable tbody tr').forEach(row => {
             row.classList.toggle('selected', row.dataset.requestId === requestId);
         });
     }
-    
+
     async function showRestfulRequestDetail(request) {
         if (!request) {
             document.getElementById('restfulRequestInfo').textContent = '无法找到该请求';
@@ -864,7 +864,7 @@
             document.getElementById('restfulResponsePayload').textContent = '';
             return;
         }
-        
+
         document.getElementById('restfulRequestInfo').innerHTML = `
             <div><strong>Request ID:</strong> ${request.requestId}</div>
             <div><strong>Path:</strong> ${request.path ?? '-'}</div>
@@ -875,11 +875,11 @@
             <div><strong>Time:</strong> ${formatTime(request.startTime)}</div>
             <div><strong>Client IP:</strong> ${request.clientIp ?? '-'}</div>
         `;
-        
+
         try {
             const detail = await fetchJson(`${apiBase}/api/restful-requests/${request.requestId}`);
             if (detail) {
-                document.getElementById('restfulRequestDetailHint').textContent = 
+                document.getElementById('restfulRequestDetailHint').textContent =
                     `${detail.method ?? '-'} ${detail.path ?? ''} → ${detail.responseStatus ?? '-'} | ${formatTime(detail.startTime)}`;
                 document.getElementById('restfulRequestPayload').textContent = detail.requestBody ?? '';
                 document.getElementById('restfulResponsePayload').textContent = detail.responseBody ?? '';
@@ -893,7 +893,7 @@
             document.getElementById('restfulResponsePayload').textContent = '';
         }
     }
-    
+
     // 绑定 RESTful 请求筛选器事件
     document.getElementById('restfulMcpMethodFilter').addEventListener('change', loadRestfulRequests);
     document.getElementById('restfulSessionIdFilter').addEventListener('change', loadRestfulRequests);
@@ -903,7 +903,7 @@
             loadRestfulRequests();
         }
     });
-    
+
     // 绑定 RESTful 请求的复制按钮
     document.getElementById('copyRestfulRequestPayload').addEventListener('click', () => {
         copyToClipboard('restfulRequestPayload', 'copyRestfulRequestPayload');
@@ -911,7 +911,7 @@
     document.getElementById('copyRestfulResponsePayload').addEventListener('click', () => {
         copyToClipboard('restfulResponsePayload', 'copyRestfulResponsePayload');
     });
-    
+
     // 绑定 SSE 会话页面的筛选器事件
     const sseServiceFilter = document.getElementById('sseServiceFilter');
     if (sseServiceFilter) {
@@ -921,7 +921,7 @@
             }
         });
     }
-    
+
     // 当输入 sessionId 时，调用后端 API 重新加载数据（查询所有时间）
     document.getElementById('sessionSearch').addEventListener('input', () => {
         // 使用防抖，避免频繁请求
