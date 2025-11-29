@@ -65,6 +65,7 @@ public class AdminDashboardController {
     public Mono<List<SessionOverview>> sessions(
             @RequestParam(required = false) String serviceName,
             @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) String transportType,
             @RequestParam(defaultValue = "12") int hours) {
         return Mono.fromCallable(() -> {
                     List<SessionOverview> allSessions = sessionService.getSessionOverview();
@@ -76,7 +77,20 @@ public class AdminDashboardController {
                     return allSessions.stream()
                             .filter(s -> {
                                 if (serviceName != null && !serviceName.isEmpty()) {
-                                    return serviceName.equals(s.serviceName());
+                                    if (!serviceName.equals(s.serviceName())) {
+                                        return false;
+                                    }
+                                }
+                                if (transportType != null && !transportType.isEmpty()) {
+                                    String sessionTransportType = s.transportType();
+                                    if (sessionTransportType == null) {
+                                        // 如果没有 transportType，默认认为是 SSE（向后兼容）
+                                        if (!"SSE".equalsIgnoreCase(transportType)) {
+                                            return false;
+                                        }
+                                    } else if (!transportType.equalsIgnoreCase(sessionTransportType)) {
+                                        return false;
+                                    }
                                 }
                                 return true;
                             })

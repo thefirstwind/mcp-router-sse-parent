@@ -123,3 +123,4 @@ echo "3. /etc/hosts 是否包含: 127.0.0.1 ${DOMAIN}"
 echo "4. Nginx 配置是否正确: cat nginx/nginx.conf | grep -A 20 'server_name'"
 echo "5. 应用日志: tail -50 logs/mcp-router-v3.log"
 
+

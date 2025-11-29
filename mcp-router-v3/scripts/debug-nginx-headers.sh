@@ -49,3 +49,4 @@ echo "3. 检查 Nginx 错误日志：tail -f /opt/homebrew/var/log/nginx/error.l
 
 
 
+
