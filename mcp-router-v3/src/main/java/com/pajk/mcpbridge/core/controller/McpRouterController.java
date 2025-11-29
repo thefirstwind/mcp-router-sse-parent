@@ -49,6 +49,8 @@ public class McpRouterController {
         log.info("Received route request for service: {}", serviceName);
         Map<String, String> headers = extractHeaders(request);
         attachSessionIdIfPresent(message, headers, request);
+        // 标记为 RESTful 请求，避免在 createRoutingLog 中推断 sessionId
+        headers.put("_isRestful", "true");
         return routerService.routeRequest(serviceName, message, headers)
                 .map(resp -> {
                     if (resp.getError() != null) {
@@ -78,6 +80,8 @@ public class McpRouterController {
         log.info("Received route request for service: {} with timeout: {}s", serviceName, timeoutSeconds);
         Map<String, String> headers = extractHeaders(request);
         attachSessionIdIfPresent(message, headers, request);
+        // 标记为 RESTful 请求，避免在 createRoutingLog 中推断 sessionId
+        headers.put("_isRestful", "true");
         return routerService.routeRequest(serviceName, message, Duration.ofSeconds(timeoutSeconds), headers)
                 .map(resp -> {
                     if (resp.getError() != null) {
@@ -106,6 +110,8 @@ public class McpRouterController {
         log.info("Received smart route request");
         Map<String, String> headers = extractHeaders(request);
         attachSessionIdIfPresent(message, headers, request);
+        // 标记为 RESTful 请求，避免在 createRoutingLog 中推断 sessionId
+        headers.put("_isRestful", "true");
         if (smartRouteShortCircuit) {
             // Short-circuit in tests: immediately return a benign OK response
             return Mono.just(McpMessage.builder()

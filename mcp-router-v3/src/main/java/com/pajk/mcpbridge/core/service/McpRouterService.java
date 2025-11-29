@@ -7,6 +7,7 @@ import com.pajk.mcpbridge.core.config.NacosMcpRegistryConfig;
 import com.pajk.mcpbridge.core.model.McpMessage;
 import com.pajk.mcpbridge.core.model.McpServerInfo;
 import com.pajk.mcpbridge.core.registry.McpServerRegistry;
+import com.pajk.mcpbridge.core.service.McpSessionService.SessionOverview;
 import com.pajk.mcpbridge.persistence.entity.RoutingLog;
 import com.pajk.mcpbridge.persistence.service.PersistenceEventPublisher;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -21,6 +22,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 增强的MCP路由服务
@@ -37,6 +39,7 @@ public class McpRouterService {
     private final HealthCheckService healthCheckService;
     private final LoadBalancer loadBalancer;
     private final NacosMcpRegistryConfig.McpRegistryProperties registryProperties;
+    private final McpSessionService sessionService;
     
     // 持久化事件发布器（可选依赖，不影响主流程）
     @Autowired(required = false)
@@ -65,11 +68,23 @@ public class McpRouterService {
      * 按需路由请求：发现服务 -> 健康检查 -> 智能负载均衡 -> 建立连接 -> 调用
      */
     public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Duration timeout, Map<String, String> headers) {
-        log.info("🔄 Starting intelligent routing for service: {}, method: {}", serviceName, message.getMethod());
+        // 记录 sessionId 信息用于调试
+        String resolvedSessionId = resolveSessionId(message, headers);
+        log.info("🔄 Starting intelligent routing for service: {}, method: {}, resolvedSessionId: {}", 
+                serviceName, message.getMethod(), resolvedSessionId != null ? resolvedSessionId : "null");
         
         // 创建路由日志对象（记录开始时间）
         String requestId = UUID.randomUUID().toString();
         RoutingLog routingLog = createRoutingLog(requestId, serviceName, message, headers);
+        
+        // 记录最终使用的 sessionId（用于调试）
+        if (routingLog.getSessionId() != null && !routingLog.getSessionId().isEmpty()) {
+            log.debug("📝 Routing log created with sessionId: {}", routingLog.getSessionId());
+        } else {
+            log.warn("⚠️ Routing log created with null/empty sessionId for requestId: {}, service: {}, method: {}. " +
+                    "This may indicate: 1) RESTful request (expected), 2) Streamable client did not pass sessionId correctly (unexpected)", 
+                    requestId, serviceName, message.getMethod());
+        }
         long startTime = System.currentTimeMillis();
         
         // 检查是否是支持的方法
@@ -668,6 +683,45 @@ public class McpRouterService {
             // 提取工具名称
             String toolName = extractToolName(message);
             String sessionId = resolveSessionId(message, headers);
+
+            // 官方推荐：sessionId 应由客户端显式传递（Mcp-Session-Id 或 ?sessionId=）
+            // 但为了兼容当前 MCP Inspector 等客户端在 Streamable 模式下未传 sessionId 的情况，
+            // 在仅用于落库的场景下做一个"最佳努力"的推断：
+            // - 仅在 sessionId 为空、且存在唯一一个匹配 serviceName 且 transportType=STREAMABLE 的活跃会话时使用该会话的 sessionId
+            // - RESTful 请求（通过 /mcp/router/route/{serviceName}）不应该推断 sessionId，保持为 null
+            boolean isRestful = headers != null && "true".equals(headers.get("_isRestful"));
+            if (!isRestful
+                    && (sessionId == null || sessionId.isEmpty())
+                    && serviceName != null && !serviceName.isEmpty()
+                    && sessionService != null) {
+                try {
+                    List<SessionOverview> sessions = sessionService.getSessionOverview();
+                    List<SessionOverview> matching = sessions.stream()
+                            .filter(SessionOverview::active)
+                            .filter(s -> serviceName.equals(s.serviceName()))
+                            .filter(s -> s.transportType() != null
+                                    && "STREAMABLE".equalsIgnoreCase(s.transportType()))
+                            .filter(s -> s.sessionId() != null && !s.sessionId().trim().isEmpty())
+                            .sorted((a, b) -> {
+                                if (a.lastActive() == null && b.lastActive() == null) return 0;
+                                if (a.lastActive() == null) return 1;
+                                if (b.lastActive() == null) return -1;
+                                return b.lastActive().compareTo(a.lastActive());
+                            })
+                            .collect(Collectors.toList());
+
+                    if (matching.size() == 1) {
+                        sessionId = matching.get(0).sessionId();
+                        log.debug("🧩 Inferred streamable sessionId '{}' for service '{}' when creating routing log",
+                                sessionId, serviceName);
+                    } else if (matching.size() > 1) {
+                        log.debug("🧩 Found {} streamable sessions for service '{}', skip inferring sessionId for log",
+                                matching.size(), serviceName);
+                    }
+                } catch (Exception e) {
+                    log.debug("⚠️ Failed to infer streamable sessionId for routing log: {}", e.getMessage());
+                }
+            }
 
             // 序列化请求头
             String requestHeadersJson = "{}";
