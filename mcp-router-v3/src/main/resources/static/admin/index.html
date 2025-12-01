@@ -616,6 +616,432 @@
             border-color: #8b5cf6;
             background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
         }
+        /* 服务注册中心样式 - 简洁现代设计 */
+        .service-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .service-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .service-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .service-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+            line-height: 1.4;
+        }
+        .service-card-badges {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .service-card-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1;
+        }
+        .service-card-badge:first-of-type {
+            background: #f0f9ff;
+            color: #0369a1;
+        }
+        .service-card-badge:last-of-type {
+            background: #f5f5f5;
+            color: #525252;
+        }
+        .service-card-body {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .service-card-health {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text);
+        }
+        .service-card-footer {
+            display: flex;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .service-card-stat {
+            flex: 1;
+        }
+        .service-card-stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+        .service-card-stat-value.healthy {
+            color: var(--success);
+        }
+        .service-card-stat-value.unhealthy {
+            color: var(--error);
+        }
+        .service-card-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .health-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .health-indicator.healthy {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        .health-indicator.unhealthy {
+            background: var(--error);
+        }
+        .service-detail-section {
+            margin-bottom: 20px;
+        }
+        .service-detail-section h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: var(--text);
+        }
+        .service-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .service-detail-item:last-child {
+            border-bottom: none;
+        }
+        .service-detail-label {
+            color: var(--text-muted);
+        }
+        .service-detail-value {
+            font-weight: 500;
+            color: var(--text);
+        }
+        .instance-list {
+            margin-top: 12px;
+        }
+        .instance-item {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .instance-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .instance-item:last-child {
+            margin-bottom: 0;
+        }
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .instance-address {
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .instance-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .instance-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .instance-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .instance-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .instance-detail-item {
+            font-size: 12px;
+        }
+        .instance-detail-label {
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .instance-detail-value {
+            color: var(--text);
+            font-weight: 500;
+            font-family: monospace;
+        }
+        .metadata-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            border-radius: 4px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        /* 健康监控样式 */
+        .circuit-breaker-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .circuit-breaker-badge.closed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        .circuit-breaker-badge.open {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+        .circuit-breaker-badge.half-open {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        .health-history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .health-history-item:last-child {
+            margin-bottom: 0;
+        }
+        .health-history-time {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .health-history-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .close-btn:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--card-bg);
+            color: var(--text);
+            box-sizing: border-box;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .form-group textarea {
+            min-height: 80px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-danger {
+            background: var(--error);
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .version-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .version-selector select {
+            flex: 1;
+        }
+        .tools-list {
+            margin-top: 16px;
+        }
+        .tool-item {
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+        .tool-item-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .tool-item-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .tool-item-params {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        .config-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+        .config-tab {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .config-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .config-tab-content {
+            display: none;
+        }
+        .config-tab-content.active {
+            display: block;
+        }
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -636,14 +1062,15 @@
         <div id="errorBox" class="error-box" style="display:none;"></div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="overview">协议概览</button>
+            <button class="tab active" data-tab="overview">DEFAULT</button>
+            <button class="tab" data-tab="registry">服务注册中心</button>
             <button class="tab" data-tab="sessions">会话管理</button>
             <button class="tab" data-tab="sse">SSE 连接</button>
             <button class="tab" data-tab="streamable">Streamable 连接</button>
             <button class="tab" data-tab="restful">RESTful 请求</button>
         </div>
 
-        <!-- 协议概览 -->
+        <!-- DEFAULT -->
         <div class="tab-content active" id="overview-tab">
             <div class="protocol-cards">
                 <div class="protocol-card restful">
@@ -683,10 +1110,13 @@
                     </div>
                     <div class="protocol-card-content">
                         <ul class="protocol-features">
-                            <li>基于 Server-Sent Events 协议</li>
-                            <li>支持服务器主动推送消息到客户端</li>
-                            <li>长连接保持，实时双向通信</li>
-                            <li>自动心跳机制，连接状态可监控</li>
+                            <li><strong>协议特点：</strong>基于 Server-Sent Events (SSE) 标准协议，Content-Type: text/event-stream</li>
+                            <li><strong>连接方式：</strong>通过 GET /sse/{serviceName} 建立长连接，支持服务器主动推送</li>
+                            <li><strong>心跳机制：</strong>每 30 秒自动发送心跳事件，保持连接活跃，超时时间 10 分钟</li>
+                            <li><strong>会话管理：</strong>自动生成 sessionId，关联 serviceName，支持会话状态追踪</li>
+                            <li><strong>消息格式：</strong>标准 SSE 格式，event: 事件类型，data: JSON 数据</li>
+                            <li><strong>适用场景：</strong>需要实时双向通信的场景，如工具调用、资源监听等</li>
+                            <li><strong>兼容性：</strong>完全兼容 Spring AI 和 MCP 标准格式</li>
                         </ul>
                     </div>
                 </div>
@@ -705,16 +1135,68 @@
                     </div>
                     <div class="protocol-card-content">
                         <ul class="protocol-features">
-                            <li>基于 NDJSON (Newline Delimited JSON) 格式</li>
-                            <li>MCP 官方标准协议实现</li>
-                            <li>支持流式数据传输，适合大文件处理</li>
-                            <li>兼容 MCP Inspector 等官方工具</li>
+                            <li><strong>协议特点：</strong>基于 NDJSON (Newline Delimited JSON) 格式，MCP 官方标准协议</li>
+                            <li><strong>连接方式：</strong>通过 GET /mcp/{serviceName} 建立流式连接，Content-Type: application/x-ndjson</li>
+                            <li><strong>数据格式：</strong>每行一个 JSON 对象，支持流式传输，适合大文件处理</li>
+                            <li><strong>会话管理：</strong>自动生成 sessionId，支持通过 Mcp-Session-Id 请求头传递</li>
+                            <li><strong>消息端点：</strong>连接建立后返回消息端点 URL，通过 POST 发送消息</li>
+                            <li><strong>兼容性：</strong>完全兼容 MCP Inspector 等官方工具，支持标准 MCP 协议</li>
+                            <li><strong>适用场景：</strong>需要流式数据传输的场景，如大文件读取、批量资源处理等</li>
+                            <li><strong>超时设置：</strong>Redis TTL 30 分钟，支持会话持久化</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" style="margin-top: 24px;">
+                <h3>服务注册中心特点</h3>
+                <div style="padding: 16px;">
+                    <ul class="protocol-features" style="margin: 0;">
+                        <li><strong>基于 Nacos：</strong>使用 Nacos 作为服务注册与发现中心，支持动态服务注册和发现</li>
+                        <li><strong>多服务组支持：</strong>支持 mcp-server、mcp-endpoints、DEFAULT_GROUP 等多个服务组</li>
+                        <li><strong>服务配置管理：</strong>通过 UUID 机制关联服务名称和配置，支持版本化配置管理</li>
+                        <li><strong>配置类型：</strong>支持 mcp-tools、mcp-versions、mcp-server 三种配置类型</li>
+                        <li><strong>动态更新：</strong>支持配置热更新，无需重启服务即可生效</li>
+                        <li><strong>服务发现：</strong>自动发现注册的服务实例，支持负载均衡和健康检查</li>
+                        <li><strong>元数据管理：</strong>支持服务元数据管理，包括版本、端点等信息</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <h3>会话管理设计</h3>
+                <div class="two-column" style="margin-top: 16px;">
+                    <div class="card" style="margin: 0;">
+                        <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--primary);">客户端到 mcp-bridge 的会话管理</h4>
+                        <ul class="protocol-features" style="margin: 0;">
+                            <li><strong>会话创建：</strong>客户端通过 SSE 或 Streamable 连接时，自动生成唯一的 sessionId</li>
+                            <li><strong>会话存储：</strong>会话信息存储在 Redis 中，支持多实例共享，TTL 30 分钟</li>
+                            <li><strong>会话关联：</strong>sessionId 与 serviceName 自动关联，支持通过 sessionId 查找对应的服务</li>
+                            <li><strong>状态管理：</strong>支持 CONNECTING、CONNECTED、DISCONNECTED、ERROR、TIMEOUT 等状态</li>
+                            <li><strong>心跳机制：</strong>SSE 连接每 30 秒发送心跳，Streamable 连接通过消息保持活跃</li>
+                            <li><strong>超时处理：</strong>SSE 会话 10 分钟无活动自动超时，Streamable 会话 30 分钟超时</li>
+                            <li><strong>客户端信息：</strong>记录客户端 IP、User-Agent、客户端 ID 等信息，便于追踪和调试</li>
+                            <li><strong>会话清理：</strong>定期清理超时会话，释放资源，支持手动清理</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card" style="margin: 0;">
+                        <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--primary);">mcp-bridge 到各个 MCP Server 的会话管理</h4>
+                        <ul class="protocol-features" style="margin: 0;">
+                            <li><strong>桥接会话：</strong>mcp-bridge 作为客户端连接到后端 MCP Server，建立桥接会话</li>
+                            <li><strong>会话映射：</strong>维护客户端会话与服务器会话的映射关系，支持一对多映射</li>
+                            <li><strong>会话复用：</strong>同一服务的多个客户端会话可以共享同一个服务器会话，提高效率</li>
+                            <li><strong>会话超时：</strong>服务器会话超时时间 10 分钟，无活动时自动清理</li>
+                            <li><strong>消息路由：</strong>根据客户端 sessionId 查找对应的服务器会话，路由消息到正确的后端服务</li>
+                            <li><strong>事件转发：</strong>将后端服务器的 SSE 事件流转发到客户端，保持实时通信</li>
+                            <li><strong>错误处理：</strong>服务器会话异常时自动重连，支持故障转移和负载均衡</li>
+                            <li><strong>资源管理：</strong>定期清理过期的服务器会话，防止资源泄漏</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
                 <h3>MCP 标准协议方法</h3>
                 <div class="method-grid">
                     <div class="method-item tools">
@@ -950,7 +1432,7 @@
                         <select id="restfulHoursFilter">
                             <option value="1">最近 1 小时</option>
                             <option value="6">最近 6 小时</option>
-                            <option value="24">最近 24 小时</option>
+                            <option value="24" selected>最近 24 小时</option>
                             <option value="48">最近 48 小时</option>
                         </select>
                         <button class="btn" onclick="loadRestfulRequests()">刷新</button>
@@ -994,6 +1476,98 @@
             </div>
         </div>
 
+        <!-- 服务注册中心 -->
+        <div class="tab-content" id="registry-tab">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0;">服务列表</h3>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn" style="font-size: 12px; padding: 6px 12px;" onclick="loadNacosServices()">刷新 Nacos 服务</button>
+                        <button class="btn" style="font-size: 12px; padding: 6px 12px;" onclick="loadNacosConfigs()">刷新 Nacos 配置</button>
+                    </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 14px; margin: 0 0 8px 0; color: var(--text-muted);">服务列表@Nacos</h4>
+                    <div id="nacosServicesList" class="service-cards-grid">
+                        <div class="muted" style="padding: 20px; text-align: center;">点击"刷新 Nacos 服务"加载</div>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size: 14px; margin: 0 0 8px 0; color: var(--text-muted);">Nacos MCP 配置列表</h4>
+                    <div id="nacosConfigsList" style="background: var(--bg); border-radius: 8px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div class="muted" style="text-align: center; padding: 20px;">点击上方服务查看配置</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="card">
+                    <h3>服务详情</h3>
+                    <div id="serviceDetail" class="muted">选择左侧服务查看详情</div>
+                </div>
+                <div class="card">
+                    <h3>配置信息</h3>
+                    <div id="serviceConfig" class="muted">选择服务查看配置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 服务注册模态框 -->
+        <div id="registerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>注册 MCP 服务</h3>
+                    <button class="close-btn" onclick="closeRegisterModal()">&times;</button>
+                </div>
+                <form id="registerForm" onsubmit="handleRegisterServer(event)">
+                    <div class="form-group">
+                        <label>服务名称 *</label>
+                        <input type="text" id="registerName" required placeholder="例如: mcp-server-v2">
+                    </div>
+                    <div class="form-group">
+                        <label>版本 *</label>
+                        <input type="text" id="registerVersion" required placeholder="例如: 1.0.0">
+                    </div>
+                    <div class="form-group">
+                        <label>IP 地址 *</label>
+                        <input type="text" id="registerIp" required placeholder="例如: 127.0.0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>端口 *</label>
+                        <input type="number" id="registerPort" required placeholder="例如: 8062">
+                    </div>
+                    <div class="form-group">
+                        <label>服务组</label>
+                        <input type="text" id="registerServiceGroup" placeholder="例如: mcp-server" value="mcp-server">
+                    </div>
+                    <div class="form-group">
+                        <label>SSE 端点</label>
+                        <input type="text" id="registerSseEndpoint" placeholder="例如: /sse" value="/sse">
+                    </div>
+                    <div class="form-group">
+                        <label>权重</label>
+                        <input type="number" id="registerWeight" step="0.1" value="1.0" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>是否临时实例</label>
+                        <select id="registerEphemeral">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>元数据 (JSON，可选)</label>
+                        <textarea id="registerMetadata" placeholder='{"key": "value"}'></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">取消</button>
+                        <button type="submit" class="btn">注册</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
     </div>
 
     <script>
@@ -1001,12 +1575,104 @@
             const match = window.location.pathname.match(/^(.*)\/admin/);
             return match ? match[1] : '';
         })();
-        const apiBase = `${adminBasePath}/admin`;
+        const apiBase = `${adminBasePath}/admin`;  // Admin dashboard API
+        const baseApiPath = adminBasePath || '';  // Base API path for non-admin endpoints
 
         let sessionCache = [];
         let restfulRequestsCache = [];
 
-        // 加载健康检查状态
+        // ============================================================================
+        // 用户行为记录系统 (localStorage)
+        // ============================================================================
+        const UserBehaviorStorage = {
+            STORAGE_KEY: 'mcp-bridge-user-behavior',
+            
+            // 获取所有用户行为记录
+            getAll() {
+                try {
+                    const data = localStorage.getItem(this.STORAGE_KEY);
+                    return data ? JSON.parse(data) : {};
+                } catch (e) {
+                    console.warn('Failed to read user behavior from localStorage:', e);
+                    return {};
+                }
+            },
+            
+            // 保存用户行为记录
+            save(key, value) {
+                try {
+                    const data = this.getAll();
+                    data[key] = {
+                        value: value,
+                        timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+                } catch (e) {
+                    console.warn('Failed to save user behavior to localStorage:', e);
+                }
+            },
+            
+            // 获取特定行为记录
+            get(key, defaultValue = null) {
+                const data = this.getAll();
+                return data[key]?.value ?? defaultValue;
+            },
+            
+            // 清除所有记录
+            clear() {
+                try {
+                    localStorage.removeItem(this.STORAGE_KEY);
+                } catch (e) {
+                    console.warn('Failed to clear user behavior from localStorage:', e);
+                }
+            },
+            
+            // 记录标签页选择
+            saveActiveTab(tab) {
+                this.save('activeTab', tab);
+            },
+            
+            // 记录筛选条件
+            saveFilter(filterName, value) {
+                this.save(`filter_${filterName}`, value);
+            },
+            
+            // 获取筛选条件
+            getFilter(filterName, defaultValue = '') {
+                return this.get(`filter_${filterName}`, defaultValue);
+            },
+            
+            // 记录时间范围选择
+            saveTimeRange(range) {
+                this.save('timeRange', range);
+            },
+            
+            // 记录查看的会话ID
+            saveViewedSession(sessionId) {
+                this.save('viewedSession', sessionId);
+            },
+            
+            // 记录用户操作历史
+            logAction(action, details = {}) {
+                try {
+                    const history = this.get('actionHistory', []);
+                    history.push({
+                        action: action,
+                        details: details,
+                        timestamp: new Date().toISOString()
+                    });
+                    // 只保留最近100条记录
+                    if (history.length > 100) {
+                        history.shift();
+                    }
+                    this.save('actionHistory', history);
+                } catch (e) {
+                    console.warn('Failed to log action:', e);
+                }
+            }
+        };
+
+        // 加载系统健康状态（仅用于header显示）
         async function loadHealthStatus() {
             try {
                 const adminBasePath = (() => {
@@ -1109,6 +1775,40 @@
             });
         }
 
+        // 计算剩余时间（毫秒）
+        function calculateRemainingTime(expireTime) {
+            if (!expireTime) return null;
+            let expireDate;
+            if (Array.isArray(expireTime)) {
+                const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nano = 0] = expireTime;
+                expireDate = new Date(year, month - 1, day, hour, minute, second, Math.floor(nano / 1_000_000));
+            } else if (typeof expireTime === 'string') {
+                expireDate = new Date(expireTime);
+            } else {
+                expireDate = expireTime;
+            }
+            if (Number.isNaN(expireDate.getTime())) return null;
+            const now = new Date();
+            const remaining = expireDate.getTime() - now.getTime();
+            return remaining;
+        }
+
+        // 格式化剩余时间
+        function formatRemainingTime(remainingMs) {
+            if (remainingMs === null || remainingMs === undefined) return 'N/A';
+            if (remainingMs < 0) return '已过期';
+            const seconds = Math.floor(remainingMs / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            if (hours > 0) {
+                return `${hours}小时${minutes % 60}分钟`;
+            } else if (minutes > 0) {
+                return `${minutes}分钟${seconds % 60}秒`;
+            } else {
+                return `${seconds}秒`;
+            }
+        }
+
         // 获取 MCP 方法类型
         function getMcpMethodType(method) {
             if (!method) return '';
@@ -1120,11 +1820,63 @@
 
         // API 调用
         async function fetchJson(url) {
-            const resp = await fetch(url);
-            if (!resp.ok) {
-                throw new Error(`请求失败: ${resp.status}`);
+            try {
+                const resp = await fetch(url);
+                const contentType = resp.headers.get('content-type') || '';
+                
+                // 先读取响应文本
+                const text = await resp.text();
+                
+                // 如果响应为空
+                if (!text || text.trim() === '') {
+                    if (!resp.ok) {
+                        throw new Error(`请求失败: ${resp.status} - 响应为空`);
+                    }
+                    console.warn('Empty response from:', url);
+                    return null;
+                }
+                
+                // 检查状态码
+                if (!resp.ok) {
+                    // 尝试解析错误响应为 JSON
+                    try {
+                        const errorJson = JSON.parse(text);
+                        if (errorJson.error) {
+                            throw new Error(errorJson.error.message || errorJson.error.code || `请求失败: ${resp.status}`);
+                        }
+                    } catch (e) {
+                        // 如果不是 JSON，直接使用文本
+                    }
+                    throw new Error(`请求失败: ${resp.status} - ${text.substring(0, 200)}`);
+                }
+                
+                // 尝试解析 JSON
+                try {
+                    return JSON.parse(text);
+                } catch (parseError) {
+                    // 如果不是 JSON 格式
+                    console.warn('Response is not JSON from:', url, 'Content-Type:', contentType, 'Response:', text.substring(0, 200));
+                    
+                    // 如果是 HTML 错误页面
+                    if (contentType.includes('text/html')) {
+                        throw new Error(`服务器返回了 HTML 页面而不是 JSON，可能是路径错误或服务器错误`);
+                    }
+                    
+                    // 如果是纯文本，尝试返回一个对象
+                    if (text.trim()) {
+                        return { message: text, raw: true };
+                    }
+                    
+                    return null;
+                }
+            } catch (err) {
+                console.error('API调用失败:', url, err);
+                // 如果是网络错误，提供更友好的提示
+                if (err.name === 'TypeError' && err.message.includes('fetch')) {
+                    throw new Error('网络请求失败，请检查服务器是否运行');
+                }
+                throw err;
             }
-            return resp.json();
         }
 
         // 错误处理
@@ -1140,24 +1892,22 @@
         // 加载概览数据
         async function loadOverview() {
             try {
-                const [summary, sessions, logs] = await Promise.all([
+                const [summary, sessions, restfulRequests] = await Promise.all([
                     fetchJson(`${apiBase}/api/summary`),
                     fetchJson(`${apiBase}/api/sessions`),
-                    fetchJson(`${apiBase}/api/logs?hours=24`)
+                    fetchJson(`${apiBase}/api/restful-requests?hours=24&hasSessionId=false&limit=1000`)
                 ]);
-
-                // 计算总请求数（用于协议统计）
-                const totalRequests = logs?.length || 0;
 
                 // 协议统计（过滤掉 sessionId 为 null 的记录）
                 const sseSessions = sessions?.filter(s => s.sessionId != null && s.sessionId.trim() !== '' && (s.transportType === 'SSE' || !s.transportType)) || [];
                 const streamableSessions = sessions?.filter(s => s.sessionId != null && s.sessionId.trim() !== '' && s.transportType === 'STREAMABLE') || [];
-                const restfulLogs = logs?.filter(log => !log.sessionId) || [];
+                // RESTful 请求数：使用专门的 RESTful 请求接口，确保数据准确
+                const restfulCount = restfulRequests?.length || 0;
 
                 document.getElementById('sseCount').textContent = sseSessions.length;
                 document.getElementById('streamableCount').textContent = streamableSessions.length;
-                // RESTful 请求数使用最近24小时的总请求数
-                document.getElementById('restfulCount').textContent = totalRequests;
+                // RESTful 请求数使用专门的接口统计（最近24小时）
+                document.getElementById('restfulCount').textContent = restfulCount;
             } catch (err) {
                 console.error(err);
                 showError('加载概览数据失败: ' + err.message);
@@ -1216,6 +1966,12 @@
 
         // 加载 SSE 会话详情
         async function loadSseSessionDetail(sessionId) {
+            // 记录用户查看的会话
+            UserBehaviorStorage.saveViewedSession(sessionId);
+            UserBehaviorStorage.logAction('view_session_detail', { 
+                sessionId: sessionId, 
+                type: 'SSE' 
+            });
             try {
                 const session = sessionCache.find(s => s.sessionId === sessionId);
                 if (!session) return;
@@ -1226,12 +1982,22 @@
                     ? '' 
                     : '<div class="muted" style="margin-top: 4px; font-size: 11px;">说明：SSE连接已建立，但尚未绑定到具体的后端服务。通常在连接建立时未指定serviceName，或使用智能路由时会显示此状态。</div>';
 
+                const remainingTime = calculateRemainingTime(session.expireTime);
+                const remainingTimeStr = formatRemainingTime(remainingTime);
+                const timeoutMinutes = session.timeoutMs ? Math.floor(session.timeoutMs / 60000) : null;
+                
                 document.getElementById('sseSessionDetail').innerHTML = `
                     <div><strong>Session ID:</strong> <code>${session.sessionId}</code></div>
                     <div><strong>服务名称:</strong> ${serviceNameDisplay}${serviceNameNote}</div>
                     <div><strong>传输协议:</strong> ${session.transportType || 'SSE'}</div>
                     <div><strong>状态:</strong> <span class="badge ${session.active ? 'success' : 'error'}">${session.active ? 'Active' : 'Closed'}</span></div>
+                    ${session.clientId ? `<div><strong>客户端ID:</strong> ${session.clientId}</div>` : ''}
+                    ${session.clientIp ? `<div><strong>客户端IP:</strong> ${session.clientIp}</div>` : ''}
+                    ${session.userAgent ? `<div><strong>User-Agent:</strong> <span style="font-size: 11px; word-break: break-all;">${session.userAgent}</span></div>` : ''}
                     <div><strong>最后活跃:</strong> ${formatTime(session.lastActive)}</div>
+                    ${session.expireTime ? `<div><strong>过期时间:</strong> ${formatTime(session.expireTime)}</div>` : ''}
+                    ${remainingTime !== null ? `<div><strong>剩余时间:</strong> <span class="badge ${remainingTime > 60000 ? 'success' : remainingTime > 0 ? 'warning' : 'error'}">${remainingTimeStr}</span></div>` : ''}
+                    ${timeoutMinutes ? `<div><strong>超时设置:</strong> ${timeoutMinutes}分钟</div>` : ''}
                 `;
 
                 const logs = await fetchJson(`${apiBase}/api/sessions/${sessionId}/logs`);
@@ -1312,7 +2078,7 @@
             try {
                 const serviceName = document.getElementById('restfulServiceFilter')?.value.trim() || null;
                 const mcpMethod = document.getElementById('restfulMethodFilter')?.value || null;
-                const hours = parseInt(document.getElementById('restfulHoursFilter')?.value || '1');
+                const hours = parseInt(document.getElementById('restfulHoursFilter')?.value || '24');
 
                 const params = new URLSearchParams({ hours, limit: 100 });
                 if (serviceName) params.append('serviceName', serviceName);
@@ -1360,6 +2126,12 @@
         // 显示 RESTful 请求详情
         async function showRestfulRequestDetail(request) {
             if (!request) return;
+            // 记录用户查看的请求
+            UserBehaviorStorage.logAction('view_restful_request', { 
+                requestId: request.requestId,
+                serviceName: request.serverName,
+                mcpMethod: request.mcpMethod
+            });
 
             document.getElementById('restfulRequestInfo').innerHTML = `
                 <div><strong>Request ID:</strong> <code>${request.requestId}</code></div>
@@ -1367,6 +2139,9 @@
                 <div><strong>方法:</strong> <span class="mcp-method-badge ${getMcpMethodType(request.mcpMethod)}">${request.mcpMethod ?? '-'}</span></div>
                 <div><strong>工具:</strong> ${request.toolName ?? '-'}</div>
                 <div><strong>状态:</strong> <span class="badge ${request.success ? 'success' : 'error'}">${request.responseStatus ?? '-'}</span></div>
+                ${request.clientId ? `<div><strong>客户端ID:</strong> ${request.clientId}</div>` : ''}
+                ${request.clientIp ? `<div><strong>客户端IP:</strong> ${request.clientIp}</div>` : ''}
+                ${request.userAgent ? `<div><strong>User-Agent:</strong> <span style="font-size: 11px; word-break: break-all;">${request.userAgent}</span></div>` : ''}
                 <div><strong>延迟:</strong> ${request.duration ?? '-'}ms</div>
                 <div><strong>时间:</strong> ${formatTime(request.startTime)}</div>
             `;
@@ -1443,6 +2218,12 @@
 
         // 加载 Streamable 会话详情
         async function loadStreamableSessionDetail(sessionId) {
+            // 记录用户查看的会话
+            UserBehaviorStorage.saveViewedSession(sessionId);
+            UserBehaviorStorage.logAction('view_session_detail', { 
+                sessionId: sessionId, 
+                type: 'Streamable' 
+            });
             try {
                 const session = streamableSessionCache.find(s => s.sessionId === sessionId);
                 if (!session) return;
@@ -1453,12 +2234,22 @@
                     ? '' 
                     : '<div class="muted" style="margin-top: 4px; font-size: 11px;">说明：Streamable连接已建立，但尚未绑定到具体的后端服务。通常在连接建立时未指定serviceName，或使用智能路由时会显示此状态。</div>';
 
+                const remainingTime = calculateRemainingTime(session.expireTime);
+                const remainingTimeStr = formatRemainingTime(remainingTime);
+                const timeoutMinutes = session.timeoutMs ? Math.floor(session.timeoutMs / 60000) : null;
+                
                 document.getElementById('streamableSessionDetail').innerHTML = `
                     <div><strong>Session ID:</strong> <code>${session.sessionId}</code></div>
                     <div><strong>服务名称:</strong> ${serviceNameDisplay}${serviceNameNote}</div>
                     <div><strong>传输协议:</strong> ${session.transportType || 'STREAMABLE'}</div>
                     <div><strong>状态:</strong> <span class="badge ${session.active ? 'success' : 'error'}">${session.active ? 'Active' : 'Closed'}</span></div>
+                    ${session.clientId ? `<div><strong>客户端ID:</strong> ${session.clientId}</div>` : ''}
+                    ${session.clientIp ? `<div><strong>客户端IP:</strong> ${session.clientIp}</div>` : ''}
+                    ${session.userAgent ? `<div><strong>User-Agent:</strong> <span style="font-size: 11px; word-break: break-all;">${session.userAgent}</span></div>` : ''}
                     <div><strong>最后活跃:</strong> ${formatTime(session.lastActive)}</div>
+                    ${session.expireTime ? `<div><strong>过期时间:</strong> ${formatTime(session.expireTime)}</div>` : ''}
+                    ${remainingTime !== null ? `<div><strong>剩余时间:</strong> <span class="badge ${remainingTime > 60000 ? 'success' : remainingTime > 0 ? 'warning' : 'error'}">${remainingTimeStr}</span></div>` : ''}
+                    ${timeoutMinutes ? `<div><strong>超时设置:</strong> ${timeoutMinutes}分钟</div>` : ''}
                 `;
 
                 const logs = await fetchJson(`${apiBase}/api/sessions/${sessionId}/logs`);
@@ -1590,17 +2381,33 @@
 
         // 加载会话详情
         async function loadSessionDetail(sessionId) {
+            // 记录用户查看的会话
+            UserBehaviorStorage.saveViewedSession(sessionId);
+            UserBehaviorStorage.logAction('view_session_detail', { 
+                sessionId: sessionId, 
+                type: 'All' 
+            });
             try {
                 const sessions = await fetchJson(`${apiBase}/api/sessions`);
                 const session = sessions.find(s => s.sessionId === sessionId);
                 if (!session) return;
 
+                const remainingTime = calculateRemainingTime(session.expireTime);
+                const remainingTimeStr = formatRemainingTime(remainingTime);
+                const timeoutMinutes = session.timeoutMs ? Math.floor(session.timeoutMs / 60000) : null;
+                
                 document.getElementById('sessionDetail').innerHTML = `
                     <div><strong>Session ID:</strong> <code>${session.sessionId}</code></div>
                     <div><strong>服务名称:</strong> ${session.serviceName ?? '未绑定'}</div>
                     <div><strong>传输协议:</strong> ${session.transportType || 'SSE'}</div>
                     <div><strong>状态:</strong> <span class="badge ${session.active ? 'success' : 'error'}">${session.active ? 'Active' : 'Closed'}</span></div>
+                    ${session.clientId ? `<div><strong>客户端ID:</strong> ${session.clientId}</div>` : ''}
+                    ${session.clientIp ? `<div><strong>客户端IP:</strong> ${session.clientIp}</div>` : ''}
+                    ${session.userAgent ? `<div><strong>User-Agent:</strong> <span style="font-size: 11px; word-break: break-all;">${session.userAgent}</span></div>` : ''}
                     <div><strong>最后活跃:</strong> ${formatTime(session.lastActive)}</div>
+                    ${session.expireTime ? `<div><strong>过期时间:</strong> ${formatTime(session.expireTime)}</div>` : ''}
+                    ${remainingTime !== null ? `<div><strong>剩余时间:</strong> <span class="badge ${remainingTime > 60000 ? 'success' : remainingTime > 0 ? 'warning' : 'error'}">${remainingTimeStr}</span></div>` : ''}
+                    ${timeoutMinutes ? `<div><strong>超时设置:</strong> ${timeoutMinutes}分钟</div>` : ''}
                 `;
             } catch (err) {
                 console.error(err);
@@ -1616,6 +2423,10 @@
                 tab.classList.add('active');
                 document.getElementById(`${targetTab}-tab`).classList.add('active');
 
+                // 记录用户选择的标签页
+                UserBehaviorStorage.saveActiveTab(targetTab);
+                UserBehaviorStorage.logAction('tab_switch', { tab: targetTab });
+
                 if (targetTab === 'overview') {
                     loadOverview();
                 } else if (targetTab === 'sse') {
@@ -1626,13 +2437,1400 @@
                     loadStreamableDashboard();
                 } else if (targetTab === 'sessions') {
                     loadAllSessions();
+                } else if (targetTab === 'registry') {
+                    // 加载 Nacos 服务列表
+                    loadNacosServices();
                 }
             });
         });
 
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('registerModal');
+            if (event.target === modal) {
+                closeRegisterModal();
+            }
+        }
+
+        // 服务注册中心相关函数
+        let serviceRegistryCache = [];
+
+        // 加载 Nacos 服务列表
+        async function loadNacosServices() {
+            try {
+                const container = document.getElementById('nacosServicesList');
+                if (!container) {
+                    console.error('nacosServicesList element not found');
+                    return;
+                }
+                container.innerHTML = '<div class="loading"><div class="spinner"></div> 加载中...</div>';
+
+                let group = document.getElementById('registryServiceGroupFilter')?.value || 'mcp-server';
+                // 如果选择的是 "*"（所有服务组），则使用 "all" 查询所有组
+                if (group === '*') {
+                    group = 'all';
+                }
+                const url = `${baseApiPath}/api/nacos/services?group=${group}&pageNo=1&pageSize=100`;
+                console.log('Loading Nacos services from:', url);
+                const response = await fetchJson(url);
+                console.log('Nacos services response:', response);
+                
+                if (!response) {
+                    container.innerHTML = '<div class="empty-state">获取服务列表失败：响应为空</div>';
+                    return;
+                }
+                
+                // 检查是否有错误
+                if (response.error) {
+                    container.innerHTML = `<div class="empty-state">错误: ${response.error}</div>`;
+                    return;
+                }
+                
+                // 处理响应数据
+                const serviceInfos = response.serviceInfos || [];
+                if (serviceInfos.length > 0) {
+                    const html = serviceInfos.map(service => {
+                        const healthyRate = service.instanceCount > 0 
+                            ? (service.healthyInstanceCount / service.instanceCount * 100).toFixed(0) 
+                            : 0;
+                        return `
+                            <div class="service-card" onclick="showNacosServiceDetail('${service.serviceName}', '${service.group}')">
+                                <div class="service-card-header">
+                                    <h4 class="service-card-name">${service.serviceName}</h4>
+                                    <div class="service-card-badges">
+                                        <span class="service-card-badge">${service.group}</span>
+                                    </div>
+                                </div>
+                                <div class="service-card-info">
+                                    <div class="service-card-stat">
+                                        <span class="service-card-stat-value">${service.instanceCount}</span>
+                                        <span class="service-card-stat-label">实例数</span>
+                                    </div>
+                                    <div class="service-card-stat">
+                                        <span class="service-card-stat-value ${service.healthyInstanceCount > 0 ? 'healthy' : 'unhealthy'}">${service.healthyInstanceCount}</span>
+                                        <span class="service-card-stat-label">健康实例</span>
+                                    </div>
+                                    <div class="service-card-stat">
+                                        <span class="service-card-stat-value">${healthyRate}%</span>
+                                        <span class="service-card-stat-label">健康率</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="empty-state">暂无 Nacos 服务 (组: ${response.group || group})</div>`;
+                }
+            } catch (err) {
+                console.error('加载 Nacos 服务列表失败:', err);
+                showError('加载 Nacos 服务列表失败: ' + err.message);
+                document.getElementById('nacosServicesList').innerHTML = '<div class="empty-state">加载失败: ' + err.message + '</div>';
+            }
+        }
+
+        // 加载 Nacos MCP 配置列表（根据服务名）
+        async function loadNacosConfigs(serviceName) {
+            try {
+                const container = document.getElementById('nacosConfigsList');
+                if (!container) {
+                    console.error('nacosConfigsList element not found');
+                    return;
+                }
+                
+                if (!serviceName) {
+                    container.innerHTML = '<div class="muted" style="text-align: center; padding: 20px;">点击上方服务查看配置</div>';
+                    return;
+                }
+                
+                container.innerHTML = '<div class="loading"><div class="spinner"></div> 加载中...</div>';
+
+                // 先通过服务名查询配置
+                let url = `${baseApiPath}/api/nacos/configs?appName=${encodeURIComponent(serviceName)}`;
+                console.log('Loading Nacos configs from:', url);
+                let response = await fetchJson(url);
+                console.log('Nacos configs response:', response);
+                
+                // 如果返回 null 或没数据，回退到查询所有配置
+                if (!response || !response.configs || response.configs.length === 0) {
+                    console.log('No configs found for service, loading all configs...');
+                    url = `${baseApiPath}/api/nacos/configs`;
+                    response = await fetchJson(url);
+                    console.log('All configs response:', response);
+                }
+                
+                if (!response) {
+                    container.innerHTML = '<div class="empty-state">获取配置列表失败：响应为空</div>';
+                    return;
+                }
+                
+                // 检查是否有错误
+                if (response.error) {
+                    container.innerHTML = `<div class="empty-state">错误: ${response.error}</div>`;
+                    return;
+                }
+                
+                let configs = response.configs || [];
+                
+                // 如果配置中有 serviceName 为 null 的，尝试通过服务列表匹配 UUID 来填充
+                const configsWithNullServiceName = configs.filter(c => !c.serviceName && c.uuid);
+                if (configsWithNullServiceName.length > 0) {
+                    try {
+                        // 获取所有服务列表
+                        const servicesResponse = await fetchJson(`${baseApiPath}/api/nacos/services?group=*`);
+                        if (servicesResponse && servicesResponse.serviceInfos) {
+                            // 创建服务名到 UUID 的映射
+                            const serviceUuidMap = {};
+                            for (const serviceInfo of servicesResponse.serviceInfos) {
+                                try {
+                                    const uuidResponse = await fetchJson(`${baseApiPath}/api/mcp/config/uuid?serverName=${encodeURIComponent(serviceInfo.serviceName)}`);
+                                    if (uuidResponse && uuidResponse.uuid) {
+                                        serviceUuidMap[uuidResponse.uuid] = serviceInfo.serviceName;
+                                    }
+                                } catch (e) {
+                                    console.debug('Failed to get UUID for service:', serviceInfo.serviceName, e);
+                                }
+                            }
+                            
+                            // 填充 serviceName
+                            configs.forEach(config => {
+                                if (!config.serviceName && config.uuid && serviceUuidMap[config.uuid]) {
+                                    config.serviceName = serviceUuidMap[config.uuid];
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Failed to match service names with UUIDs:', e);
+                    }
+                }
+                
+                if (configs.length > 0) {
+                    // 直接展示配置，不分组
+                    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+                    configs.forEach(config => {
+                        const displayName = config.dataId;
+                        html += `
+                            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s;"
+                                 onmouseover="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'"
+                                 onmouseout="this.style.borderColor='var(--border)'; this.style.boxShadow='none'"
+                                 onclick="viewNacosConfigInPage('${config.dataId}', '${config.group}')">
+                                <div style="font-size: 13px; color: var(--text); font-weight: 500;">${displayName}</div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                    Group: ${config.group}${config.version ? ' | Version: ' + config.version : ''}${config.serviceName ? ' | Service: ' + config.serviceName : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state">暂无 Nacos MCP 配置</div>';
+                }
+            } catch (err) {
+                console.error('加载 Nacos 配置列表失败:', err);
+                showError('加载 Nacos 配置列表失败: ' + err.message);
+                document.getElementById('nacosConfigsList').innerHTML = '<div class="empty-state">加载失败: ' + err.message + '</div>';
+            }
+        }
+
+        // 显示 Nacos 服务详情
+        async function showNacosServiceDetail(serviceName, serviceGroup) {
+            try {
+                // 加载配置列表
+                loadNacosConfigs(serviceName);
+                
+                // 获取服务实例并显示详情
+                const instances = await fetchJson(`${baseApiPath}/api/mcp/servers/instances?serviceName=${serviceName}&serviceGroup=${serviceGroup}`);
+                const instancesList = Array.isArray(instances) ? instances : (instances ? [instances] : []);
+                
+                // 显示详情（可以复用现有的 showServiceDetail 逻辑）
+                showServiceDetail(serviceName, serviceGroup);
+            } catch (err) {
+                console.error('加载 Nacos 服务详情失败:', err);
+                showError('加载服务详情失败: ' + err.message);
+            }
+        }
+
+        // 在当前页面查看 Nacos 配置详情
+        async function viewNacosConfigInPage(dataId, group) {
+            try {
+                const container = document.getElementById('serviceConfig');
+                container.innerHTML = '<div class="loading"><div class="spinner"></div> 加载配置中...</div>';
+                
+                // 从 dataId 中提取 UUID 和版本
+                let uuid = null;
+                let version = null;
+                
+                if (dataId.includes('-mcp-versions.json')) {
+                    uuid = dataId.replace('-mcp-versions.json', '');
+                } else if (dataId.includes('-mcp-server.json')) {
+                    const withoutSuffix = dataId.replace('-mcp-server.json', '');
+                    const parts = withoutSuffix.split('-');
+                    if (parts.length >= 5) {
+                        uuid = parts.slice(0, 5).join('-');
+                        version = parts.length > 5 ? parts[5] : null;
+                    }
+                } else if (dataId.includes('-mcp-tools.json')) {
+                    const withoutSuffix = dataId.replace('-mcp-tools.json', '');
+                    const parts = withoutSuffix.split('-');
+                    if (parts.length >= 5) {
+                        uuid = parts.slice(0, 5).join('-');
+                        version = parts.length > 5 ? parts[5] : null;
+                    }
+                }
+
+                if (!uuid) {
+                    container.innerHTML = '<div class="error-box">无法从 dataId 中提取 UUID: ' + dataId + '</div>';
+                    return;
+                }
+
+                let config = null;
+                let response = null;
+                
+                try {
+                    if (group === 'mcp-server' && version) {
+                        response = await fetchJson(`${baseApiPath}/api/mcp/config/server?uuid=${uuid}&version=${version}`);
+                    } else if (group === 'mcp-tools' && version) {
+                        response = await fetchJson(`${baseApiPath}/api/mcp/config/tools?uuid=${uuid}&version=${version}`);
+                    } else if (group === 'mcp-server-versions') {
+                        response = await fetchJson(`${baseApiPath}/api/mcp/config/versions?uuid=${uuid}`);
+                    }
+
+                    // 处理响应，可能是 ResponseEntity 格式
+                    if (response) {
+                        if (response.body !== undefined) {
+                            config = response.body;
+                        } else if (response.id || response.name || response.tools || response.versions) {
+                            // 直接是配置对象
+                            config = response;
+                        }
+                    }
+                } catch (err) {
+                    console.error('获取配置失败:', err);
+                    container.innerHTML = '<div class="error-box">获取配置失败: ' + err.message + '</div>';
+                    return;
+                }
+
+                if (config) {
+                    const configJson = formatJson(config);
+                    let html = `
+                        <div style="margin-bottom: 12px; padding: 8px; background: var(--card-bg); border-radius: 6px; border: 1px solid var(--border);">
+                            <div style="font-size: 12px; color: var(--text-muted);">
+                                <strong>DataId:</strong> ${dataId}<br>
+                                <strong>Group:</strong> ${group}<br>
+                                ${uuid ? `<strong>UUID:</strong> ${uuid}<br>` : ''}
+                                ${version ? `<strong>Version:</strong> ${version}` : ''}
+                            </div>
+                        </div>
+                        <div class="json-viewer-header">
+                            <div class="json-viewer-title">配置内容</div>
+                            <button class="copy-btn" onclick="copyJson('nacosConfigContent')">复制</button>
+                        </div>
+                        <div class="json-viewer" id="nacosConfigContent" style="max-height: 500px; overflow-y: auto;">${highlightJson(configJson)}</div>
+                    `;
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="error-box">未找到配置详情或配置为空</div>';
+                }
+            } catch (err) {
+                console.error('查看 Nacos 配置详情失败:', err);
+                document.getElementById('serviceConfig').innerHTML = '<div class="error-box">查看配置详情失败: ' + err.message + '</div>';
+            }
+        }
+
+        // 查看 Nacos 配置（保留原函数用于兼容）
+        async function viewNacosConfig(dataId, group) {
+            try {
+                // 从 dataId 中提取 UUID 和版本
+                let uuid = null;
+                let version = null;
+                
+                if (dataId.includes('-mcp-versions.json')) {
+                    uuid = dataId.replace('-mcp-versions.json', '');
+                } else if (dataId.includes('-mcp-server.json')) {
+                    const withoutSuffix = dataId.replace('-mcp-server.json', '');
+                    const parts = withoutSuffix.split('-');
+                    if (parts.length >= 5) {
+                        uuid = parts.slice(0, 5).join('-');
+                        version = parts.length > 5 ? parts[5] : null;
+                    }
+                } else if (dataId.includes('-mcp-tools.json')) {
+                    const withoutSuffix = dataId.replace('-mcp-tools.json', '');
+                    const parts = withoutSuffix.split('-');
+                    if (parts.length >= 5) {
+                        uuid = parts.slice(0, 5).join('-');
+                        version = parts.length > 5 ? parts[5] : null;
+                    }
+                }
+
+                if (!uuid) {
+                    showError('无法从 dataId 中提取 UUID: ' + dataId);
+                    return;
+                }
+
+                let config = null;
+                let response = null;
+                
+                if (group === 'mcp-server' && version) {
+                    response = await fetchJson(`${baseApiPath}/api/mcp/config/server?uuid=${uuid}&version=${version}`);
+                } else if (group === 'mcp-tools' && version) {
+                    response = await fetchJson(`${baseApiPath}/api/mcp/config/tools?uuid=${uuid}&version=${version}`);
+                } else if (group === 'mcp-server-versions') {
+                    response = await fetchJson(`${baseApiPath}/api/mcp/config/versions?uuid=${uuid}`);
+                }
+
+                // 处理响应，可能是 ResponseEntity 格式
+                if (response) {
+                    if (response.body !== undefined) {
+                        config = response.body;
+                    } else if (response.id || response.name || response.tools || response.versions) {
+                        // 直接是配置对象
+                        config = response;
+                    }
+                }
+
+                if (config) {
+                    const configJson = formatJson(config);
+                    const modal = document.createElement('div');
+                    modal.className = 'modal';
+                    modal.style.display = 'flex';
+                    modal.innerHTML = `
+                        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                            <div class="modal-header">
+                                <h3>配置详情: ${dataId}</h3>
+                                <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                            </div>
+                            <div style="padding: 16px;">
+                                <div class="json-viewer-header">
+                                    <div class="json-viewer-title">${group}</div>
+                                    <button class="copy-btn" onclick="copyJson('configViewer')">复制</button>
+                                </div>
+                                <div class="json-viewer" id="configViewer">${highlightJson(configJson)}</div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    modal.onclick = (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    };
+                } else {
+                    showError('无法获取配置内容');
+                }
+            } catch (err) {
+                console.error('查看配置失败:', err);
+                showError('查看配置失败: ' + err.message);
+            }
+        }
+
+        // 加载服务注册中心
+        async function loadServiceRegistry() {
+            try {
+                const container = document.getElementById('serviceRegistryList');
+                container.innerHTML = '<div class="loading"><div class="spinner"></div> 加载中...</div>';
+
+                const serviceGroup = document.getElementById('registryServiceGroupFilter')?.value || '*';
+                const serviceName = document.getElementById('registryServiceNameFilter')?.value.trim() || '*';
+
+                const params = new URLSearchParams();
+                params.append('serviceName', serviceName);
+                params.append('serviceGroup', serviceGroup);
+
+                const servers = await fetchJson(`${baseApiPath}/api/mcp/servers?${params}`);
+                // 处理Flux响应（可能是数组或单个对象）
+                let serverArray = [];
+                if (Array.isArray(servers)) {
+                    serverArray = servers;
+                } else if (servers && typeof servers === 'object') {
+                    // 如果是单个对象，转换为数组
+                    serverArray = [servers];
+                }
+                serviceRegistryCache = serverArray;
+
+                renderServiceRegistryList(serviceRegistryCache);
+            } catch (err) {
+                console.error('加载服务注册中心失败:', err);
+                showError('加载服务列表失败: ' + err.message);
+                document.getElementById('serviceRegistryList').innerHTML = '<div class="empty-state">加载失败: ' + err.message + '</div>';
+            }
+        }
+
+        // 渲染服务列表
+        function renderServiceRegistryList(servers) {
+            const container = document.getElementById('serviceRegistryList');
+            if (!servers || servers.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无服务</div>';
+                return;
+            }
+
+            // 按服务名分组
+            const grouped = {};
+            servers.forEach(server => {
+                const name = server.name || 'unknown';
+                if (!grouped[name]) {
+                    grouped[name] = [];
+                }
+                grouped[name].push(server);
+            });
+
+            // 过滤掉实例数为0的服务
+            const filteredGroups = Object.entries(grouped).filter(([name, instances]) => {
+                return instances.length > 0;
+            });
+
+            if (filteredGroups.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无有效服务（所有服务实例数为0）</div>';
+                return;
+            }
+
+            container.innerHTML = filteredGroups.map(([name, instances]) => {
+                const healthyCount = instances.filter(i => i.healthy).length;
+                const totalCount = instances.length;
+                const isHealthy = healthyCount > 0;
+                const version = instances[0]?.version || 'unknown';
+                const serviceGroup = instances[0]?.serviceGroup || 'mcp-server';
+
+                return `
+                    <div class="service-card" onclick="showServiceDetail('${name}', '${serviceGroup}')">
+                        <div class="service-card-header">
+                            <h4 class="service-card-name">${name}</h4>
+                            <div class="service-card-badges">
+                                <span class="service-card-badge">${serviceGroup}</span>
+                                <span class="service-card-badge">${version}</span>
+                            </div>
+                        </div>
+                        <div class="service-card-body">
+                            <div class="service-card-health">
+                                <span class="health-indicator ${isHealthy ? 'healthy' : 'unhealthy'}"></span>
+                                <span>${isHealthy ? '健康' : '异常'}</span>
+                            </div>
+                        </div>
+                        <div class="service-card-footer">
+                            <div class="service-card-stat">
+                                <div class="service-card-stat-value ${isHealthy ? 'healthy' : 'unhealthy'}">${healthyCount}</div>
+                                <div class="service-card-stat-label">健康</div>
+                            </div>
+                            <div class="service-card-stat">
+                                <div class="service-card-stat-value">${totalCount}</div>
+                                <div class="service-card-stat-label">总计</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 显示服务详情
+        async function showServiceDetail(serviceName, serviceGroup) {
+            try {
+                // 获取所有实例
+                const params = new URLSearchParams();
+                params.append('serviceName', serviceName);
+                params.append('serviceGroup', serviceGroup);
+                const instances = await fetchJson(`${baseApiPath}/api/mcp/servers/instances?${params}`);
+                const instancesList = Array.isArray(instances) ? instances : [];
+
+                // 获取版本列表
+                let versions = [];
+                let versionsError = null;
+                try {
+                    // 后端现在支持服务名称，直接使用服务名称获取版本列表
+                    const versionsUrl = `${baseApiPath}/api/mcp/servers/config/versions/${serviceName}`;
+                    console.log('Fetching versions from:', versionsUrl);
+                    const versionsResp = await fetchJson(versionsUrl);
+                    console.log('Versions response:', versionsResp);
+                    
+                    if (versionsResp) {
+                        if (versionsResp.error) {
+                            versionsError = versionsResp.error.message || '获取版本列表失败';
+                            console.warn('Versions API returned error:', versionsResp.error);
+                        } else if (Array.isArray(versionsResp)) {
+                            versions = versionsResp;
+                        } else if (versionsResp.versions && Array.isArray(versionsResp.versions)) {
+                            versions = versionsResp.versions;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch versions:', e);
+                    versionsError = e.message || '获取版本列表失败';
+                }
+
+                // 获取健康状态
+                let healthStatus = null;
+                try {
+                    const healthResp = await fetchJson(`${baseApiPath}/mcp/health/status/${serviceName}`);
+                    if (healthResp && healthResp.found) {
+                        healthStatus = healthResp;
+                    }
+                } catch (e) {
+                    console.debug('Health status not available:', e);
+                }
+
+                // 获取配置（使用第一个实例的版本，或默认版本）
+                const currentVersion = instancesList[0]?.version || '1.0.0';
+                let serverConfig = null;
+                let toolsConfig = null;
+                let toolsList = [];
+                let configError = null;
+                
+                try {
+                    // 后端现在支持服务名称，直接使用服务名称获取配置
+                    const configUrl = `${baseApiPath}/api/mcp/servers/config/full/${serviceName}?version=${currentVersion}`;
+                    console.log('Fetching config from:', configUrl);
+                    const fullConfig = await fetchJson(configUrl);
+                    console.log('Full config response:', fullConfig);
+                    
+                    // 处理 null 或 undefined 响应
+                    if (fullConfig === null || fullConfig === undefined) {
+                        configError = '配置响应为空，可能服务未在 Nacos 中注册配置';
+                        console.warn('Config response is null');
+                    } else if (fullConfig.error) {
+                        // 处理错误响应
+                        configError = fullConfig.error.message || fullConfig.error.code || '获取配置失败';
+                        console.warn('Config API returned error:', fullConfig.error);
+                    } else if (fullConfig.raw === true) {
+                        // 处理原始文本响应
+                        configError = '配置 API 返回了非 JSON 格式的响应';
+                        console.warn('Config API returned raw text:', fullConfig.message);
+                    } else {
+                        // 处理正常的配置响应
+                        // 处理不同的响应格式
+                        if (fullConfig.serverConfig) {
+                            serverConfig = fullConfig.serverConfig;
+                        } else if (fullConfig.name || fullConfig.version) {
+                            // 如果直接返回服务器配置对象
+                            serverConfig = fullConfig;
+                        }
+                        
+                        if (fullConfig.toolsConfig) {
+                            toolsConfig = fullConfig.toolsConfig;
+                        } else if (fullConfig.tools && Array.isArray(fullConfig.tools)) {
+                            toolsConfig = { tools: fullConfig.tools };
+                        }
+                        
+                        if (toolsConfig && toolsConfig.tools && Array.isArray(toolsConfig.tools)) {
+                            toolsList = toolsConfig.tools;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch config:', e);
+                    // 检查是否是 JSON 解析错误
+                    if (e.message && e.message.includes('JSON')) {
+                        configError = '配置 API 返回了无效的 JSON 响应，可能是服务器错误';
+                    } else {
+                        configError = e.message || '获取配置失败';
+                    }
+                }
+
+                // 渲染服务详情
+                const firstInstance = instancesList[0] || {};
+                const protocol = firstInstance.metadata?.protocol || firstInstance.protocol || 'mcp-sse';
+                const sseEndpoint = firstInstance.sseEndpoint || firstInstance.metadata?.sseEndpoint || '/sse';
+                const sseMessageEndpoint = firstInstance.metadata?.sseMessageEndpoint || '/mcp/message';
+                
+                document.getElementById('serviceDetail').innerHTML = `
+                    <div class="service-detail-section">
+                        <h4>基本信息</h4>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">服务名称</span>
+                            <span class="service-detail-value">${serviceName}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">服务组</span>
+                            <span class="service-detail-value">${serviceGroup}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">实例数量</span>
+                            <span class="service-detail-value">${instancesList.length} (健康: ${instancesList.filter(i => i.healthy).length})</span>
+                        </div>
+                        ${healthStatus ? `
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">健康状态</span>
+                            <span class="service-detail-value">
+                                <span class="health-indicator ${healthStatus.healthy ? 'healthy' : 'unhealthy'}"></span>
+                                ${healthStatus.healthy ? '健康' : '不健康'}
+                            </span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">最后检查</span>
+                            <span class="service-detail-value">${formatTime(healthStatus.lastCheckTime)}</span>
+                        </div>
+                        ` : ''}
+                        <div class="service-detail-item" style="margin-top: 12px;">
+                            <button class="btn btn-danger btn-small" onclick="deregisterServer('${serviceName}', '${serviceGroup}')">注销服务</button>
+                        </div>
+                    </div>
+                    <div class="service-detail-section">
+                        <h4>实例列表 (${instancesList.length})</h4>
+                        <div class="instance-list">
+                            ${instancesList.length > 0 ? instancesList.map(inst => {
+                                const instHost = inst.host || inst.ip;
+                                return `
+                                <div class="instance-item">
+                                    <div class="instance-header">
+                                        <div>
+                                            <div class="instance-address">${instHost}:${inst.port}</div>
+                                            <div class="instance-meta">
+                                                <span class="instance-meta-item">
+                                                    <span>权重:</span>
+                                                    <strong>${inst.weight || 1.0}</strong>
+                                                </span>
+                                                <span class="instance-meta-item">
+                                                    <span>类型:</span>
+                                                    <strong>${inst.ephemeral ? '临时' : '持久'}</strong>
+                                                </span>
+                                                ${inst.version ? `
+                                                <span class="instance-meta-item">
+                                                    <span>版本:</span>
+                                                    <strong>${inst.version}</strong>
+                                                </span>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="instance-status">
+                                            <span class="health-indicator ${inst.healthy ? 'healthy' : 'unhealthy'}"></span>
+                                            <span>${inst.healthy ? '健康' : '异常'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            }).join('') : '<div class="muted">暂无实例</div>'}
+                        </div>
+                    </div>
+                    ${toolsList.length > 0 ? `
+                    <div class="service-detail-section">
+                        <h4>工具列表 (${toolsList.length})</h4>
+                        <div class="tools-list">
+                            ${toolsList.map(tool => `
+                                <div class="tool-item">
+                                    <div class="tool-item-name">${tool.name || '-'}</div>
+                                    <div class="tool-item-desc">${tool.description || '无描述'}</div>
+                                    ${tool.inputSchema ? `
+                                        <div class="tool-item-params">参数: ${JSON.stringify(tool.inputSchema, null, 2)}</div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+
+                // 渲染配置信息（带版本选择）
+                let configHtml = '';
+                
+                // 显示错误信息
+                if (configError || versionsError) {
+                    configHtml += '<div class="error-box" style="margin-bottom: 16px;">';
+                    if (configError) {
+                        configHtml += `<div>配置获取失败: ${configError}</div>`;
+                    }
+                    if (versionsError) {
+                        configHtml += `<div>版本列表获取失败: ${versionsError}</div>`;
+                    }
+                    configHtml += '</div>';
+                }
+                
+                if (versions.length > 0) {
+                    configHtml += `
+                        <div class="version-selector">
+                            <label style="white-space: nowrap;">版本:</label>
+                            <select id="configVersionSelect" onchange="loadServiceConfig('${serviceName}', this.value)">
+                                ${versions.map(v => `<option value="${v}" ${v === currentVersion ? 'selected' : ''}>${v}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                } else if (!versionsError && instancesList.length > 0) {
+                    // 如果没有版本列表但有实例，使用实例的版本
+                    configHtml += `
+                        <div class="version-selector">
+                            <label style="white-space: nowrap;">版本:</label>
+                            <select id="configVersionSelect" onchange="loadServiceConfig('${serviceName}', this.value)">
+                                <option value="${currentVersion}" selected>${currentVersion}</option>
+                            </select>
+                        </div>
+                    `;
+                }
+
+                if (serverConfig || toolsConfig) {
+                    if (serverConfig) {
+                        const serverConfigJson = formatJson(serverConfig);
+                        configHtml += `
+                            <div class="config-tabs">
+                                <button class="config-tab active" onclick="switchConfigTab('server')">服务器配置</button>
+                                ${toolsConfig ? `<button class="config-tab" onclick="switchConfigTab('tools')">工具配置</button>` : ''}
+                            </div>
+                            <div class="config-tab-content active" id="serverConfigTab">
+                                <div class="json-viewer-header">
+                                    <div class="json-viewer-title">Server Config</div>
+                                    <button class="copy-btn" onclick="copyJson('serviceServerConfig')">复制</button>
+                                </div>
+                                <div class="json-viewer" id="serviceServerConfig">${highlightJson(serverConfigJson)}</div>
+                            </div>
+                        `;
+                    }
+                    if (toolsConfig) {
+                        const toolsConfigJson = formatJson(toolsConfig);
+                        configHtml += `
+                            <div class="config-tab-content" id="toolsConfigTab">
+                                <div class="json-viewer-header">
+                                    <div class="json-viewer-title">Tools Config</div>
+                                    <button class="copy-btn" onclick="copyJson('serviceToolsConfig')">复制</button>
+                                </div>
+                                <div class="json-viewer" id="serviceToolsConfig">${highlightJson(toolsConfigJson)}</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    let noConfigMsg = '<div class="muted">配置信息不可用';
+                    if (configError) {
+                        noConfigMsg += `<br><small style="color: var(--error);">错误: ${configError}</small>`;
+                    } else if (instancesList.length === 0) {
+                        noConfigMsg += '<br><small>请先确保服务已注册并运行</small>';
+                    }
+                    noConfigMsg += '</div>';
+                    configHtml = noConfigMsg;
+                }
+                document.getElementById('serviceConfig').innerHTML = configHtml;
+            } catch (err) {
+                console.error(err);
+                showError('加载服务详情失败: ' + err.message);
+            }
+        }
+
+        // 切换配置标签
+        function switchConfigTab(tab) {
+            document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.config-tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'server') {
+                document.querySelector('.config-tab').classList.add('active');
+                document.getElementById('serverConfigTab').classList.add('active');
+            } else if (tab === 'tools') {
+                document.querySelectorAll('.config-tab')[1].classList.add('active');
+                document.getElementById('toolsConfigTab').classList.add('active');
+            }
+        }
+
+        // 加载服务配置（切换版本时）
+        async function loadServiceConfig(serviceName, version) {
+            try {
+                // 后端现在支持服务名称，直接使用服务名称获取配置
+                const configUrl = `${baseApiPath}/api/mcp/servers/config/full/${serviceName}?version=${version}`;
+                console.log('Loading config from:', configUrl);
+                const fullConfig = await fetchJson(configUrl);
+                console.log('Config response:', fullConfig);
+                
+                if (fullConfig) {
+                    if (fullConfig.error) {
+                        showError('加载配置失败: ' + (fullConfig.error.message || fullConfig.error.code || '未知错误'));
+                        return;
+                    }
+                    
+                    const serverConfig = fullConfig.serverConfig || (fullConfig.name ? fullConfig : null);
+                    const toolsConfig = fullConfig.toolsConfig || (fullConfig.tools ? { tools: fullConfig.tools } : null);
+                    
+                    if (serverConfig) {
+                        const serverConfigJson = formatJson(serverConfig);
+                        document.getElementById('serviceServerConfig').innerHTML = highlightJson(serverConfigJson);
+                    } else {
+                        document.getElementById('serviceServerConfig').innerHTML = '<span class="json-null">服务器配置不可用</span>';
+                    }
+                    
+                    if (toolsConfig) {
+                        const toolsConfigJson = formatJson(toolsConfig);
+                        document.getElementById('serviceToolsConfig').innerHTML = highlightJson(toolsConfigJson);
+                    } else {
+                        document.getElementById('serviceToolsConfig').innerHTML = '<span class="json-null">工具配置不可用</span>';
+                    }
+                } else {
+                    showError('配置响应为空');
+                }
+            } catch (err) {
+                console.error('Failed to load config:', err);
+                showError('加载配置失败: ' + err.message);
+            }
+        }
+
+        // 显示注册服务表单
+        function showRegisterServerForm() {
+            document.getElementById('registerModal').classList.add('active');
+        }
+
+        // 关闭注册模态框
+        function closeRegisterModal() {
+            document.getElementById('registerModal').classList.remove('active');
+            document.getElementById('registerForm').reset();
+        }
+
+        // 处理服务注册
+        async function handleRegisterServer(event) {
+            event.preventDefault();
+            
+            try {
+                const serverInfo = {
+                    name: document.getElementById('registerName').value.trim(),
+                    version: document.getElementById('registerVersion').value.trim(),
+                    ip: document.getElementById('registerIp').value.trim(),
+                    port: parseInt(document.getElementById('registerPort').value),
+                    serviceGroup: document.getElementById('registerServiceGroup').value.trim() || 'mcp-server',
+                    sseEndpoint: document.getElementById('registerSseEndpoint').value.trim() || '/sse',
+                    weight: parseFloat(document.getElementById('registerWeight').value) || 1.0,
+                    ephemeral: document.getElementById('registerEphemeral').value === 'true',
+                    healthy: true
+                };
+
+                const metadataStr = document.getElementById('registerMetadata').value.trim();
+                if (metadataStr) {
+                    try {
+                        serverInfo.metadata = JSON.parse(metadataStr);
+                    } catch (e) {
+                        showError('元数据 JSON 格式错误: ' + e.message);
+                        return;
+                    }
+                }
+
+                const response = await fetch(`${baseApiPath}/api/mcp/servers/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serverInfo)
+                });
+
+                const result = await response.text();
+                if (response.ok) {
+                    showSuccess('服务注册成功');
+                    closeRegisterModal();
+                    setTimeout(() => {
+                        loadNacosServices();
+                    }, 1000);
+                } else {
+                    showError('服务注册失败: ' + result);
+                }
+            } catch (err) {
+                console.error(err);
+                showError('服务注册失败: ' + err.message);
+            }
+        }
+
+        // 注销服务
+        async function deregisterServer(serviceName, serviceGroup) {
+            if (!confirm(`确定要注销服务 "${serviceName}" 吗？`)) {
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({ serviceName, serviceGroup: serviceGroup || 'mcp-server' });
+                const response = await fetch(`${baseApiPath}/api/mcp/servers/deregister?${params}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.text();
+                if (response.ok) {
+                    showSuccess('服务注销成功');
+                    setTimeout(() => {
+                        loadNacosServices();
+                    }, 1000);
+                } else {
+                    showError('服务注销失败: ' + result);
+                }
+            } catch (err) {
+                console.error(err);
+                showError('服务注销失败: ' + err.message);
+            }
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            const box = document.getElementById('errorBox');
+            box.textContent = message;
+            box.style.background = 'rgba(16, 185, 129, 0.1)';
+            box.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+            box.style.color = 'var(--success)';
+            box.style.display = 'block';
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 3000);
+        }
+
+        // 健康监控相关函数
+        let healthMonitorCache = [];
+
+        // 加载健康监控
+        async function loadHealthMonitor() {
+            try {
+                const tbody = document.querySelector('#healthStatusTable tbody');
+                tbody.innerHTML = '<tr><td colspan="8" class="loading"><div class="spinner"></div> 加载中...</td></tr>';
+
+                // 加载健康状态
+                const healthStatuses = await fetchJson(`${baseApiPath}/mcp/health/status`);
+                const statuses = healthStatuses?.healthStatuses || {};
+
+                // 加载服务列表
+                const servers = await fetchJson(`${baseApiPath}/api/mcp/servers?serviceName=*&serviceGroup=mcp-server`);
+                // 处理Flux响应
+                let serverList = [];
+                if (Array.isArray(servers)) {
+                    serverList = servers;
+                } else if (servers && typeof servers === 'object') {
+                    serverList = [servers];
+                }
+
+                // 加载熔断器状态
+                const circuitBreakers = await fetchJson(`${baseApiPath}/mcp/health/circuit-breakers`);
+                const breakers = circuitBreakers?.circuitBreakers || {};
+
+                // 合并数据
+                const serviceNames = new Set();
+                serverList.forEach(s => serviceNames.add(s.name));
+                Object.keys(statuses).forEach(s => serviceNames.add(s));
+
+                const healthData = Array.from(serviceNames).map(name => {
+                    const status = statuses[name];
+                    const breaker = breakers[name];
+                    const serverInstances = serverList.filter(s => s.name === name);
+
+                    return {
+                        serviceName: name,
+                        healthy: status?.healthy ?? (serverInstances.some(s => s.healthy)),
+                        lastCheckTime: status?.lastCheckTime,
+                        successCount: status?.successCount ?? 0,
+                        failureCount: status?.failureCount ?? 0,
+                        circuitBreakerState: breaker?.state || 'CLOSED',
+                        serverId: status?.serverId,
+                        instances: serverInstances
+                    };
+                });
+
+                healthMonitorCache = healthData;
+                renderHealthMonitor(healthData);
+
+                // 更新统计
+                updateHealthStats(healthData);
+            } catch (err) {
+                console.error(err);
+                showError('加载健康监控失败: ' + err.message);
+            }
+        }
+
+        // 渲染健康监控表格
+        function renderHealthMonitor(data) {
+            const filter = document.getElementById('healthServiceFilter')?.value.trim().toLowerCase() || '';
+            const filtered = filter ? data.filter(d => d.serviceName.toLowerCase().includes(filter)) : data;
+
+            const tbody = document.querySelector('#healthStatusTable tbody');
+            if (!filtered || filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => {
+                const successRate = item.successCount + item.failureCount > 0
+                    ? ((item.successCount / (item.successCount + item.failureCount)) * 100).toFixed(1)
+                    : '-';
+                const circuitBreakerClass = item.circuitBreakerState?.toLowerCase() || 'closed';
+
+                return `
+                    <tr data-service-name="${item.serviceName}" style="cursor: pointer;">
+                        <td>${item.serviceName}</td>
+                        <td>
+                            <span class="health-indicator ${item.healthy ? 'healthy' : 'unhealthy'}"></span>
+                            ${item.healthy ? '健康' : '不健康'}
+                        </td>
+                        <td>${item.lastCheckTime ? formatTime(item.lastCheckTime) : '-'}</td>
+                        <td>${item.successCount}</td>
+                        <td>${item.failureCount}</td>
+                        <td>${successRate}%</td>
+                        <td>
+                            <span class="circuit-breaker-badge ${circuitBreakerClass}">${item.circuitBreakerState || 'CLOSED'}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-small" onclick="event.stopPropagation(); showHealthDetail('${item.serviceName}')">详情</button>
+                            <button class="btn btn-small" onclick="event.stopPropagation(); triggerHealthCheck('${item.serviceName}')">检查</button>
+                            ${item.circuitBreakerState === 'OPEN' ? `
+                                <button class="btn btn-small" onclick="event.stopPropagation(); resetCircuitBreaker('${item.serviceName}')">重置熔断</button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 添加点击事件
+            tbody.querySelectorAll('tr[data-service-name]').forEach(row => {
+                row.addEventListener('click', () => {
+                    const serviceName = row.dataset.serviceName;
+                    showHealthDetail(serviceName);
+                });
+            });
+        }
+
+        // 更新健康统计
+        function updateHealthStats(data) {
+            const total = data.length;
+            const healthy = data.filter(d => d.healthy).length;
+            const unhealthy = total - healthy;
+            const circuitBreaker = data.filter(d => d.circuitBreakerState === 'OPEN').length;
+
+            document.getElementById('totalServicesCount').textContent = total;
+            document.getElementById('healthyServicesCount').textContent = healthy;
+            document.getElementById('unhealthyServicesCount').textContent = unhealthy;
+            document.getElementById('circuitBreakerServicesCount').textContent = circuitBreaker;
+        }
+
+        // 显示健康详情
+        async function showHealthDetail(serviceName) {
+            try {
+                // 获取健康状态
+                const healthStatus = await fetchJson(`${baseApiPath}/mcp/health/status/${serviceName}`);
+                
+                // 获取熔断器状态
+                let circuitBreaker = null;
+                try {
+                    const breakerResp = await fetchJson(`${baseApiPath}/mcp/health/circuit-breakers/${serviceName}`);
+                    if (breakerResp && breakerResp.found) {
+                        circuitBreaker = breakerResp;
+                    }
+                } catch (e) {
+                    console.debug('Circuit breaker status not available:', e);
+                }
+
+                if (!healthStatus || !healthStatus.found) {
+                    document.getElementById('healthDetail').innerHTML = '<div class="muted">健康状态不可用</div>';
+                    document.getElementById('healthHistory').innerHTML = '<div class="muted">检查历史不可用</div>';
+                    return;
+                }
+
+                // 渲染健康详情
+                document.getElementById('healthDetail').innerHTML = `
+                    <div class="service-detail-section">
+                        <h4>健康状态</h4>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">服务名称</span>
+                            <span class="service-detail-value">${serviceName}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">健康状态</span>
+                            <span class="service-detail-value">
+                                <span class="health-indicator ${healthStatus.healthy ? 'healthy' : 'unhealthy'}"></span>
+                                ${healthStatus.healthy ? '健康' : '不健康'}
+                            </span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">服务器 ID</span>
+                            <span class="service-detail-value">${healthStatus.serverId || '-'}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">最后检查时间</span>
+                            <span class="service-detail-value">${formatTime(healthStatus.lastCheckTime)}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">成功次数</span>
+                            <span class="service-detail-value">${healthStatus.successCount || 0}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">失败次数</span>
+                            <span class="service-detail-value">${healthStatus.failureCount || 0}</span>
+                        </div>
+                        ${circuitBreaker ? `
+                        <div class="service-detail-section" style="margin-top: 20px;">
+                            <h4>熔断器状态</h4>
+                            <div class="service-detail-item">
+                                <span class="service-detail-label">状态</span>
+                                <span class="service-detail-value">
+                                    <span class="circuit-breaker-badge ${circuitBreaker.state?.toLowerCase() || 'closed'}">${circuitBreaker.state || 'CLOSED'}</span>
+                                </span>
+                            </div>
+                            ${circuitBreaker.failureThreshold ? `
+                            <div class="service-detail-item">
+                                <span class="service-detail-label">失败阈值</span>
+                                <span class="service-detail-value">${circuitBreaker.failureThreshold}</span>
+                            </div>
+                            ` : ''}
+                            ${circuitBreaker.halfOpenAttempts !== undefined ? `
+                            <div class="service-detail-item">
+                                <span class="service-detail-label">半开尝试次数</span>
+                                <span class="service-detail-value">${circuitBreaker.halfOpenAttempts}</span>
+                            </div>
+                            ` : ''}
+                            <div class="service-detail-item" style="margin-top: 12px;">
+                                <button class="btn btn-small" onclick="resetCircuitBreaker('${serviceName}')">重置熔断器</button>
+                                ${circuitBreaker.state === 'OPEN' ? `
+                                    <button class="btn btn-small" onclick="closeCircuitBreaker('${serviceName}')">关闭熔断器</button>
+                                ` : `
+                                    <button class="btn btn-small btn-danger" onclick="openCircuitBreaker('${serviceName}')">打开熔断器</button>
+                                `}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                // 渲染检查历史（简化版，显示统计信息）
+                const totalChecks = (healthStatus.successCount || 0) + (healthStatus.failureCount || 0);
+                document.getElementById('healthHistory').innerHTML = `
+                    <div class="service-detail-section">
+                        <h4>检查统计</h4>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">总检查次数</span>
+                            <span class="service-detail-value">${totalChecks}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">成功次数</span>
+                            <span class="service-detail-value" style="color: var(--success);">${healthStatus.successCount || 0}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">失败次数</span>
+                            <span class="service-detail-value" style="color: var(--error);">${healthStatus.failureCount || 0}</span>
+                        </div>
+                        <div class="service-detail-item">
+                            <span class="service-detail-label">成功率</span>
+                            <span class="service-detail-value">
+                                ${totalChecks > 0 ? ((healthStatus.successCount || 0) / totalChecks * 100).toFixed(1) : 0}%
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                console.error(err);
+                showError('加载健康详情失败: ' + err.message);
+            }
+        }
+
+        // 触发健康检查
+        async function triggerHealthCheck(serviceName) {
+            try {
+                const params = new URLSearchParams({ serviceName, serviceGroup: 'mcp-server' });
+                const response = await fetch(`${baseApiPath}/mcp/monitor/check?${params}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSuccess(`健康检查已触发: ${serviceName}`);
+                    setTimeout(() => loadHealthMonitor(), 2000); // 2秒后刷新
+                } else {
+                    showError('触发健康检查失败: ' + (result.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                showError('触发健康检查失败: ' + err.message);
+            }
+        }
+
+        // 触发全量健康检查
+        async function triggerAllHealthCheck() {
+            try {
+                const response = await fetch(`${baseApiPath}/mcp/monitor/check-all`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSuccess('全量健康检查已触发');
+                    setTimeout(() => loadHealthMonitor(), 3000); // 3秒后刷新
+                } else {
+                    showError('触发全量健康检查失败: ' + (result.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                showError('触发全量健康检查失败: ' + err.message);
+            }
+        }
+
+        // 重置熔断器
+        async function resetCircuitBreaker(serviceName) {
+            try {
+                const response = await fetch(`${baseApiPath}/mcp/health/circuit-breakers/${serviceName}/reset`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSuccess(`熔断器已重置: ${serviceName}`);
+                    setTimeout(() => {
+                        loadHealthMonitor();
+                        showHealthDetail(serviceName);
+                    }, 1000);
+                } else {
+                    showError('重置熔断器失败: ' + (result.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                showError('重置熔断器失败: ' + err.message);
+            }
+        }
+
+        // 打开熔断器
+        async function openCircuitBreaker(serviceName) {
+            if (!confirm(`确定要打开 ${serviceName} 的熔断器吗？这将阻止对该服务的请求。`)) {
+                return;
+            }
+            try {
+                const response = await fetch(`${baseApiPath}/mcp/health/circuit-breakers/${serviceName}/open`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSuccess(`熔断器已打开: ${serviceName}`);
+                    setTimeout(() => {
+                        loadHealthMonitor();
+                        showHealthDetail(serviceName);
+                    }, 1000);
+                } else {
+                    showError('打开熔断器失败: ' + (result.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                showError('打开熔断器失败: ' + err.message);
+            }
+        }
+
+        // 关闭熔断器
+        async function closeCircuitBreaker(serviceName) {
+            try {
+                const response = await fetch(`${baseApiPath}/mcp/health/circuit-breakers/${serviceName}/close`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSuccess(`熔断器已关闭: ${serviceName}`);
+                    setTimeout(() => {
+                        loadHealthMonitor();
+                        showHealthDetail(serviceName);
+                    }, 1000);
+                } else {
+                    showError('关闭熔断器失败: ' + (result.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                showError('关闭熔断器失败: ' + err.message);
+            }
+        }
+
+        // 恢复用户行为记录
+        function restoreUserBehavior() {
+            // 恢复标签页选择
+            const savedTab = UserBehaviorStorage.get('activeTab', 'overview');
+            const tabButton = document.querySelector(`.tab[data-tab="${savedTab}"]`);
+            if (tabButton) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tabButton.classList.add('active');
+                const tabContent = document.getElementById(`${savedTab}-tab`);
+                if (tabContent) {
+                    tabContent.classList.add('active');
+                }
+            }
+
+            // 恢复筛选条件
+            const sessionSearch = document.getElementById('sessionSearch');
+            if (sessionSearch) {
+                sessionSearch.value = UserBehaviorStorage.getFilter('sessionSearch', '');
+            }
+            const transportFilter = document.getElementById('transportFilter');
+            if (transportFilter) {
+                transportFilter.value = UserBehaviorStorage.getFilter('transportFilter', '');
+            }
+            const sseServiceFilter = document.getElementById('sseServiceFilter');
+            if (sseServiceFilter) {
+                sseServiceFilter.value = UserBehaviorStorage.getFilter('sseServiceFilter', '');
+            }
+            const sseSessionSearch = document.getElementById('sseSessionSearch');
+            if (sseSessionSearch) {
+                sseSessionSearch.value = UserBehaviorStorage.getFilter('sseSessionSearch', '');
+            }
+            const restfulServiceFilter = document.getElementById('restfulServiceFilter');
+            if (restfulServiceFilter) {
+                restfulServiceFilter.value = UserBehaviorStorage.getFilter('restfulServiceFilter', '');
+            }
+            const restfulMethodFilter = document.getElementById('restfulMethodFilter');
+            if (restfulMethodFilter) {
+                restfulMethodFilter.value = UserBehaviorStorage.getFilter('restfulMethodFilter', '');
+            }
+            const restfulHoursFilter = document.getElementById('restfulHoursFilter');
+            if (restfulHoursFilter) {
+                restfulHoursFilter.value = UserBehaviorStorage.getFilter('restfulHoursFilter', '24');
+            }
+        }
+
+        // 为筛选条件添加事件监听，记录用户行为
+        function setupFilterListeners() {
+            // 会话管理筛选
+            const sessionSearch = document.getElementById('sessionSearch');
+            if (sessionSearch) {
+                sessionSearch.addEventListener('input', (e) => {
+                    UserBehaviorStorage.saveFilter('sessionSearch', e.target.value);
+                    UserBehaviorStorage.logAction('filter_change', { 
+                        filter: 'sessionSearch', 
+                        value: e.target.value 
+                    });
+                });
+            }
+            const transportFilter = document.getElementById('transportFilter');
+            if (transportFilter) {
+                transportFilter.addEventListener('change', (e) => {
+                    UserBehaviorStorage.saveFilter('transportFilter', e.target.value);
+                    UserBehaviorStorage.logAction('filter_change', { 
+                        filter: 'transportFilter', 
+                        value: e.target.value 
+                    });
+                });
+            }
+
+            // SSE 筛选
+            const sseServiceFilter = document.getElementById('sseServiceFilter');
+            if (sseServiceFilter) {
+                sseServiceFilter.addEventListener('input', (e) => {
+                    UserBehaviorStorage.saveFilter('sseServiceFilter', e.target.value);
+                });
+            }
+            const sseSessionSearch = document.getElementById('sseSessionSearch');
+            if (sseSessionSearch) {
+                sseSessionSearch.addEventListener('input', (e) => {
+                    UserBehaviorStorage.saveFilter('sseSessionSearch', e.target.value);
+                });
+            }
+
+            // RESTful 筛选
+            const restfulServiceFilter = document.getElementById('restfulServiceFilter');
+            if (restfulServiceFilter) {
+                restfulServiceFilter.addEventListener('input', (e) => {
+                    UserBehaviorStorage.saveFilter('restfulServiceFilter', e.target.value);
+                });
+            }
+            const restfulMethodFilter = document.getElementById('restfulMethodFilter');
+            if (restfulMethodFilter) {
+                restfulMethodFilter.addEventListener('change', (e) => {
+                    UserBehaviorStorage.saveFilter('restfulMethodFilter', e.target.value);
+                });
+            }
+            const restfulHoursFilter = document.getElementById('restfulHoursFilter');
+            if (restfulHoursFilter) {
+                restfulHoursFilter.addEventListener('change', (e) => {
+                    UserBehaviorStorage.saveFilter('restfulHoursFilter', e.target.value);
+                    UserBehaviorStorage.logAction('time_range_change', { 
+                        hours: e.target.value 
+                    });
+                });
+            }
+        }
+
         // 初始化
+        restoreUserBehavior();
+        setupFilterListeners();
         loadHealthStatus();
-        loadOverview();
+        
+        // 根据恢复的标签页加载对应内容
+        const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'overview';
+        if (activeTab === 'overview') {
+            loadOverview();
+        } else if (activeTab === 'sse') {
+            loadSseDashboard();
+        } else if (activeTab === 'restful') {
+            loadRestfulRequests();
+        } else if (activeTab === 'streamable') {
+            loadStreamableDashboard();
+        } else if (activeTab === 'sessions') {
+            loadAllSessions();
+        } else if (activeTab === 'registry') {
+            loadNacosServices();
+        }
         
         // 自动刷新
         setInterval(() => {

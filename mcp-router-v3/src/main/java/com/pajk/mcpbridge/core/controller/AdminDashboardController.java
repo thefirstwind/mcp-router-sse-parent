@@ -271,7 +271,9 @@ public class AdminDashboardController {
             Integer responseStatus,
             Integer duration,
             LocalDateTime startTime,
-            String clientIp
+            String clientId,
+            String clientIp,
+            String userAgent
     ) {
         static RestfulRequestSummary from(RoutingLog log) {
             return new RestfulRequestSummary(
@@ -285,7 +287,9 @@ public class AdminDashboardController {
                     log.getResponseStatus(),
                     log.getDuration(),
                     log.getStartTime(),
-                    log.getClientIp()
+                    log.getClientId(),
+                    log.getClientIp(),
+                    log.getUserAgent()
             );
         }
     }

@@ -124,3 +124,6 @@ echo "4. Nginx 配置是否正确: cat nginx/nginx.conf | grep -A 20 'server_nam
 echo "5. 应用日志: tail -50 logs/mcp-router-v3.log"
 
 
+
+
+

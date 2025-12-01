@@ -4,6 +4,8 @@ import com.pajk.mcpbridge.core.session.SessionInstanceIdProvider;
 import com.pajk.mcpbridge.core.session.SessionMeta;
 import com.pajk.mcpbridge.core.session.SessionRedisRepository;
 import com.pajk.mcpbridge.core.transport.TransportType;
+import com.pajk.mcpbridge.persistence.entity.RoutingLog;
+import com.pajk.mcpbridge.persistence.mapper.RoutingLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
@@ -29,11 +31,14 @@ public class McpSessionService {
     private final SessionRedisRepository sessionRepository;
     private final String instanceId;
     private final Map<String, Sinks.Many<ServerSentEvent<String>>> sessionIdToSseSink = new ConcurrentHashMap<>();
+    private final RoutingLogMapper routingLogMapper;
 
     public McpSessionService(SessionRedisRepository sessionRepository,
-                             SessionInstanceIdProvider instanceIdProvider) {
+                             SessionInstanceIdProvider instanceIdProvider,
+                             RoutingLogMapper routingLogMapper) {
         this.sessionRepository = sessionRepository;
         this.instanceId = instanceIdProvider.getInstanceId();
+        this.routingLogMapper = routingLogMapper;
     }
 
     public void registerSessionService(String sessionId, String serviceName, TransportType transportType) {
@@ -131,13 +136,58 @@ public class McpSessionService {
     }
 
     public List<SessionOverview> getSessionOverview() {
+        // SSE 会话超时时间：10分钟（600秒）
+        final long SSE_TIMEOUT_MS = 600_000;
+        // Redis 会话 TTL：30分钟（从配置中获取，这里使用默认值）
+        final long REDIS_SESSION_TTL_MS = 30 * 60 * 1000;
+        
         return sessionRepository.findAllSessions().stream()
-                .map(meta -> new SessionOverview(
-                        meta.getSessionId(),
-                        meta.getServiceName(),
-                        meta.getTransportType(),
-                        meta.getLastActive(),
-                        meta.isActive()))
+                .map(meta -> {
+                    // 从 RoutingLog 中获取客户端信息（取最新的日志记录）
+                    String clientId = null;
+                    String clientIp = null;
+                    String userAgent = null;
+                    try {
+                        List<RoutingLog> logs = routingLogMapper.selectBySessionId(meta.getSessionId(), 1);
+                        if (logs != null && !logs.isEmpty()) {
+                            RoutingLog latestLog = logs.get(0);
+                            clientId = latestLog.getClientId();
+                            clientIp = latestLog.getClientIp();
+                            userAgent = latestLog.getUserAgent();
+                        }
+                    } catch (Exception e) {
+                        log.debug("Failed to get client info for session: {}", meta.getSessionId(), e);
+                    }
+                    
+                    // 计算过期时间
+                    LocalDateTime expireTime = null;
+                    long timeoutMs = 0;
+                    if (meta.getLastActive() != null) {
+                        // 根据传输类型选择超时时间
+                        String transportType = meta.getTransportType();
+                        if (transportType != null && "STREAMABLE".equalsIgnoreCase(transportType)) {
+                            // Streamable 会话使用 Redis TTL（30分钟）
+                            timeoutMs = REDIS_SESSION_TTL_MS;
+                            expireTime = meta.getLastActive().plusNanos(timeoutMs * 1_000_000);
+                        } else {
+                            // SSE 会话使用 10 分钟超时
+                            timeoutMs = SSE_TIMEOUT_MS;
+                            expireTime = meta.getLastActive().plusNanos(timeoutMs * 1_000_000);
+                        }
+                    }
+                    
+                    return new SessionOverview(
+                            meta.getSessionId(),
+                            meta.getServiceName(),
+                            meta.getTransportType(),
+                            meta.getLastActive(),
+                            meta.isActive(),
+                            clientId,
+                            clientIp,
+                            userAgent,
+                            expireTime,
+                            timeoutMs);
+                })
                 .sorted((a, b) -> {
                     LocalDateTime lastActiveA = a.lastActive();
                     LocalDateTime lastActiveB = b.lastActive();
@@ -177,6 +227,16 @@ public class McpSessionService {
         sessionRepository.updateBackendSessionId(sessionId, backendSessionId);
     }
 
-    public record SessionOverview(String sessionId, String serviceName, String transportType, LocalDateTime lastActive, boolean active) { }
+    public record SessionOverview(
+            String sessionId, 
+            String serviceName, 
+            String transportType, 
+            LocalDateTime lastActive, 
+            boolean active,
+            String clientId,
+            String clientIp,
+            String userAgent,
+            LocalDateTime expireTime,
+            long timeoutMs) { }
 }
 

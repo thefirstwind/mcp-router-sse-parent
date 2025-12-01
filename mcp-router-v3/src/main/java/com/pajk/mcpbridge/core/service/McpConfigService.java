@@ -47,10 +47,23 @@ public class McpConfigService{
      * 基于服务名生成固定UUID，确保同一服务名总是得到相同的UUID
      */
     private String generateFixedUuidFromServiceName(String serviceName) {
-        // 使用服务名的hash作为种子，确保相同服务名产生相同UUID
-        long hash = serviceName.hashCode();
         // 使用固定的算法生成UUID，确保可重现性
+        // UUID.nameUUIDFromBytes 使用 MD5 哈希，确保相同服务名总是得到相同的UUID
         return UUID.nameUUIDFromBytes(serviceName.getBytes()).toString();
+    }
+
+    /**
+     * 从服务名称生成固定UUID（公共方法）
+     * 用于根据服务名称推算UUID
+     * 
+     * @param serviceName 服务名称
+     * @return 对应的UUID
+     */
+    public String getUuidFromServiceName(String serviceName) {
+        if (serviceName == null || serviceName.isBlank()) {
+            throw new IllegalArgumentException("服务名称不能为空");
+        }
+        return generateFixedUuidFromServiceName(serviceName);
     }
 
     /**

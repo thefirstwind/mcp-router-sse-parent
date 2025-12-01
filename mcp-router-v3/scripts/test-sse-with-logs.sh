@@ -33,3 +33,6 @@ echo "如果看到 X-Forwarded-Host=mcp-bridge.local，说明 Nginx 配置正常
 
 
 
+
+
+
