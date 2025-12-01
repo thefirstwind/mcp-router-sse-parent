@@ -5,7 +5,6 @@ import com.pajk.mcpbridge.core.model.McpMessage;
 import com.pajk.mcpbridge.core.service.McpRequestValidator;
 import com.pajk.mcpbridge.core.service.McpRouterService;
 import com.pajk.mcpbridge.core.service.McpSessionService;
-import com.pajk.mcpbridge.core.service.McpSessionService.SessionOverview;
 import com.pajk.mcpbridge.core.service.McpSessionBridgeService;
 import com.pajk.mcpbridge.core.service.McpSseTransportProvider;
 import com.pajk.mcpbridge.core.transport.TransportPreferenceResolver;
@@ -781,11 +780,10 @@ public class McpRouterServerConfig {
         log.info("📥 Received MCP message request (path): path={}, serviceName={}, sessionId={}, queryParams={}", 
                 request.path(), serviceName, sessionId, request.queryParams());
         
-        // 官方推荐：如果没有 sessionId，就视为无会话请求（通常是 RESTful 场景），不做推断
+        // 如果查询参数中没有 sessionId，尝试自动生成
         if (sessionId == null || sessionId.isEmpty()) {
-            log.warn("⚠️ No sessionId found in request (path). Clients should establish Streamable connection first " +
-                    "and then send requests with Mcp-Session-Id or ?sessionId=. path={}, queryParams={}",
-                    request.path(), request.queryParams());
+            sessionId = UUID.randomUUID().toString();
+            log.info("📥 Generated auto sessionId: sessionId={}", sessionId);
         }
         
         // 路径参数方式必须提供服务名称
@@ -820,11 +818,10 @@ public class McpRouterServerConfig {
         log.info("📥 Received MCP message request: path={}, sessionId={}, serviceName={}, queryParams={}", 
                 request.path(), sessionId, serviceName, request.queryParams());
         
-        // 官方推荐：如果没有 sessionId，就视为无会话请求（通常是 RESTful 场景），不做推断
+        // 如果查询参数中没有 sessionId，尝试自动生成
         if (sessionId == null || sessionId.isEmpty()) {
-            log.warn("⚠️ No sessionId found in request. Clients should establish Streamable connection first " +
-                    "and then send requests with Mcp-Session-Id or ?sessionId=. path={}, queryParams={}",
-                    request.path(), request.queryParams());
+            sessionId = UUID.randomUUID().toString();
+            log.info("📥 Generated auto sessionId: sessionId={}", sessionId);
         }
         
         // 如果查询参数中没有 serviceName，尝试从会话中获取
@@ -980,12 +977,7 @@ public class McpRouterServerConfig {
                             return sseSinkMono
                                     .flatMap(sseSink -> {
                                         // SSE sink 已就绪，现在处理 initialize 请求
-                                        // 将 sessionId 传递到 headers 中，确保路由日志能正确关联
-                                        Map<String, String> headers = new java.util.HashMap<>();
-                                        if (sessionId != null && !sessionId.isEmpty()) {
-                                            headers.put("sessionId", sessionId);
-                                        }
-                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage, Duration.ofSeconds(60), headers);
+                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
                             return initializeResponse
                                     .flatMap(response -> {
                                         try {
@@ -1056,12 +1048,7 @@ public class McpRouterServerConfig {
                                     })
                                     .switchIfEmpty(Mono.defer(() -> {
                                         // 如果没有 SSE sink，先处理 initialize 请求，然后回退到 HTTP 响应
-                                        // 将 sessionId 传递到 headers 中，确保路由日志能正确关联
-                                        Map<String, String> headers = new java.util.HashMap<>();
-                                        if (sessionId != null && !sessionId.isEmpty()) {
-                                            headers.put("sessionId", sessionId);
-                                        }
-                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage, Duration.ofSeconds(60), headers);
+                                        Mono<McpMessage> initializeResponse = routerService.routeRequest(serviceNameForLog, mcpMessage);
                                         return initializeResponse
                                                 .flatMap(response -> {
                                                     try {
@@ -1137,14 +1124,8 @@ public class McpRouterServerConfig {
                         // 路由消息
                         final String targetServiceName = finalServiceName; // 用于 lambda 中的 final 变量
                         
-                        // 更新客户端会话的最后活跃时间（只有当 sessionId 不为 null 时才更新）
-                        if (sessionId != null && !sessionId.isEmpty()) {
-                            try {
-                                sessionBridgeService.updateClientSessionLastActiveTime(sessionId);
-                            } catch (Exception e) {
-                                log.debug("Failed to update client session last active time: {}", e.getMessage());
-                            }
-                        }
+                        // 更新客户端会话的最后活跃时间
+                        sessionBridgeService.updateClientSessionLastActiveTime(sessionId);
                         
                         // 获取或创建服务器会话（如果需要）
                         // 注意：只有在客户端会话存在时才尝试获取或创建服务器会话
@@ -1307,22 +1288,12 @@ public class McpRouterServerConfig {
                                         Duration timeout = (mcpMessage.getMethod() != null && 
                                                 (mcpMessage.getMethod().endsWith("/list") || "tools/call".equals(mcpMessage.getMethod())))
                                                 ? Duration.ofMillis(500) : Duration.ofSeconds(60);
-                                        // 将 sessionId 传递到 headers 中，确保路由日志能正确关联
-                                        Map<String, String> headers = new java.util.HashMap<>();
-                                        if (sessionId != null && !sessionId.isEmpty()) {
-                                            headers.put("sessionId", sessionId);
-                                        }
-                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, headers);
+                                        routeResult = routerService.routeRequest(targetServiceName, mcpMessage, timeout, Map.of());
                                     } else {
                                         // 智能路由（自动发现服务）
                                         log.info("🧠 Smart routing (auto-discover service), method: {}", mcpMessage.getMethod());
-                                        // 将 sessionId 传递到 headers 中，确保路由日志能正确关联
-                                        Map<String, String> headers = new java.util.HashMap<>();
-                                        if (sessionId != null && !sessionId.isEmpty()) {
-                                            headers.put("sessionId", sessionId);
-                                        }
                                         routeResult = routerService.smartRoute(mcpMessage, 
-                                                Duration.ofSeconds(60), headers); // 使用60秒超时，与默认超时一致
+                                                Duration.ofSeconds(60), Map.of()); // 使用60秒超时，与默认超时一致
                                     }
                                     
                                     // 将路由结果转换为标准 MCP 响应格式，并通过 SSE 发送

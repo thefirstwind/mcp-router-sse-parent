@@ -20,11 +20,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import jakarta.annotation.PostConstruct;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import io.netty.channel.ChannelOption;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +52,7 @@ public class NacosController {
     private final ConfigService configService;
     private final McpConfigService mcpConfigService;
     private final ObjectMapper objectMapper;
-    private final WebClient webClient = WebClient.builder().build();
+    private WebClient webClient;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     
     @Value("${spring.ai.alibaba.mcp.nacos.server-addr:127.0.0.1:8848}")
@@ -52,6 +60,39 @@ public class NacosController {
     
     @Value("${spring.ai.alibaba.mcp.nacos.namespace:public}")
     private String namespace;
+    
+    @Value("${spring.ai.alibaba.mcp.nacos.username:nacos}")
+    private String nacosUsername;
+    
+    @Value("${spring.ai.alibaba.mcp.nacos.password:nacos}")
+    private String nacosPassword;
+    
+    // Nacos API 超时配置（秒）
+    @Value("${spring.ai.alibaba.mcp.nacos.api-timeout:10}")
+    private int nacosApiTimeout;
+    
+    // Nacos API 连接超时配置（秒）
+    @Value("${spring.ai.alibaba.mcp.nacos.api-connect-timeout:5}")
+    private int nacosApiConnectTimeout;
+    
+    /**
+     * 初始化带超时配置的 WebClient
+     * 使用 @PostConstruct 确保 @Value 字段已经注入
+     */
+    @PostConstruct
+    public void initWebClient() {
+        // 配置 WebClient 超时设置
+        HttpClient httpClient = HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(nacosApiTimeout))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, nacosApiConnectTimeout * 1000);
+        
+        this.webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+        
+        log.info("Nacos WebClient initialized with timeout: {}s, connectTimeout: {}s", 
+                nacosApiTimeout, nacosApiConnectTimeout);
+    }
 
     /**
      * 获取 Nacos 中的服务列表
@@ -193,8 +234,9 @@ public class NacosController {
             response.setConfigs(allConfigs);
             response.setCount(allConfigs.size());
             
-            // 按组分类统计
+            // 按组分类统计（过滤掉 group 为 null 的配置）
             Map<String, Long> groupCounts = allConfigs.stream()
+                    .filter(config -> config.getGroup() != null)
                     .collect(Collectors.groupingBy(ConfigInfo::getGroup, Collectors.counting()));
             response.setGroupCounts(groupCounts);
             
@@ -207,13 +249,83 @@ public class NacosController {
     }
     
     /**
+     * 登录 Nacos 并获取访问令牌
+     * 
+     * @return 访问令牌，如果登录失败则返回 null
+     */
+    private String loginNacos() {
+        try {
+            String loginUrl = String.format("http://%s/nacos/v1/auth/login", nacosServerAddr);
+            log.info("Logging in to Nacos: {} (username={})", loginUrl, nacosUsername);
+            
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return webClient.post()
+                            .uri(loginUrl)
+                            .header("Content-Type", "application/x-www-form-urlencoded")
+                            .body(BodyInserters.fromFormData("username", nacosUsername)
+                                    .with("password", nacosPassword))
+                            .retrieve()
+                            .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
+                                log.error("Nacos login returned error status: {}", clientResponse.statusCode());
+                                return Mono.error(new RuntimeException("Nacos login error: " + clientResponse.statusCode()));
+                            })
+                            .bodyToMono(String.class)
+                            .timeout(Duration.ofSeconds(nacosApiTimeout))
+                            .block();
+                } catch (Exception e) {
+                    log.error("Error in Nacos login WebClient call: {}", e.getMessage(), e);
+                    throw new RuntimeException(e);
+                }
+            }, executorService);
+            
+            String loginResponse;
+            try {
+                loginResponse = future.get(nacosApiTimeout, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                log.error("Nacos login timeout after {} seconds", nacosApiTimeout, e);
+                return null;
+            }
+            log.info("Nacos login response received, length: {}", loginResponse != null ? loginResponse.length() : 0);
+            
+            if (loginResponse != null && !loginResponse.isEmpty()) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> responseMap = objectMapper.readValue(loginResponse, Map.class);
+                    String accessToken = (String) responseMap.get("accessToken");
+                    if (accessToken != null && !accessToken.isEmpty()) {
+                        log.info("Nacos login successful, token length: {}", accessToken.length());
+                        return accessToken;
+                    } else {
+                        log.warn("Nacos login response does not contain accessToken. Response: {}", loginResponse);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to parse Nacos login response: {} - {}", loginResponse, e.getMessage(), e);
+                }
+            } else {
+                log.warn("Nacos login returned null or empty response");
+            }
+        } catch (Exception e) {
+            log.error("Error logging in to Nacos: {}", e.getMessage(), e);
+        }
+        return null;
+    }
+    
+    /**
      * 通过 Nacos Open API 根据 appName 查询配置列表
      */
     private List<ConfigInfo> getConfigsByAppName(String appName) {
         List<ConfigInfo> configs = new ArrayList<>();
         try {
-            // 使用 Nacos Open API 查询配置历史（包含 appName 信息）
-            String url = String.format("http://%s/nacos/v2/cs/history/configs?pageNo=1&pageSize=100&namespaceId=%s&appName=%s",
+            // 先登录获取 token
+            String accessToken = loginNacos();
+            if (accessToken == null || accessToken.isEmpty()) {
+                log.error("Failed to get Nacos access token, cannot query configs");
+                return configs;
+            }
+            
+            // 使用 Nacos Open API 查询配置列表（包含 appName 信息）
+            String url = String.format("http://%s/nacos/v3/admin/cs/config/list?pageNo=1&pageSize=100&namespaceId=%s&appName=%s",
                     nacosServerAddr, namespace, appName);
             
             log.info("Querying configs by appName from: {} (nacosServerAddr={}, namespace={})", url, nacosServerAddr, namespace);
@@ -221,16 +333,19 @@ public class NacosController {
             String response = null;
             try {
                 // 使用 CompletableFuture 在独立线程中执行阻塞操作
+                final String token = accessToken; // 需要在 lambda 中使用 final 变量
                 CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                     try {
                         return webClient.get()
                                 .uri(url)
+                                .header("Authorization", "Bearer " + token)
                                 .retrieve()
                                 .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
                                     log.error("Nacos API returned error status: {}", clientResponse.statusCode());
                                     return Mono.error(new RuntimeException("Nacos API error: " + clientResponse.statusCode()));
                                 })
                                 .bodyToMono(String.class)
+                                .timeout(Duration.ofSeconds(nacosApiTimeout))
                                 .block();
                     } catch (Exception e) {
                         log.error("Error in WebClient call: {}", e.getMessage(), e);
@@ -238,7 +353,12 @@ public class NacosController {
                     }
                 }, executorService);
                 
-                response = future.get(); // 在独立线程中等待，不会阻塞响应式线程
+                try {
+                    response = future.get(nacosApiTimeout, TimeUnit.SECONDS); // 设置超时，避免长时间阻塞
+                } catch (TimeoutException e) {
+                    log.error("Nacos API call timeout after {} seconds: {}", nacosApiTimeout, url, e);
+                    return configs;
+                }
                 
                 log.info("Nacos API response received, length: {}", response != null ? response.length() : 0);
                 if (response != null && response.length() < 1000) {
@@ -261,17 +381,43 @@ public class NacosController {
                             responseMap != null && responseMap.containsKey("data"));
                     
                     if (responseMap != null && responseMap.containsKey("data")) {
+                        // 新接口返回的 data 是一个对象，包含 pageItems 数组
                         @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> dataList = (List<Map<String, Object>>) responseMap.get("data");
+                        Map<String, Object> dataObj = (Map<String, Object>) responseMap.get("data");
+                        List<Map<String, Object>> dataList = null;
+                        
+                        if (dataObj != null && dataObj.containsKey("pageItems")) {
+                            // 新接口格式：data.pageItems
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> pageItems = (List<Map<String, Object>>) dataObj.get("pageItems");
+                            dataList = pageItems;
+                            log.info("Using new API format: pageItems size={}, totalCount={}, pageNumber={}", 
+                                    dataList != null ? dataList.size() : 0,
+                                    dataObj.get("totalCount"),
+                                    dataObj.get("pageNumber"));
+                        } else if (dataObj instanceof List) {
+                            // 兼容旧接口格式：data 直接是数组
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> legacyList = (List<Map<String, Object>>) dataObj;
+                            dataList = legacyList;
+                            log.info("Using legacy API format: data list size={}", dataList != null ? dataList.size() : 0);
+                        }
+                        
                         log.info("Data list size: {}", dataList != null ? dataList.size() : 0);
                         
                         if (dataList != null && !dataList.isEmpty()) {
+                            // 用于存储所有符合条件的配置项（包含 modifyTime）
+                            List<ConfigItemWithTime> allConfigItems = new ArrayList<>();
+                            
+                            // 第一步：收集所有符合条件的配置项
                             for (Map<String, Object> item : dataList) {
                                 String dataId = (String) item.get("dataId");
-                                String configGroup = (String) item.get("group");
+                                // Nacos API 返回的字段是 groupName，不是 group
+                                String configGroup = (String) item.get("groupName");
+                                if (configGroup == null) {
+                                    configGroup = (String) item.get("group"); // 兼容处理
+                                }
                                 String itemAppName = (String) item.get("appName");
-                                
-                                log.info("Processing config item: dataId={}, group={}, appName={}, queryAppName={}", dataId, configGroup, itemAppName, appName);
                                 
                                 // 过滤：只处理 appName 匹配的配置
                                 if (itemAppName == null || !itemAppName.equals(appName)) {
@@ -283,80 +429,104 @@ public class NacosController {
                                 if (dataId != null && (dataId.contains("-mcp-server.json") || 
                                         dataId.contains("-mcp-tools.json") || 
                                         dataId.contains("-mcp-versions.json"))) {
-                                    ConfigInfo configInfo = new ConfigInfo();
-                                    configInfo.setDataId(dataId);
-                                    configInfo.setGroup(configGroup);
+                                    
+                                    // 提取 modifyTime
+                                    Long modifyTime = null;
+                                    Object modifyTimeObj = item.get("modifyTime");
+                                    if (modifyTimeObj != null) {
+                                        if (modifyTimeObj instanceof Number) {
+                                            modifyTime = ((Number) modifyTimeObj).longValue();
+                                        } else if (modifyTimeObj instanceof String) {
+                                            try {
+                                                modifyTime = Long.parseLong((String) modifyTimeObj);
+                                            } catch (NumberFormatException e) {
+                                                log.debug("Failed to parse modifyTime: {}", modifyTimeObj);
+                                            }
+                                        }
+                                    }
                                     
                                     // 从 dataId 中提取 UUID 和版本
+                                    String uuid = null;
+                                    String version = null;
+                                    String configType = null;
+                                    
                                     if (dataId.contains("-mcp-versions.json")) {
-                                        String uuid = dataId.replace("-mcp-versions.json", "");
-                                        configInfo.setUuid(uuid);
+                                        uuid = dataId.replace("-mcp-versions.json", "");
+                                        configType = "versions";
                                     } else if (dataId.contains("-mcp-server.json")) {
                                         String withoutSuffix = dataId.replace("-mcp-server.json", "");
                                         String[] parts = withoutSuffix.split("-");
                                         if (parts.length >= 5) {
-                                            String uuid = String.join("-", Arrays.copyOf(parts, 5));
-                                            String version = parts.length > 5 ? parts[5] : null;
-                                            configInfo.setUuid(uuid);
-                                            configInfo.setVersion(version);
+                                            uuid = String.join("-", Arrays.copyOf(parts, 5));
+                                            version = parts.length > 5 ? parts[5] : null;
+                                            configType = "server";
                                         }
                                     } else if (dataId.contains("-mcp-tools.json")) {
                                         String withoutSuffix = dataId.replace("-mcp-tools.json", "");
                                         String[] parts = withoutSuffix.split("-");
                                         if (parts.length >= 5) {
-                                            String uuid = String.join("-", Arrays.copyOf(parts, 5));
-                                            String version = parts.length > 5 ? parts[5] : null;
-                                            configInfo.setUuid(uuid);
-                                            configInfo.setVersion(version);
+                                            uuid = String.join("-", Arrays.copyOf(parts, 5));
+                                            version = parts.length > 5 ? parts[5] : null;
+                                            configType = "tools";
                                         }
                                     }
                                     
-                                    // 通过 UUID 匹配服务名（优先使用 UUID 匹配，更准确）
-                                    // 获取所有服务，然后通过服务名获取 UUID 进行匹配
-                                    boolean matched = false;
-                                    try {
-                                        // 查询所有已知的服务组
-                                        List<String> serviceGroups = Arrays.asList("mcp-server", "mcp-endpoints", "DEFAULT_GROUP");
-                                        for (String serviceGroup : serviceGroups) {
-                                            if (matched) break;
-                                            try {
-                                                ListView<String> services = namingService.getServicesOfServer(1, 100, serviceGroup);
-                                                if (services != null && services.getData() != null) {
-                                                    for (String serviceName : services.getData()) {
-                                                        try {
-                                                            String serviceUuid = mcpConfigService.getUuidFromServiceName(serviceName);
-                                                            log.debug("Checking service: {} -> UUID: {} against config UUID: {}", serviceName, serviceUuid, configInfo.getUuid());
-                                                            if (configInfo.getUuid() != null && configInfo.getUuid().equals(serviceUuid)) {
-                                                                configInfo.setServiceName(serviceName);
-                                                                log.info("Matched service name {} for UUID {} in group {}", serviceName, configInfo.getUuid(), serviceGroup);
-                                                                matched = true;
-                                                                break;
-                                                            }
-                                                        } catch (Exception e) {
-                                                            log.debug("Failed to get UUID for service: {}", serviceName, e);
-                                                        }
-                                                    }
-                                                }
-                                            } catch (Exception e) {
-                                                log.debug("Failed to get services from group: {}", serviceGroup, e);
-                                            }
-                                        }
-                                    } catch (Exception e) {
-                                        log.debug("Failed to match service name by UUID: {}", e.getMessage());
+                                    if (uuid != null && configType != null) {
+                                        ConfigItemWithTime configItem = new ConfigItemWithTime();
+                                        configItem.dataId = dataId;
+                                        configItem.group = configGroup;
+                                        configItem.uuid = uuid;
+                                        configItem.version = version;
+                                        configItem.configType = configType;
+                                        configItem.modifyTime = modifyTime != null ? modifyTime : 0L;
+                                        configItem.serviceName = appName; // 直接使用 appName 作为 serviceName
+                                        allConfigItems.add(configItem);
+                                        
+                                        log.debug("Collected config: dataId={}, type={}, uuid={}, version={}, modifyTime={}", 
+                                                dataId, configType, uuid, version, modifyTime);
                                     }
-                                    
-                                    // 如果 UUID 匹配失败，使用 appName 作为备选
-                                    if (!matched && itemAppName != null && !itemAppName.isEmpty()) {
-                                        configInfo.setServiceName(itemAppName);
-                                        log.debug("Using appName as serviceName: {}", itemAppName);
-                                    }
-                                    
-                                    configs.add(configInfo);
-                                    log.info("Added config: dataId={}, group={}, uuid={}, version={}, serviceName={}", 
-                                            dataId, configGroup, configInfo.getUuid(), configInfo.getVersion(), configInfo.getServiceName());
-                                } else {
-                                    log.debug("Skipping non-MCP config: dataId={}", dataId);
                                 }
+                            }
+                            
+                            // 第二步：按类型分组，取 modifyTime 最大的
+                            Map<String, ConfigItemWithTime> latestByType = new HashMap<>();
+                            for (ConfigItemWithTime item : allConfigItems) {
+                                String key = item.configType; // "versions", "server", "tools"
+                                ConfigItemWithTime existing = latestByType.get(key);
+                                if (existing == null || item.modifyTime > existing.modifyTime) {
+                                    latestByType.put(key, item);
+                                }
+                            }
+                            
+                            // 第三步：验证 UUID 一致性
+                            String commonUuid = null;
+                            boolean uuidConsistent = true;
+                            for (ConfigItemWithTime item : latestByType.values()) {
+                                if (commonUuid == null) {
+                                    commonUuid = item.uuid;
+                                } else if (!commonUuid.equals(item.uuid)) {
+                                    uuidConsistent = false;
+                                    log.warn("UUID mismatch detected: {} vs {} for config type {}", 
+                                            commonUuid, item.uuid, item.configType);
+                                    break;
+                                }
+                            }
+                            
+                            // 第四步：如果 UUID 一致，添加到结果列表
+                            if (uuidConsistent && commonUuid != null) {
+                                for (ConfigItemWithTime item : latestByType.values()) {
+                                    ConfigInfo configInfo = new ConfigInfo();
+                                    configInfo.setDataId(item.dataId);
+                                    configInfo.setGroup(item.group);
+                                    configInfo.setUuid(item.uuid);
+                                    configInfo.setVersion(item.version);
+                                    configInfo.setServiceName(item.serviceName);
+                                    configs.add(configInfo);
+                                    log.info("Added config: dataId={}, group={}, uuid={}, version={}, serviceName={}, modifyTime={}", 
+                                            item.dataId, item.group, item.uuid, item.version, item.serviceName, item.modifyTime);
+                                }
+                            } else {
+                                log.warn("UUIDs are not consistent or no valid configs found for appName: {}", appName);
                             }
                         } else {
                             log.warn("Data list is null or empty");
@@ -561,6 +731,19 @@ public class NacosController {
         private String serviceName;
         private String uuid;
         private String version;
+    }
+    
+    /**
+     * 带时间戳的配置项（内部使用）
+     */
+    private static class ConfigItemWithTime {
+        String dataId;
+        String group;
+        String uuid;
+        String version;
+        String configType; // "versions", "server", "tools"
+        long modifyTime;
+        String serviceName;
     }
 
     // ==================== MCP 配置管理接口 ====================
