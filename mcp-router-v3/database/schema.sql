@@ -195,7 +195,12 @@ CREATE TABLE `routing_logs` (
   -- 客户端信息
   `client_id` VARCHAR(100) COMMENT '客户端ID',
   `client_ip` VARCHAR(50) COMMENT '客户端IP',
+  `real_ip` VARCHAR(50) COMMENT '真实IP（考虑代理后的真实客户端IP）',
+  `forwarded_for` VARCHAR(500) COMMENT 'X-Forwarded-For头（完整的代理链）',
   `user_agent` VARCHAR(500) COMMENT '用户代理',
+  `referer` VARCHAR(1000) COMMENT 'Referer头（请求来源页面）',
+  `origin` VARCHAR(500) COMMENT 'Origin头（请求来源域名）',
+  `host` VARCHAR(255) COMMENT 'Host头（请求的主机名和端口）',
   `session_id` VARCHAR(100) COMMENT '会话ID',
   
   -- 状态信息

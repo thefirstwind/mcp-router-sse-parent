@@ -129,16 +129,11 @@ public interface RoutingLogMapper {
     int deleteByTimeBefore(@Param("cutoffTime") LocalDateTime cutoffTime);
     
     /**
-     * 查询 RESTful 接口请求
+     * 查询 RESTful 接口请求（旧版本，保留兼容性）
      * 
-     * @param serviceName 服务名称（可选）
-     * @param mcpMethod MCP 方法（可选，如 "tools/call", "tools/list"）
-     * @param hasSessionId sessionId 是否为空（可选，true=有sessionId, false=无sessionId, null=不筛选）
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param limit 限制返回数量
-     * @return 路由日志列表
+     * @deprecated 使用 selectRestfulRequestsWithPagination 代替
      */
+    @Deprecated
     List<RoutingLog> selectRestfulRequests(
         @Param("serviceName") String serviceName,
         @Param("mcpMethod") String mcpMethod,
@@ -146,6 +141,46 @@ public interface RoutingLogMapper {
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime,
         @Param("limit") Integer limit
+    );
+    
+    /**
+     * 查询 RESTful 接口请求（带分页）
+     * 
+     * @param serviceName 服务名称（可选）
+     * @param mcpMethod MCP 方法（可选，如 "tools/call", "tools/list"）
+     * @param hasSessionId sessionId 是否为空（可选，true=有sessionId, false=无sessionId, null=不筛选）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param offset 偏移量（用于分页）
+     * @param limit 每页数量
+     * @return 路由日志列表
+     */
+    List<RoutingLog> selectRestfulRequestsWithPagination(
+        @Param("serviceName") String serviceName,
+        @Param("mcpMethod") String mcpMethod,
+        @Param("hasSessionId") Boolean hasSessionId,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime,
+        @Param("offset") Integer offset,
+        @Param("limit") Integer limit
+    );
+    
+    /**
+     * 统计 RESTful 接口请求数量
+     * 
+     * @param serviceName 服务名称（可选）
+     * @param mcpMethod MCP 方法（可选，如 "tools/call", "tools/list"）
+     * @param hasSessionId sessionId 是否为空（可选，true=有sessionId, false=无sessionId, null=不筛选）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 请求数量
+     */
+    Long countRestfulRequests(
+        @Param("serviceName") String serviceName,
+        @Param("mcpMethod") String mcpMethod,
+        @Param("hasSessionId") Boolean hasSessionId,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime
     );
 }
 

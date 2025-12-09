@@ -50,7 +50,12 @@
         <!-- 客户端信息 -->
         <result column="client_id" property="clientId"/>
         <result column="client_ip" property="clientIp"/>
+        <result column="real_ip" property="realIp"/>
+        <result column="forwarded_for" property="forwardedFor"/>
         <result column="user_agent" property="userAgent"/>
+        <result column="referer" property="referer"/>
+        <result column="origin" property="origin"/>
+        <result column="host" property="host"/>
         <result column="session_id" property="sessionId"/>
         
         <!-- 状态标识 -->
@@ -90,7 +95,7 @@
             <!-- 时间信息 -->
             start_time, end_time, duration, queue_time, connect_time, process_time,
             <!-- 客户端信息 -->
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             <!-- 状态标识 -->
             is_success, is_cached, is_retry, retry_count,
             <!-- 错误信息 -->
@@ -117,7 +122,7 @@
             <!-- 时间信息 -->
             #{startTime}, #{endTime}, #{duration}, #{queueTime}, #{connectTime}, #{processTime},
             <!-- 客户端信息 -->
-            #{clientId}, #{clientIp}, #{userAgent}, #{sessionId},
+            #{clientId}, #{clientIp}, #{realIp}, #{forwardedFor}, #{userAgent}, #{referer}, #{origin}, #{host}, #{sessionId},
             <!-- 状态标识 -->
             #{isSuccess}, #{isCached}, #{isRetry}, #{retryCount},
             <!-- 错误信息 -->
@@ -146,7 +151,7 @@
             <!-- 时间信息 -->
             start_time, end_time, duration, queue_time, connect_time, process_time,
             <!-- 客户端信息 -->
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             <!-- 状态标识 -->
             is_success, is_cached, is_retry, retry_count,
             <!-- 错误信息 -->
@@ -175,7 +180,7 @@
                 <!-- 时间信息 -->
                 #{log.startTime}, #{log.endTime}, #{log.duration}, #{log.queueTime}, #{log.connectTime}, #{log.processTime},
                 <!-- 客户端信息 -->
-                #{log.clientId}, #{log.clientIp}, #{log.userAgent}, #{log.sessionId},
+                #{log.clientId}, #{log.clientIp}, #{log.realIp}, #{log.forwardedFor}, #{log.userAgent}, #{log.referer}, #{log.origin}, #{log.host}, #{log.sessionId},
                 <!-- 状态标识 -->
                 #{log.isSuccess}, #{log.isCached}, #{log.isRetry}, #{log.retryCount},
                 <!-- 错误信息 -->
@@ -201,7 +206,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags,
@@ -220,7 +225,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags, created_at
@@ -241,7 +246,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags,
@@ -263,7 +268,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags,
@@ -288,7 +293,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags,
@@ -365,7 +370,7 @@
         WHERE start_time &lt; #{cutoffTime}
     </insert>
     
-    <!-- 查询 RESTful 接口请求 -->
+    <!-- 查询 RESTful 接口请求（旧版本，保留兼容性） -->
     <select id="selectRestfulRequests" resultMap="RoutingLogResultMap">
         SELECT 
             id, request_id, trace_id, parent_id,
@@ -374,7 +379,7 @@
             request_headers, request_body, request_size,
             response_status, response_headers, response_body, response_size,
             start_time, end_time, duration, queue_time, connect_time, process_time,
-            client_id, client_ip, user_agent, session_id,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
             is_success, is_cached, is_retry, retry_count,
             error_message, error_code, error_type,
             metadata, tags,
@@ -397,12 +402,79 @@
                 </otherwise>
             </choose>
         </if>
-        <if test="startTime != null">
-            AND start_time BETWEEN #{startTime} AND #{endTime}
+        <if test="startTime != null and endTime != null">
+            AND start_time &lt;= #{endTime} AND start_time &gt;= #{startTime}
         </if>
         ORDER BY start_time DESC
         <if test="limit != null">
             LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 查询 RESTful 接口请求（带分页：使用 pageNo 和 pageSize） -->
+    <select id="selectRestfulRequestsWithPagination" resultMap="RoutingLogResultMap">
+        SELECT 
+            id, request_id, trace_id, parent_id,
+            server_key, server_name, load_balance_strategy,
+            method, path, mcp_method, tool_name, query_params,
+            request_headers, request_body, request_size,
+            response_status, response_headers, response_body, response_size,
+            start_time, end_time, duration, queue_time, connect_time, process_time,
+            client_id, client_ip, real_ip, forwarded_for, user_agent, referer, origin, host, session_id,
+            is_success, is_cached, is_retry, retry_count,
+            error_message, error_code, error_type,
+            metadata, tags,
+            created_at
+        FROM routing_logs
+        WHERE path LIKE '/mcp/router%'
+        <if test="serviceName != null and serviceName != ''">
+            AND (server_name = #{serviceName} OR server_key = #{serviceName})
+        </if>
+        <if test="mcpMethod != null and mcpMethod != ''">
+            AND mcp_method = #{mcpMethod}
+        </if>
+        <if test="hasSessionId != null">
+            <choose>
+                <when test="hasSessionId == true">
+                    AND session_id IS NOT NULL AND session_id != ''
+                </when>
+                <otherwise>
+                    AND (session_id IS NULL OR session_id = '')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="startTime != null and endTime != null">
+            AND start_time &lt;= #{endTime} AND start_time &gt;= #{startTime}
+        </if>
+        ORDER BY start_time DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计 RESTful 接口请求数量 -->
+    <select id="countRestfulRequests" resultType="java.lang.Long">
+        SELECT COUNT(0)
+        FROM routing_logs
+        WHERE path LIKE '/mcp/router%'
+        <if test="serviceName != null and serviceName != ''">
+            AND (server_name = #{serviceName} OR server_key = #{serviceName})
+        </if>
+        <if test="mcpMethod != null and mcpMethod != ''">
+            AND mcp_method = #{mcpMethod}
+        </if>
+        <if test="hasSessionId != null">
+            <choose>
+                <when test="hasSessionId == true">
+                    AND session_id IS NOT NULL AND session_id != ''
+                </when>
+                <otherwise>
+                    AND (session_id IS NULL OR session_id = '')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="startTime != null">
+            AND start_time BETWEEN #{startTime} AND #{endTime}
         </if>
     </select>
 

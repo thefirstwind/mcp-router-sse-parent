@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 生产环境 Redis 客户端封装
  * 
@@ -153,17 +156,13 @@ public class PajkJedisClient {
         }
         return ret;
     }
-    
-    // Getters for configuration
-    public String getClusterName() {
-        return clusterName;
-    }
-    
-    public String getCategory() {
-        return category;
-    }
-    
-    public String getAppName() {
-        return appName;
+
+    public Map<String, String> hgetAll(String key) throws Exception {
+        if (redisStoredClient == null) {
+            throw new IllegalStateException("Redis client not initialized");
+        }
+        Map<String,String> ret = new HashMap<String,String>();
+        // 生产环境调用：return redisStoredClient.exists(getKey(key));
+        return ret;
     }
 }

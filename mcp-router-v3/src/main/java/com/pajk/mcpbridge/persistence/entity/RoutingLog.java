@@ -202,9 +202,39 @@ public class RoutingLog {
     private String clientIp;
     
     /**
+     * 真实IP (real_ip)
+     * 考虑代理后的真实客户端IP（从X-Forwarded-For等头中提取）
+     */
+    private String realIp;
+    
+    /**
+     * X-Forwarded-For头 (forwarded_for)
+     * 完整的代理链信息
+     */
+    private String forwardedFor;
+    
+    /**
      * 用户代理 (user_agent)
      */
     private String userAgent;
+    
+    /**
+     * Referer头 (referer)
+     * 请求来源页面
+     */
+    private String referer;
+    
+    /**
+     * Origin头 (origin)
+     * 请求来源域名
+     */
+    private String origin;
+    
+    /**
+     * Host头 (host)
+     * 请求的主机名和端口
+     */
+    private String host;
     
     /**
      * 会话ID (session_id)

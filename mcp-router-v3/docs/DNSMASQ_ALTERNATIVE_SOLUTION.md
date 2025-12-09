@@ -156,3 +156,6 @@ echo "现在使用: http://${DOMAIN}/mcp/router/tools/mcp-server-v6"
 
 
 
+
+
+

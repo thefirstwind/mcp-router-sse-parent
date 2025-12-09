@@ -109,6 +109,36 @@ public class LocalJedisRedisClient implements RedisClient {
     }
 
     @Override
+    public String type(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.type(key);
+        } catch (Exception e) {
+            log.error("Failed to type key={}", key, e);
+            throw new RuntimeException("Redis type failed", e);
+        }
+    }
+
+    @Override
+    public Set<String> smembers(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.smembers(key);
+        } catch (Exception e) {
+            log.error("Failed to smembers key={}", key, e);
+            throw new RuntimeException("Redis smembers failed", e);
+        }
+    }
+
+    @Override
+    public String get(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.get(key);
+        } catch (Exception e) {
+            log.error("Failed to get key={}", key, e);
+            throw new RuntimeException("Redis get failed", e);
+        }
+    }
+
+    @Override
     public <T> T execute(RedisOperation<T> operation) {
         try (Jedis jedis = jedisPool.getResource()) {
             // 对于 Jedis，直接执行操作即可

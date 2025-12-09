@@ -140,12 +140,77 @@ public class AdminDashboardController {
      * @return RESTful 请求列表
      */
     @GetMapping("/api/restful-requests")
-    public Mono<List<RestfulRequestSummary>> restfulRequests(
+    public Mono<RestfulRequestPageResponse> restfulRequests(
             @RequestParam(required = false) String serviceName,
             @RequestParam(required = false) String mcpMethod,
             @RequestParam(required = false) String hasSessionId,
-            @RequestParam(defaultValue = "1") int hours,
-            @RequestParam(defaultValue = "100") int limit) {
+            @RequestParam(defaultValue = "24") int hours,
+            @RequestParam(defaultValue = "1") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return Mono.fromCallable(() -> {
+                    // 参数校验
+                    final int finalPageNo = pageNo < 1 ? 1 : pageNo;
+                    final int finalPageSize = (pageSize < 1 || pageSize > 100) 
+                            ? Math.min(Math.max(pageSize, 1), 100) 
+                            : pageSize;
+                    
+                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime startTime = now.minusHours(hours);
+                    LocalDateTime endTime = now;
+                    
+                    Boolean sessionIdFilter = null;
+                    if (hasSessionId != null && !hasSessionId.isEmpty()) {
+                        sessionIdFilter = Boolean.parseBoolean(hasSessionId);
+                    }
+                    
+                    // 先查询总数
+                    Long totalCount = routingLogMapper.countRestfulRequests(
+                            serviceName, mcpMethod, sessionIdFilter, startTime, endTime);
+                    
+                    // 计算分页参数
+                    int offset = (finalPageNo - 1) * finalPageSize;
+                    int limit = finalPageSize;
+                    
+                    // 查询分页数据
+                    List<RoutingLog> logs = routingLogMapper.selectRestfulRequestsWithPagination(
+                            serviceName, mcpMethod, sessionIdFilter, startTime, endTime, offset, limit);
+                    
+                    // 计算总页数
+                    int totalPages = (int) Math.ceil((double) totalCount / finalPageSize);
+                    
+                    log.info("RESTful请求分页查询: pageNo={}, pageSize={}, totalCount={}, totalPages={}, 返回记录数={}", 
+                            finalPageNo, finalPageSize, totalCount, totalPages, logs.size());
+                    
+                    // 构建响应
+                    RestfulRequestPageResponse response = new RestfulRequestPageResponse();
+                    response.setPageNo(finalPageNo);
+                    response.setPageSize(finalPageSize);
+                    response.setTotalCount(totalCount != null ? totalCount : 0);
+                    response.setTotalPages(totalPages);
+                    response.setData(logs.stream()
+                            .map(RestfulRequestSummary::from)
+                            .collect(Collectors.toList()));
+                    
+                    return response;
+                })
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+    
+    /**
+     * 统计 RESTful 接口请求数量（使用 COUNT(0) 提高效率）
+     * 
+     * @param serviceName 服务名称（可选）
+     * @param mcpMethod MCP 方法（可选，如 "tools/call", "tools/list"）
+     * @param hasSessionId sessionId 是否为空（可选，"true"=有sessionId, "false"=无sessionId, 其他=不筛选）
+     * @param hours 查询最近 N 小时的数据，默认 24 小时
+     * @return RESTful 请求数量
+     */
+    @GetMapping("/api/restful-requests/count")
+    public Mono<Long> restfulRequestsCount(
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) String mcpMethod,
+            @RequestParam(required = false) String hasSessionId,
+            @RequestParam(defaultValue = "24") int hours) {
         return Mono.fromCallable(() -> {
                     LocalDateTime now = LocalDateTime.now();
                     LocalDateTime startTime = now.minusHours(hours);
@@ -153,11 +218,9 @@ public class AdminDashboardController {
                     if (hasSessionId != null && !hasSessionId.isEmpty()) {
                         sessionIdFilter = Boolean.parseBoolean(hasSessionId);
                     }
-                    List<RoutingLog> logs = routingLogMapper.selectRestfulRequests(
-                            serviceName, mcpMethod, sessionIdFilter, startTime, now, limit);
-                    return logs.stream()
-                            .map(RestfulRequestSummary::from)
-                            .collect(Collectors.toList());
+                    Long count = routingLogMapper.countRestfulRequests(
+                            serviceName, mcpMethod, sessionIdFilter, startTime, now);
+                    return count != null ? count : 0L;
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -168,21 +231,50 @@ public class AdminDashboardController {
     @GetMapping("/api/restful-requests/{requestId}")
     public Mono<SessionLogDetail> restfulRequestDetail(@PathVariable String requestId) {
         return Mono.fromCallable(() -> {
-                    RoutingLog log = routingLogMapper.selectByRequestId(requestId);
-                    if (log == null) {
+                    RoutingLog routingLog = routingLogMapper.selectByRequestId(requestId);
+                    if (routingLog == null) {
                         return null;
                     }
-                    // RESTful 请求详情返回完整内容，不截取
+                    
+                    // 限制 requestBody 和 responseBody 的大小，防止解压缩和序列化阻塞
+                    // 最大大小：500KB（与前端限制一致）
+                    final int MAX_BODY_SIZE = 500 * 1024;
+                    
+                    String requestBody = routingLog.getRequestBody();
+                    String responseBody = routingLog.getResponseBody();
+                    
+                    // 截断过大的内容，防止阻塞
+                    if (requestBody != null && requestBody.length() > MAX_BODY_SIZE) {
+                        int originalSize = requestBody.length();
+                        requestBody = requestBody.substring(0, MAX_BODY_SIZE) + 
+                                "\n\n...[内容过大，已截断，仅显示前 " + (MAX_BODY_SIZE / 1024) + "KB]";
+                        log.warn("Request body truncated for requestId: {}, original size: {} bytes", 
+                                requestId, originalSize);
+                    }
+                    
+                    if (responseBody != null && responseBody.length() > MAX_BODY_SIZE) {
+                        int originalSize = responseBody.length();
+                        responseBody = responseBody.substring(0, MAX_BODY_SIZE) + 
+                                "\n\n...[内容过大，已截断，仅显示前 " + (MAX_BODY_SIZE / 1024) + "KB]";
+                        log.warn("Response body truncated for requestId: {}, original size: {} bytes", 
+                                requestId, originalSize);
+                    }
+                    
                     return new SessionLogDetail(
-                            log.getRequestId(),
-                            log.getMethod(),
-                            log.getPath(),
-                            log.getMcpMethod(),
-                            log.getRequestBody(), // 不截取 requestBody
-                            log.getResponseBody(), // 不截取 responseBody，完整显示
-                            log.getResponseStatus(),
-                            log.getStartTime()
+                            routingLog.getRequestId(),
+                            routingLog.getMethod(),
+                            routingLog.getPath(),
+                            routingLog.getMcpMethod(),
+                            requestBody,
+                            responseBody,
+                            routingLog.getResponseStatus(),
+                            routingLog.getStartTime()
                     );
+                })
+                .timeout(java.time.Duration.ofSeconds(10)) // 10秒超时保护
+                .onErrorResume(throwable -> {
+                    log.error("Failed to get restful request detail for requestId: {}", requestId, throwable);
+                    return Mono.empty();
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -261,6 +353,7 @@ public class AdminDashboardController {
     }
     
     public record RestfulRequestSummary(
+            Long id,
             String requestId,
             String method,
             String path,
@@ -277,6 +370,7 @@ public class AdminDashboardController {
     ) {
         static RestfulRequestSummary from(RoutingLog log) {
             return new RestfulRequestSummary(
+                    log.getId(),
                     log.getRequestId(),
                     log.getMethod(),
                     log.getPath(),
@@ -291,6 +385,57 @@ public class AdminDashboardController {
                     log.getClientIp(),
                     log.getUserAgent()
             );
+        }
+    }
+
+    /**
+     * RESTful 请求分页响应
+     */
+    public static class RestfulRequestPageResponse {
+        private int pageNo;
+        private int pageSize;
+        private long totalCount;
+        private int totalPages;
+        private List<RestfulRequestSummary> data;
+
+        public int getPageNo() {
+            return pageNo;
+        }
+
+        public void setPageNo(int pageNo) {
+            this.pageNo = pageNo;
+        }
+
+        public int getPageSize() {
+            return pageSize;
+        }
+
+        public void setPageSize(int pageSize) {
+            this.pageSize = pageSize;
+        }
+
+        public long getTotalCount() {
+            return totalCount;
+        }
+
+        public void setTotalCount(long totalCount) {
+            this.totalCount = totalCount;
+        }
+
+        public int getTotalPages() {
+            return totalPages;
+        }
+
+        public void setTotalPages(int totalPages) {
+            this.totalPages = totalPages;
+        }
+
+        public List<RestfulRequestSummary> getData() {
+            return data;
+        }
+
+        public void setData(List<RestfulRequestSummary> data) {
+            this.data = data;
         }
     }
 }

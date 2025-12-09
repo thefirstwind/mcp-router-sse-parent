@@ -733,6 +733,9 @@ public class McpRouterService {
                 }
             }
             
+            // 提取请求来源信息
+            RequestSourceInfo sourceInfo = extractRequestSourceInfo(headers);
+            
             return RoutingLog.builder()
                 .requestId(requestId)
                 .method(message.getMethod())
@@ -748,6 +751,14 @@ public class McpRouterService {
                 .isCached(false)
                 .isRetry(false)
                 .retryCount(0)
+                // 设置请求来源信息
+                .clientIp(sourceInfo.clientIp)
+                .realIp(sourceInfo.realIp)
+                .forwardedFor(sourceInfo.forwardedFor)
+                .userAgent(sourceInfo.userAgent)
+                .referer(sourceInfo.referer)
+                .origin(sourceInfo.origin)
+                .host(sourceInfo.host)
                 .build();
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize request params", e);
@@ -767,6 +778,9 @@ public class McpRouterService {
                 }
             }
             
+            // 提取请求来源信息
+            RequestSourceInfo sourceInfo = extractRequestSourceInfo(headers);
+            
             return RoutingLog.builder()
                 .requestId(requestId)
                 .method(message.getMethod())
@@ -782,6 +796,14 @@ public class McpRouterService {
                 .isCached(false)
                 .isRetry(false)
                 .retryCount(0)
+                // 设置请求来源信息
+                .clientIp(sourceInfo.clientIp)
+                .realIp(sourceInfo.realIp)
+                .forwardedFor(sourceInfo.forwardedFor)
+                .userAgent(sourceInfo.userAgent)
+                .referer(sourceInfo.referer)
+                .origin(sourceInfo.origin)
+                .host(sourceInfo.host)
                 .build();
         }
     }
@@ -799,6 +821,114 @@ public class McpRouterService {
                     headers.getOrDefault("Session-Id", headers.getOrDefault("X-Session-Id", null)));
         }
         return sessionId;
+    }
+    
+    /**
+     * 从请求头中提取客户端IP（考虑代理情况）
+     * 优先级：X-Real-IP > X-Forwarded-For（第一个IP）> 其他代理头
+     */
+    private String extractClientIp(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return null;
+        }
+        
+        // 1. 优先使用 X-Real-IP（通常由反向代理设置）
+        String realIp = headers.get("X-Real-IP");
+        if (realIp == null || realIp.isEmpty()) {
+            realIp = headers.get("x-real-ip");
+        }
+        if (realIp != null && !realIp.isEmpty()) {
+            return realIp.trim().split(",")[0].trim();
+        }
+        
+        // 2. 使用 X-Forwarded-For（取第一个IP，即真实客户端IP）
+        String forwardedFor = headers.get("X-Forwarded-For");
+        if (forwardedFor == null || forwardedFor.isEmpty()) {
+            forwardedFor = headers.get("x-forwarded-for");
+        }
+        if (forwardedFor != null && !forwardedFor.isEmpty()) {
+            // X-Forwarded-For 可能包含多个IP，用逗号分隔，第一个是真实客户端IP
+            String[] ips = forwardedFor.split(",");
+            if (ips.length > 0) {
+                return ips[0].trim();
+            }
+        }
+        
+        // 3. 尝试其他可能的代理头
+        String cfConnectingIp = headers.get("CF-Connecting-IP"); // Cloudflare
+        if (cfConnectingIp != null && !cfConnectingIp.isEmpty()) {
+            return cfConnectingIp.trim();
+        }
+        
+        String trueClientIp = headers.get("True-Client-IP"); // Akamai
+        if (trueClientIp != null && !trueClientIp.isEmpty()) {
+            return trueClientIp.trim();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 从请求头中提取完整的 X-Forwarded-For 值
+     */
+    private String extractForwardedFor(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return null;
+        }
+        
+        String forwardedFor = headers.get("X-Forwarded-For");
+        if (forwardedFor == null || forwardedFor.isEmpty()) {
+            forwardedFor = headers.get("x-forwarded-for");
+        }
+        
+        return forwardedFor != null && !forwardedFor.isEmpty() ? forwardedFor.trim() : null;
+    }
+    
+    /**
+     * 从请求头中提取请求来源信息
+     */
+    private RequestSourceInfo extractRequestSourceInfo(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return new RequestSourceInfo(null, null, null, null, null, null, null);
+        }
+        
+        String clientIp = extractClientIp(headers);
+        String realIp = clientIp; // 真实IP就是提取的客户端IP
+        String forwardedFor = extractForwardedFor(headers);
+        String userAgent = headers.getOrDefault("User-Agent", 
+                headers.getOrDefault("user-agent", null));
+        String referer = headers.getOrDefault("Referer", 
+                headers.getOrDefault("referer", null));
+        String origin = headers.getOrDefault("Origin", 
+                headers.getOrDefault("origin", null));
+        String host = headers.getOrDefault("Host", 
+                headers.getOrDefault("host", null));
+        
+        return new RequestSourceInfo(clientIp, realIp, forwardedFor, userAgent, referer, origin, host);
+    }
+    
+    /**
+     * 请求来源信息记录类
+     */
+    private static class RequestSourceInfo {
+        final String clientIp;
+        final String realIp;
+        final String forwardedFor;
+        final String userAgent;
+        final String referer;
+        final String origin;
+        final String host;
+        
+        RequestSourceInfo(String clientIp, String realIp, String forwardedFor, 
+                         String userAgent, String referer, String origin, String host) {
+            this.clientIp = clientIp;
+            this.realIp = realIp;
+            this.forwardedFor = forwardedFor;
+            this.userAgent = userAgent;
+            this.referer = referer;
+            this.origin = origin;
+            this.host = host;
+        }
     }
     
     /**

@@ -49,6 +49,22 @@ public interface RedisClient {
     Set<String> keys(String pattern);
 
     /**
+     * 获取键的类型
+     * @return 键的类型：string, list, set, zset, hash, none
+     */
+    String type(String key);
+
+    /**
+     * 获取 Set 的所有成员
+     */
+    Set<String> smembers(String key);
+
+    /**
+     * 获取 String 类型的值
+     */
+    String get(String key);
+
+    /**
      * 执行操作（用于需要事务或批量操作的场景）
      */
     <T> T execute(RedisOperation<T> operation);

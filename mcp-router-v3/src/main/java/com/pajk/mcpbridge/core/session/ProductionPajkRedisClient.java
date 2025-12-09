@@ -127,6 +127,40 @@ public class ProductionPajkRedisClient implements RedisClient {
     }
 
     @Override
+    public String type(String key) {
+        try {
+            // PajkJedisClient 可能不支持 type 操作
+            log.warn("type not fully supported by PajkJedisClient for key: {}", key);
+            return "unknown";
+        } catch (Exception e) {
+            log.error("Failed to type key={}", key, e);
+            throw new RuntimeException("Redis type failed", e);
+        }
+    }
+
+    @Override
+    public Set<String> smembers(String key) {
+        try {
+            // PajkJedisClient 可能不支持 Set 操作
+            log.warn("smembers not fully supported by PajkJedisClient for key: {}", key);
+            return Set.of();
+        } catch (Exception e) {
+            log.error("Failed to smembers key={}", key, e);
+            throw new RuntimeException("Redis smembers failed", e);
+        }
+    }
+
+    @Override
+    public String get(String key) {
+        try {
+            return pajkJedisClient.get(key);
+        } catch (Exception e) {
+            log.error("Failed to get key={}", key, e);
+            throw new RuntimeException("Redis get failed", e);
+        }
+    }
+
+    @Override
     public <T> T execute(RedisOperation<T> operation) {
         // 对于生产环境，直接执行操作
         return operation.execute(this);

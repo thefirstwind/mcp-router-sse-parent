@@ -91,3 +91,6 @@ proxy_set_header X-Accel-Buffering "no";  # 禁用 Nginx 缓冲
 
 
 
+
+
+

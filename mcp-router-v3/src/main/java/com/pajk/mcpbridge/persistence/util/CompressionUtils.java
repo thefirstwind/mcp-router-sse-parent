@@ -82,6 +82,15 @@ public final class CompressionUtils {
         if (data == null || data.isEmpty()) {
             return data;
         }
+        
+        // 限制压缩数据的大小，防止解压缩阻塞
+        // 如果压缩数据本身超过 1MB，可能解压后会非常大，直接返回截断提示
+        final int MAX_COMPRESSED_SIZE = 1024 * 1024; // 1MB
+        if (data.length() > MAX_COMPRESSED_SIZE) {
+            log.warn("Compressed data too large ({} bytes), skipping decompression to prevent blocking", data.length());
+            return "[数据过大，跳过解压缩，原始大小: " + (data.length() / 1024) + "KB]";
+        }
+        
         if (data.startsWith(PREFIX_BROTLI)) {
             return decodeBrotli(data.substring(PREFIX_BROTLI.length()));
         }
@@ -135,6 +144,9 @@ public final class CompressionUtils {
         }
     }
 
+    // 解压后的最大大小限制：2MB（防止内存溢出和阻塞）
+    private static final int MAX_DECOMPRESSED_SIZE = 2 * 1024 * 1024;
+
     private static String decodeBrotli(String base64) {
         if (!BROTLI_AVAILABLE.get()) {
             log.warn("Brotli library unavailable during decode, returning base64 text.");
@@ -144,7 +156,16 @@ public final class CompressionUtils {
             byte[] compressed = BASE64_DECODER.decode(base64);
             DirectDecompress result = Decoder.decompress(compressed);
             if (result.getResultStatus() == DecoderJNI.Status.DONE) {
-                return new String(result.getDecompressedData(), StandardCharsets.UTF_8);
+                byte[] decompressed = result.getDecompressedData();
+                // 检查解压后的大小，防止过大导致阻塞
+                if (decompressed.length > MAX_DECOMPRESSED_SIZE) {
+                    log.warn("Decompressed data too large ({} bytes), truncating to prevent blocking", decompressed.length);
+                    byte[] truncated = new byte[MAX_DECOMPRESSED_SIZE];
+                    System.arraycopy(decompressed, 0, truncated, 0, MAX_DECOMPRESSED_SIZE);
+                    return new String(truncated, StandardCharsets.UTF_8) + 
+                           "\n\n...[解压后数据过大，已截断，仅显示前 " + (MAX_DECOMPRESSED_SIZE / 1024 / 1024) + "MB]";
+                }
+                return new String(decompressed, StandardCharsets.UTF_8);
             }
             log.warn("Brotli decode returned status {}", result.getResultStatus());
             return base64;
@@ -162,8 +183,21 @@ public final class CompressionUtils {
                  ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int len;
+                int totalRead = 0;
                 while ((len = gzip.read(buffer)) != -1) {
+                    // 检查解压后的大小，防止过大导致阻塞
+                    if (totalRead + len > MAX_DECOMPRESSED_SIZE) {
+                        int remaining = MAX_DECOMPRESSED_SIZE - totalRead;
+                        if (remaining > 0) {
+                            baos.write(buffer, 0, remaining);
+                        }
+                        log.warn("GZIP decompressed data exceeds limit ({} bytes), truncating to prevent blocking", 
+                                totalRead + len);
+                        String result = baos.toString(StandardCharsets.UTF_8);
+                        return result + "\n\n...[解压后数据过大，已截断，仅显示前 " + (MAX_DECOMPRESSED_SIZE / 1024 / 1024) + "MB]";
+                    }
                     baos.write(buffer, 0, len);
+                    totalRead += len;
                 }
                 return baos.toString(StandardCharsets.UTF_8);
             }
