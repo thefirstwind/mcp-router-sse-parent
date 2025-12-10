@@ -220,3 +220,4 @@ sudo networksetup -setdnsservers Ethernet "Empty"
 
 
 
+
