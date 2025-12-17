@@ -131,3 +131,6 @@ echo "5. 应用日志: tail -50 logs/mcp-router-v3.log"
 
 
 
+
+
+
