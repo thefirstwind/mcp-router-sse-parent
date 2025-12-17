@@ -7,7 +7,6 @@ import com.pajk.mcpbridge.core.config.NacosMcpRegistryConfig;
 import com.pajk.mcpbridge.core.model.McpMessage;
 import com.pajk.mcpbridge.core.model.McpServerInfo;
 import com.pajk.mcpbridge.core.registry.McpServerRegistry;
-import com.pajk.mcpbridge.core.service.McpSessionService.SessionOverview;
 import com.pajk.mcpbridge.persistence.entity.RoutingLog;
 import com.pajk.mcpbridge.persistence.service.PersistenceEventPublisher;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -17,12 +16,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 增强的MCP路由服务
@@ -466,16 +465,27 @@ public class McpRouterService {
         
         return serverRegistry.getAllHealthyServers(serviceName, registryProperties.getServiceGroups())
                 .collectList()
+                .timeout(Duration.ofSeconds(5)) // 服务发现超时：5秒
                 .flatMap(list -> {
                     if (list == null || list.isEmpty()) {
                         return Mono.just("目标服务不可用，请稍后重试或联系管理员");
                     }
                     McpServerInfo serverInfo = list.get(0);
-                    return mcpClientManager.listTools(serverInfo)
-                            .map(result -> (Object) result);
+                    // 使用10秒超时，避免长时间等待
+                    return mcpClientManager.listTools(serverInfo, Duration.ofSeconds(10))
+                            .map(result -> (Object) result)
+                            .timeout(Duration.ofSeconds(10)) // 添加额外的超时保护
+                            .onErrorResume(error -> {
+                                log.error("Failed to list tools for service: {} (server: {})", 
+                                        serviceName, serverInfo.getName(), error);
+                                // 返回错误信息而不是抛出异常
+                                return Mono.just(Map.of("error", "Failed to list tools: " + error.getMessage()));
+                            });
                 })
+                .timeout(Duration.ofSeconds(15)) // 总超时：15秒（服务发现5秒 + 调用10秒）
                 .doOnSuccess(tools -> log.info("Listed tools for service: {}", serviceName))
-                .doOnError(error -> log.error("Failed to list tools for service: {}", serviceName, error));
+                .doOnError(error -> log.error("Failed to list tools for service: {}", serviceName, error))
+                .onErrorReturn("目标服务不可用，请稍后重试或联系管理员");
     }
 
     /**
@@ -687,41 +697,10 @@ public class McpRouterService {
             // 官方推荐：sessionId 应由客户端显式传递（Mcp-Session-Id 或 ?sessionId=）
             // 但为了兼容当前 MCP Inspector 等客户端在 Streamable 模式下未传 sessionId 的情况，
             // 在仅用于落库的场景下做一个"最佳努力"的推断：
-            // - 仅在 sessionId 为空、且存在唯一一个匹配 serviceName 且 transportType=STREAMABLE 的活跃会话时使用该会话的 sessionId
-            // - RESTful 请求（通过 /mcp/router/route/{serviceName}）不应该推断 sessionId，保持为 null
-            boolean isRestful = headers != null && "true".equals(headers.get("_isRestful"));
-            if (!isRestful
-                    && (sessionId == null || sessionId.isEmpty())
-                    && serviceName != null && !serviceName.isEmpty()
-                    && sessionService != null) {
-                try {
-                    List<SessionOverview> sessions = sessionService.getSessionOverview();
-                    List<SessionOverview> matching = sessions.stream()
-                            .filter(SessionOverview::active)
-                            .filter(s -> serviceName.equals(s.serviceName()))
-                            .filter(s -> s.transportType() != null
-                                    && "STREAMABLE".equalsIgnoreCase(s.transportType()))
-                            .filter(s -> s.sessionId() != null && !s.sessionId().trim().isEmpty())
-                            .sorted((a, b) -> {
-                                if (a.lastActive() == null && b.lastActive() == null) return 0;
-                                if (a.lastActive() == null) return 1;
-                                if (b.lastActive() == null) return -1;
-                                return b.lastActive().compareTo(a.lastActive());
-                            })
-                            .collect(Collectors.toList());
-
-                    if (matching.size() == 1) {
-                        sessionId = matching.get(0).sessionId();
-                        log.debug("🧩 Inferred streamable sessionId '{}' for service '{}' when creating routing log",
-                                sessionId, serviceName);
-                    } else if (matching.size() > 1) {
-                        log.debug("🧩 Found {} streamable sessions for service '{}', skip inferring sessionId for log",
-                                matching.size(), serviceName);
-                    }
-                } catch (Exception e) {
-                    log.debug("⚠️ Failed to infer streamable sessionId for routing log: {}", e.getMessage());
-                }
-            }
+            // 注意：为了性能，sessionId 推断已移除，避免阻塞主流程
+            // 如果需要 sessionId，应该通过请求头或参数显式传递
+            // 移除同步的 getSessionOverview() 调用，避免阻塞
+            // 如果需要推断 sessionId，应该使用异步方式或通过其他机制（如请求头）传递
 
             // 序列化请求头
             String requestHeadersJson = "{}";
@@ -1024,15 +1003,25 @@ public class McpRouterService {
      * 发布路由日志（异步，不阻塞主流程）
      */
     private void publishRoutingLog(RoutingLog routingLog) {
+        // 异步执行，避免阻塞响应式流
         if (persistenceEventPublisher != null) {
-            try {
-                log.debug("📝 Publishing routing log: requestId={}, isSuccess={}", 
-                    routingLog.getRequestId(), routingLog.getIsSuccess());
-                persistenceEventPublisher.publishRoutingLog(routingLog);
-            } catch (Exception e) {
-                // 持久化失败不应影响主流程
-                log.warn("Failed to publish routing log", e);
-            }
+            Mono.fromRunnable(() -> {
+                try {
+                    log.debug("📝 Publishing routing log: requestId={}, isSuccess={}", 
+                        routingLog.getRequestId(), routingLog.getIsSuccess());
+                    persistenceEventPublisher.publishRoutingLog(routingLog);
+                } catch (Exception e) {
+                    // 持久化失败不应影响主流程
+                    log.warn("Failed to publish routing log", e);
+                }
+            })
+            .subscribeOn(Schedulers.boundedElastic())
+            .timeout(Duration.ofMillis(100)) // 100ms 超时，避免长时间阻塞
+            .onErrorResume(error -> {
+                log.debug("⚠️ Routing log publish timeout or error (non-blocking): {}", error.getMessage());
+                return Mono.empty();
+            })
+            .subscribe(); // 异步执行，不等待结果
         } else {
             // 只在第一次出现时记录警告，避免日志刷屏
             if (!persistenceWarningLogged) {

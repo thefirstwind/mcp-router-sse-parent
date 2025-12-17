@@ -280,6 +280,7 @@ public class McpServerRegistry {
 
     /**
      * 获取所有健康的MCP服务器实例（优先查本地缓存）
+     * 支持服务名称匹配：如果找不到指定服务名，尝试添加 mcp- 前缀
      */
     public Flux<McpServerInfo> getAllHealthyServers(String serviceName, String serviceGroup) {
         // 支持通配符查询，获取所有MCP服务
@@ -341,13 +342,17 @@ public class McpServerRegistry {
         }
         
         // 具体服务名查询，遍历所有服务组
+        // 支持服务名称匹配：如果找不到指定服务名，尝试添加 mcp- 前缀（向后兼容）
         return Flux.fromIterable(serviceGroups)
                 .flatMap(serviceGroup -> {
                     String cacheKey = serviceName + "@" + serviceGroup;
                     List<McpServerInfo> cached = healthyInstanceCache.get(cacheKey);
                     Long ts = healthyCacheTimestamp.get(cacheKey);
                     if (cached != null && ts != null && (System.currentTimeMillis() - ts < CACHE_TTL_MS)) {
-                        return Flux.fromIterable(cached);
+                        if (!cached.isEmpty()) {
+                            return Flux.fromIterable(cached);
+                        }
+                        // 如果缓存为空，尝试添加 mcp- 前缀查找
                     }
                     
                     // 首次或缓存过期，主动查Nacos并刷新缓存
@@ -358,6 +363,52 @@ public class McpServerRegistry {
                             List<McpServerInfo> healthyList = instances.stream()
                                     .map(instance -> buildServerInfo(instance, serviceName))
                                     .toList();
+                            
+                            // 如果找不到实例，尝试多种前缀匹配策略
+                            if (healthyList.isEmpty() && !serviceName.startsWith("mcp-") && !serviceName.startsWith("virtual-")) {
+                                // 策略1: 尝试添加 mcp- 前缀（向后兼容）
+                                String prefixedServiceName = "mcp-" + serviceName;
+                                log.debug("🔍 Service '{}' not found, trying with mcp- prefix: {}", serviceName, prefixedServiceName);
+                                try {
+                                    List<Instance> prefixedInstances = namingService.selectInstances(prefixedServiceName, serviceGroup, true);
+                                    healthyList = prefixedInstances.stream()
+                                            .map(instance -> buildServerInfo(instance, serviceName)) // 使用原始服务名
+                                            .toList();
+                                    if (!healthyList.isEmpty()) {
+                                        log.info("✅ Found service with mcp- prefix: {} -> {}", prefixedServiceName, serviceName);
+                                        // 同时更新两个缓存键
+                                        String prefixedCacheKey = prefixedServiceName + "@" + serviceGroup;
+                                        healthyInstanceCache.put(prefixedCacheKey, healthyList);
+                                        healthyCacheTimestamp.put(prefixedCacheKey, System.currentTimeMillis());
+                                        subscribeServiceChangeIfNeeded(prefixedServiceName, serviceGroup);
+                                    }
+                                } catch (Exception e) {
+                                    log.debug("⚠️ Service with mcp- prefix also not found: {}", prefixedServiceName);
+                                }
+                                
+                                // 策略2: 如果 mcp- 前缀也没找到，尝试 virtual- 前缀（虚拟项目）
+                                if (healthyList.isEmpty()) {
+                                    String virtualServiceName = "virtual-" + serviceName;
+                                    log.debug("🔍 Service '{}' not found with mcp- prefix, trying with virtual- prefix: {}", serviceName, virtualServiceName);
+                                    try {
+                                        List<Instance> virtualInstances = namingService.selectInstances(virtualServiceName, serviceGroup, true);
+                                        healthyList = virtualInstances.stream()
+                                                .map(instance -> buildServerInfo(instance, serviceName)) // 使用原始服务名
+                                                .toList();
+                                        if (!healthyList.isEmpty()) {
+                                            log.info("✅ Found service with virtual- prefix: {} -> {}", virtualServiceName, serviceName);
+                                            // 同时更新两个缓存键
+                                            String virtualCacheKey = virtualServiceName + "@" + serviceGroup;
+                                            healthyInstanceCache.put(virtualCacheKey, healthyList);
+                                            healthyCacheTimestamp.put(virtualCacheKey, System.currentTimeMillis());
+                                            subscribeServiceChangeIfNeeded(virtualServiceName, serviceGroup);
+                                        }
+                                    } catch (Exception e) {
+                                        log.debug("⚠️ Service with virtual- prefix also not found: {}", virtualServiceName);
+                                    }
+                                }
+                            }
+                            
                             healthyInstanceCache.put(cacheKey, healthyList);
                             healthyCacheTimestamp.put(cacheKey, System.currentTimeMillis());
                             // 自动订阅

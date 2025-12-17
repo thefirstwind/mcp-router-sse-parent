@@ -519,8 +519,7 @@ public class McpRouterServerConfig {
 
         Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(15))
                 .map(tick -> ServerSentEvent.<String>builder()
-                        .event("heartbeat")
-                        .data("{\"type\":\"heartbeat\",\"timestamp\":" + System.currentTimeMillis() + "}")
+                        .comment("heartbeat " + System.currentTimeMillis()) // 使用 comment，客户端会忽略，不会报错
                         .build())
                 .doOnNext(tick -> {
                     Mono.fromRunnable(() -> sessionService.touch(context.sessionId()))

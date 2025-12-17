@@ -273,10 +273,16 @@ public class McpClientManager {
     
     /**
      * 获取服务器的可用工具列表（带超时参数）
-     * 激进优化：优先使用连接池，如果没有连接则快速创建（300ms），调用超时200ms（仅用于SSE）
+     * 对于虚拟项目（virtual-*），直接使用 HTTP POST 调用 RESTful 接口
+     * 对于其他服务，使用 SSE 客户端
      */
     public Mono<McpSchema.ListToolsResult> listTools(McpServerInfo serverInfo, Duration timeout) {
-        log.debug("📋 Listing tools for server via connection pool: {}", serverInfo.getName());
+        log.debug("📋 Listing tools for server: {}", serverInfo.getName());
+
+        // 对于虚拟项目（virtual-*），直接使用 HTTP POST 调用 RESTful 接口
+        if (serverInfo.getName() != null && serverInfo.getName().startsWith("virtual-")) {
+            return listToolsViaHttp(serverInfo, timeout);
+        }
 
         // 检查是否是激进优化模式（超时时间 < 1秒）
         boolean aggressiveMode = timeout.toMillis() < 1000;
@@ -312,6 +318,59 @@ public class McpClientManager {
                             serverInfo.getName(), error);
                     invalidateConnection(serverInfo);
                 });
+    }
+
+    /**
+     * 通过 HTTP POST 直接调用 RESTful 接口获取工具列表（用于虚拟项目）
+     */
+    private Mono<McpSchema.ListToolsResult> listToolsViaHttp(McpServerInfo serverInfo, Duration timeout) {
+        log.debug("📋 Listing tools via HTTP for virtual project: {}", serverInfo.getName());
+        
+        String serverBaseUrl = buildServerUrl(serverInfo);
+        String sessionId = java.util.UUID.randomUUID().toString(); // 生成临时 sessionId
+        
+        // 构建请求体
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("jsonrpc", "2.0");
+        requestBody.put("id", "tools-list-" + System.currentTimeMillis());
+        requestBody.put("method", "tools/list");
+        requestBody.put("params", Map.of());
+        
+        // 通过 WebClient 发送请求
+        return webClientBuilder
+                .baseUrl(serverBaseUrl)
+                .build()
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/mcp/message")
+                        .queryParam("sessionId", sessionId)
+                        .build())
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(timeout) // 使用传入的超时时间
+                .map(response -> {
+                    // 解析响应，返回 ListToolsResult
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> result = (Map<String, Object>) response.get("result");
+                    if (result == null) {
+                        throw new RuntimeException("Invalid tools/list response: no result");
+                    }
+                    
+                    // 使用 ObjectMapper 直接将 result Map 转换为 ListToolsResult
+                    try {
+                        return objectMapper.convertValue(result, McpSchema.ListToolsResult.class);
+                    } catch (Exception e) {
+                        log.error("Failed to convert result to ListToolsResult: {}", result, e);
+                        throw new RuntimeException("Failed to convert tools/list response: " + e.getMessage(), e);
+                    }
+                })
+                .doOnSuccess(tools -> log.debug("✅ Tools/list request successful via HTTP for server: {}", serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to list tools via HTTP for server: {}", serverInfo.getName(), error);
+                })
+                .onErrorMap(e -> new RuntimeException("MCP tools/list failed for server '" + serverInfo.getName() + "': " + e.getMessage()));
     }
 
     /**
