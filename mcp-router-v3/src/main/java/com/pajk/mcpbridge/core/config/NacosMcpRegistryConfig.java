@@ -136,6 +136,17 @@ public class NacosMcpRegistryConfig {
             properties.setProperty("password", password);
             properties.setProperty("namespace", namespace);
             
+            // 解决 gRPC 端口连接问题：设置客户端 IP，避免 SDK 使用 localhost
+            String[] addrParts = serverAddr.split(":");
+            if (addrParts.length == 2) {
+                String host = addrParts[0];
+                if (!host.equals("localhost") && !host.equals("127.0.0.1")) {
+                    System.setProperty("nacos.client.ip", host);
+                    System.setProperty("com.alibaba.nacos.client.naming.client.ip", host);
+                    log.info("Setting Nacos client IP for gRPC connection: {}", host);
+                }
+            }
+            
             NamingService namingService = NamingFactory.createNamingService(properties);
             log.info("Nacos NamingService created successfully with server: {}", serverAddr);
             return namingService;
@@ -163,6 +174,16 @@ public class NacosMcpRegistryConfig {
             // 添加应用标识
             properties.setProperty("app", "mcp-router-v3");
             properties.setProperty("applicationName", "mcp-router-v3");
+            
+            // ConfigService 通常不需要 gRPC，但为了保持一致性，也设置客户端 IP
+            String[] addrParts = serverAddr.split(":");
+            if (addrParts.length == 2) {
+                String host = addrParts[0];
+                if (!host.equals("localhost") && !host.equals("127.0.0.1")) {
+                    System.setProperty("nacos.client.ip", host);
+                    log.info("Setting Nacos client IP for ConfigService: {}", host);
+                }
+            }
             
             log.info("Creating Nacos ConfigService with properties: serverAddr={}, namespace={}, appName=mcp-router-v3", 
                     serverAddr, namespace);

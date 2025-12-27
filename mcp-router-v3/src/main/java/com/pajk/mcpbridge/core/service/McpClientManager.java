@@ -174,6 +174,11 @@ public class McpClientManager {
     public Mono<Object> callTool(McpServerInfo serverInfo, String toolName, Map<String, Object> arguments) {
         log.debug("🔧 Calling tool '{}' on server '{}' via connection pool", toolName, serverInfo.getName());
 
+        // 对于虚拟项目（virtual-*），直接使用 HTTP POST 调用 RESTful 接口
+        if (serverInfo.getName() != null && serverInfo.getName().startsWith("virtual-")) {
+            return callToolViaHttp(serverInfo, toolName, arguments);
+        }
+
         return getOrCreateMcpClient(serverInfo)
                 .flatMap(client -> {
                     // 构建工具调用请求
@@ -230,6 +235,7 @@ public class McpClientManager {
         requestBody.put("params", params);
         
         // 通过 WebClient 发送请求
+        // 注意：对于虚拟项目（virtual-*），需要在请求头中传递 X-Service-Name，以便 zkInfo 识别 endpoint
         return webClientBuilder
                 .baseUrl(serverBaseUrl)
                 .build()
@@ -238,6 +244,7 @@ public class McpClientManager {
                         .path("/mcp/message")
                         .queryParam("sessionId", sessionId)
                         .build())
+                .header("X-Service-Name", serverInfo.getName()) // 传递 serviceName 以便 zkInfo 识别虚拟项目
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
@@ -337,6 +344,7 @@ public class McpClientManager {
         requestBody.put("params", Map.of());
         
         // 通过 WebClient 发送请求
+        // 注意：对于虚拟项目（virtual-*），需要在请求头中传递 X-Service-Name，以便 zkInfo 识别 endpoint
         return webClientBuilder
                 .baseUrl(serverBaseUrl)
                 .build()
@@ -345,6 +353,7 @@ public class McpClientManager {
                         .path("/mcp/message")
                         .queryParam("sessionId", sessionId)
                         .build())
+                .header("X-Service-Name", serverInfo.getName()) // 传递 serviceName 以便 zkInfo 识别虚拟项目
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
@@ -371,6 +380,91 @@ public class McpClientManager {
                     log.error("❌ Failed to list tools via HTTP for server: {}", serverInfo.getName(), error);
                 })
                 .onErrorMap(e -> new RuntimeException("MCP tools/list failed for server '" + serverInfo.getName() + "': " + e.getMessage()));
+    }
+
+    /**
+     * 通过 HTTP POST 直接调用 RESTful 接口执行工具调用（用于虚拟项目）
+     */
+    private Mono<Object> callToolViaHttp(McpServerInfo serverInfo, String toolName, Map<String, Object> arguments) {
+        log.debug("🔧 Calling tool '{}' via HTTP for virtual project: {}", toolName, serverInfo.getName());
+        
+        String serverBaseUrl = buildServerUrl(serverInfo);
+        String sessionId = java.util.UUID.randomUUID().toString(); // 生成临时 sessionId
+        
+        // 构建请求体
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("jsonrpc", "2.0");
+        requestBody.put("id", "tools-call-" + System.currentTimeMillis());
+        requestBody.put("method", "tools/call");
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("name", toolName);
+        params.put("arguments", arguments != null ? arguments : Map.of());
+        requestBody.put("params", params);
+        
+        // 通过 WebClient 发送请求
+        // 注意：对于虚拟项目（virtual-*），需要在请求头中传递 X-Service-Name，以便 zkInfo 识别 endpoint
+        return webClientBuilder
+                .baseUrl(serverBaseUrl)
+                .build()
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/mcp/message")
+                        .queryParam("sessionId", sessionId)
+                        .build())
+                .header("X-Service-Name", serverInfo.getName()) // 传递 serviceName 以便 zkInfo 识别虚拟项目
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofSeconds(60)) // 工具调用可能需要更长时间
+                .map(response -> {
+                    // 检查是否有错误
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> error = (Map<String, Object>) response.get("error");
+                    if (error != null) {
+                        String errorMessage = (String) error.get("message");
+                        throw new RuntimeException("Tool execution error: " + errorMessage);
+                    }
+                    
+                    // 解析响应，返回 result
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> result = (Map<String, Object>) response.get("result");
+                    if (result == null) {
+                        throw new RuntimeException("Invalid tools/call response: no result");
+                    }
+                    
+                    // 解析工具调用结果（zkInfo 返回的 result 格式可能不同，需要适配）
+                    // zkInfo 的 tools/call 响应格式：{"jsonrpc":"2.0","id":"...","result":{...}}
+                    // 其中 result 可能包含 content 数组或其他格式
+                    Object contentObj = result.get("content");
+                    if (contentObj != null) {
+                        // 如果有 content 字段，使用 parseToolResult 解析
+                        if (contentObj instanceof java.util.List) {
+                            @SuppressWarnings("unchecked")
+                            java.util.List<Map<String, Object>> contentList = (java.util.List<Map<String, Object>>) contentObj;
+                            // 转换为 McpSchema.Content 格式
+                            java.util.List<McpSchema.Content> contents = contentList.stream()
+                                    .map(contentMap -> {
+                                        String type = (String) contentMap.get("type");
+                                        if ("text".equals(type)) {
+                                            String text = (String) contentMap.get("text");
+                                            return new McpSchema.TextContent(text);
+                                        }
+                                        return new McpSchema.TextContent(contentMap.toString());
+                                    })
+                                    .collect(java.util.stream.Collectors.toList());
+                            return parseToolResult(contents);
+                        }
+                    }
+                    
+                    // 如果没有 content 字段，直接返回 result
+                    return result;
+                })
+                .doOnSuccess(result -> log.debug("✅ Tools/call request successful via HTTP for server: {}", serverInfo.getName()))
+                .doOnError(error -> {
+                    log.error("❌ Failed to call tool via HTTP for server: {}", serverInfo.getName(), error);
+                })
+                .onErrorMap(e -> new RuntimeException("MCP tools/call failed for tool '" + toolName + "' on server '" + serverInfo.getName() + "': " + e.getMessage()));
     }
 
     /**

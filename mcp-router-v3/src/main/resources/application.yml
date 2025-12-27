@@ -10,9 +10,9 @@ spring:
   
   # 数据源配置
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/mcp_bridge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: mcp_user
-    password: mcp_user
+    url: jdbc:mysql://${MYSQL_HOST:192.168.0.101}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:mcp_bridge}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:mcp_user}
+    password: ${MYSQL_PASSWORD:mcp_user}
     driver-class-name: com.mysql.cj.jdbc.Driver
     
     # HikariCP 连接池配置
@@ -42,10 +42,10 @@ spring:
     alibaba:
       mcp:
         nacos:
-          namespace: public
-          server-addr: 127.0.0.1:8848
-          username: nacos
-          password: nacos
+          namespace: ${NACOS_NAMESPACE:public}
+          server-addr: ${NACOS_SERVER_ADDR:192.168.0.101:8848}
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
           registry:
             enabled: true
             # 支持多个服务组，用于查询不同组的 MCP 服务实例  暂时只支持一个元素 mcp-server
@@ -87,7 +87,7 @@ mcp:
     redis:
       type: local  # local 或 production
       # 本地环境配置（type=local 时使用）
-      host: localhost
+      host: 192.168.0.101
       port: 6379
       password: 
       database: 0
