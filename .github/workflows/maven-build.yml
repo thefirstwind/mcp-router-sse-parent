@@ -21,8 +21,16 @@ jobs:
         distribution: 'corretto'
         cache: maven
     
-    - name: Build with Maven (skip failing modules)
-      run: mvn -B clean install -DskipTests -Dmaven.test.skip=true --fail-at-end
+    - name: Build spring-ai-alibaba dependencies
+      run: |
+        echo "Building spring-ai-alibaba..."
+        cd spring-ai-alibaba
+        mvn clean install -DskipTests -T 4
+        echo "✓ spring-ai-alibaba build completed"
+        cd ..
+    
+    - name: Build main project
+      run: mvn -B clean install -DskipTests -T 4
       continue-on-error: true
     
     - name: Run Tests
