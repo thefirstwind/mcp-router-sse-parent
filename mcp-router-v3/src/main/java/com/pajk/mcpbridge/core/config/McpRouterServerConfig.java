@@ -329,9 +329,37 @@ public class McpRouterServerConfig {
     private Mono<ServerResponse> handleStreamable(ServerRequest request, String serviceName, String source) {
         SessionContext context = initializeSession(source, request, serviceName, TransportType.STREAMABLE);
         MediaType mediaType = resolveStreamableMediaType(request);
-        Flux<String> streamFlux = buildEventFlux(context)
-                .map(this::toStreamableJson);
+        
+        // 创建 sessionId 初始消息（NDJSON格式）
+        String sessionIdMessage = buildSessionIdMessage(context.sessionId(), context.messageEndpoint());
+        
+        // 在流的开头添加 sessionId 消息，然后是正常的事件流
+        Flux<String> streamFlux = Flux.concat(
+                Flux.just(sessionIdMessage),
+                buildEventFlux(context).map(this::toStreamableJson)
+        );
+        
         return buildStreamableResponse(context, streamFlux, mediaType);
+    }
+    
+    /**
+     * 构建 Streamable 协议的 sessionId 初始消息
+     * 格式符合 NDJSON 规范，包含 sessionId 和 messageEndpoint
+     */
+    private String buildSessionIdMessage(String sessionId, String messageEndpoint) {
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("type", "session");
+        payload.put("sessionId", sessionId);
+        payload.put("messageEndpoint", messageEndpoint);
+        payload.put("transport", "streamable");
+        
+        try {
+            return objectMapper.writeValueAsString(payload) + "\n";
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to encode session message, using fallback: {}", e.getMessage());
+            return String.format("{\"type\":\"session\",\"sessionId\":\"%s\",\"messageEndpoint\":\"%s\",\"transport\":\"streamable\"}\n", 
+                    sessionId, messageEndpoint);
+        }
     }
 
 
@@ -845,16 +873,32 @@ public class McpRouterServerConfig {
      * 兼容历史查询参数 ?sessionId= 的使用方式。
      */
     private String resolveSessionId(ServerRequest request) {
+        // 1. 尝试从请求头中解析（Streamable 官方规范）
         for (String headerName : SESSION_ID_HEADER_CANDIDATES) {
             String headerValue = request.headers().firstHeader(headerName);
             if (StringUtils.hasText(headerValue)) {
-                log.debug("📎 Resolved sessionId from header {}: {}", headerName, headerValue);
+                log.info("✅ Resolved sessionId from header '{}': {}", headerName, headerValue);
                 return headerValue;
             }
         }
-        return request.queryParam("sessionId")
+        
+        // 2. 回退到查询参数（兼容历史方式）
+        String querySessionId = request.queryParam("sessionId")
                 .filter(StringUtils::hasText)
                 .orElse(null);
+        
+        if (querySessionId != null) {
+            log.info("✅ Resolved sessionId from query parameter: {}", querySessionId);
+            return querySessionId;
+        }
+        
+        // 3. 没有找到 sessionId
+        log.warn("⚠️ No sessionId found in request headers or query parameters. " +
+                "Client should pass sessionId via 'Mcp-Session-Id' header or '?sessionId=' query parameter. " +
+                "Path: {}, Method: {}", 
+                request.path(), request.method());
+        
+        return null;
     }
 
     /**
