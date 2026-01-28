@@ -28,19 +28,35 @@ jobs:
         echo "Version in pom.xml:"
         grep -A 1 "<revision>" pom.xml || true
         echo ""
-        echo "Building all modules..."
-        mvn clean install -DskipTests -T 4 2>&1 | tee ../spring-ai-build.log
+        echo "Building all modules (sequential for reliability)..."
+        mvn clean install -DskipTests
+        BUILD_STATUS=$?
         echo ""
-        echo "=== Checking installed artifacts ==="
-        ls -la ~/.m2/repository/com/alibaba/cloud/ai/ || echo "No artifacts found"
-        find ~/.m2/repository/com/alibaba/cloud/ai -name "*mcp*" -type d | head -5 || true
+        echo "=== Build exit status: $BUILD_STATUS ==="
+        if [ $BUILD_STATUS -ne 0 ]; then
+          echo "Build failed, showing last 50 lines of output"
+          tail -50 ../spring-ai-build.log || true
+          exit 1
+        fi
+        echo ""
+        echo "=== Checking installed mcp-nacos artifact ==="
+        NACOS_PATH=~/.m2/repository/com/alibaba/cloud/ai/spring-ai-alibaba-mcp-nacos/1.0.0.3.250728
+        if [ -d "$NACOS_PATH" ]; then
+          echo "✓ Found spring-ai-alibaba-mcp-nacos:"
+          ls -lh "$NACOS_PATH"
+        else
+          echo "✗ spring-ai-alibaba-mcp-nacos NOT found at $NACOS_PATH"
+          echo "Searching in repository..."
+          find ~/.m2/repository/com/alibaba/cloud/ai -name "*mcp-nacos*" || echo "No mcp-nacos artifacts found"
+          exit 1
+        fi
         cd ..
         echo "=== spring-ai-alibaba build completed ==="
     
     - name: Build main project
       run: |
         echo "=== Building main project ==="
-        mvn -B clean install -DskipTests -T 4
+        mvn -B clean install -DskipTests
       continue-on-error: true
     
     - name: Run Tests
