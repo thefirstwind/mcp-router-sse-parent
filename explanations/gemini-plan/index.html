@@ -1,0 +1,3391 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Spring AI + MCP 路由器项目完整文档">
+      
+      
+        <meta name="author" content="Your Team">
+      
+      
+        <link rel="canonical" href="https://thefirstwind.github.io/mcp-router-sse-parent/explanations/gemini-plan/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Google DeepMind Gemini API 与 Agentic Workflow 整合方案 - MCP Router 项目文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../css/timeago.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#google-deepmind-gemini-api-agentic-workflow" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="MCP Router 项目文档" class="md-header__button md-logo" aria-label="MCP Router 项目文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MCP Router 项目文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Google DeepMind Gemini API 与 Agentic Workflow 整合方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换至深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至浅色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换至浅色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/thefirstwind/mcp-router-sse-parent" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    thefirstwind/mcp-router-sse-parent
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quick-start/overview.md" class="md-tabs__link">
+          
+  
+  
+  快速开始
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/" class="md-tabs__link">
+          
+  
+  
+  教程
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../how-to-guides/" class="md-tabs__link">
+          
+  
+  
+  操作指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  说明文档
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/" class="md-tabs__link">
+          
+  
+  
+  参考文档
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../workflows/" class="md-tabs__link">
+          
+  
+  
+  工作流
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../contributing/" class="md-tabs__link">
+          
+  
+  
+  贡献指南
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="MCP Router 项目文档" class="md-nav__button md-logo" aria-label="MCP Router 项目文档" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MCP Router 项目文档
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/thefirstwind/mcp-router-sse-parent" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    thefirstwind/mcp-router-sse-parent
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    快速开始
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/overview.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目概览
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5分钟上手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/setup.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发环境
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    教程
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    教程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    教程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    操作指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    操作指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to-guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    操作指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to-guides/add-mcp-server.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    添加MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to-guides/add-agent.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    添加AI Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to-guides/integrate-gemini/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gemini整合
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    说明文档
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    说明文档
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    说明文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构设计
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    工作流对比
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    参考文档
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    参考文档
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    参考文档
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    工作流
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    工作流
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    工作流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/github-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub设置
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/summary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    工作流总结
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    贡献指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南 (Contributing Guide)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/code-standards.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    代码规范
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📋 目录
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 整合概述
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 整合概述">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心价值
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-deepmind-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Google DeepMind API 能力清单
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Google DeepMind API 能力清单">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 核心模型
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 核心模型">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gemini-3-pro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini 3 Pro (最新)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gemini-3-flash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini 3 Flash (最新)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gemini-25-pro-tts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini 2.5 Pro TTS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gemini-robotics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gemini Robotics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 生成能力
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 生成能力">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nano-banana-nano-banana-pro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nano Banana / Nano Banana Pro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#veo-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Veo 3.1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 核心功能 API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 核心功能 API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#long-context-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long Context API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-calling-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function Calling API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-outputs-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured Outputs API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#document-understanding-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Understanding API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-api-voice-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live API (Voice Agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thinking-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thinking API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 内置工具
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. API 访问方式
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API 访问方式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SDK 支持
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentic-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ Agentic Workflow 参考架构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏗️ Agentic Workflow 参考架构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spring-ai-alibaba-agent-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基于 Spring AI Alibaba Agent Framework
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 工作流类型
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 工作流类型">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sequential-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sequential Agent (顺序代理)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Agent (并行代理)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routing Agent (路由代理)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loop-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loop Agent (循环代理)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supervisor-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supervisor Agent (监督代理)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 参考开源项目
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 参考开源项目">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spring-ai-alibaba-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spring AI Alibaba Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spring-ai-official-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spring AI Official Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 核心组件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 核心组件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool Calling (工具调用)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#context-engineering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context Engineering (上下文工程)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#human-in-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Human-in-the-Loop (人机协作)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏛️ 整合架构设计
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏛️ 整合架构设计">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        整体架构图
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增模块说明
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="新增模块说明">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-gemini-integration-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. gemini-integration-module (新建)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-agent-workflow-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. agent-workflow-module (新建)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-mcp-client-gemini-mcp-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. mcp-client-gemini (扩展现有 mcp-client)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-mcp-server-gemini-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. mcp-server-gemini-tools (新建)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📝 实施计划
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📝 实施计划">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-week-1-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段 1: 基础整合 (Week 1-2)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="阶段 1: 基础整合 (Week 1-2)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-gemini-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 1.1: Gemini API 集成
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-mcp-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 1.2: 扩展 MCP Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 1.3: 文档与配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-agentic-workflow-week-3-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段 2: Agentic Workflow (Week 3-4)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="阶段 2: Agentic Workflow (Week 3-4)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 2.1: 基础 Agent 框架
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 2.2: 高级 Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-human-in-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 2.3: Human-in-the-Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-gemini-week-5-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段 3: Gemini 特色功能 (Week 5-6)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="阶段 3: Gemini 特色功能 (Week 5-6)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-document-understanding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 3.1: Document Understanding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 3.2: 多模态能力
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-voice-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 3.3: Voice Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-week-7-8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段 4: 企业级功能 (Week 7-8)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="阶段 4: 企业级功能 (Week 7-8)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 4.1: 监控与日志
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 4.2: 安全与权限
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 4.3: 性能优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-week-9-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段 5: 示例应用 (Week 9-10)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="阶段 5: 示例应用 (Week 9-10)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-deepresearch-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例 1: DeepResearch Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-multi-document-analyzer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例 2: Multi-Document Analyzer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-voice-customer-service-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例 3: Voice Customer Service Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ 技术栈
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🛠️ 技术栈">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        后端框架
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI 模型 &amp; API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        数据存储
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        消息 &amp; 通信
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        监控 &amp; 运维
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        开发工具
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 项目结构
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 配置示例
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔐 配置示例">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#applicationyml-mcp-client-gemini" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        application.yml (mcp-client-gemini)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kpi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📈 性能指标 &amp; KPI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📈 性能指标 &amp; KPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目标指标
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        成本优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎓 学习资源
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎓 学习资源">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        官方文档
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例项目
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        视频教程
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤝 贡献指南
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📞 联系方式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 许可证
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗓️ 更新日志
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🗓️ 更新日志">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v100-2026-01-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0 (2026-01-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        待办事项
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="google-deepmind-gemini-api-agentic-workflow">Google DeepMind Gemini API 与 Agentic Workflow 整合方案<a class="headerlink" href="#google-deepmind-gemini-api-agentic-workflow" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>基于 mcp-router-sse-parent 项目的整合计划</p>
+<p>创建时间: 2026-01-28</p>
+</blockquote>
+<h2 id="_1">📋 目录<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#整合概述">整合概述</a></li>
+<li><a href="#google-deepmind-api-能力清单">Google DeepMind API 能力清单</a></li>
+<li><a href="#agentic-workflow-参考架构">Agentic Workflow 参考架构</a></li>
+<li><a href="#整合架构设计">整合架构设计</a></li>
+<li><a href="#实施计划">实施计划</a></li>
+<li><a href="#技术栈">技术栈</a></li>
+</ol>
+<hr />
+<h2 id="_2">🎯 整合概述<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="_3">目标<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<p>在现有的 <strong>mcp-router-sse-parent</strong> 项目中整合 Google DeepMind 的 Gemini API，构建一个基于 Spring Boot 的企业级 Agentic AI 工作流系统。</p>
+<h3 id="_4">核心价值<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>🤖 <strong>多模型支持</strong>: 整合 Gemini、DeepSeek 等多个 AI 模型</li>
+<li>🔄 <strong>智能工作流</strong>: 实现 Sequential、Parallel、Routing、Loop 等多种 Agent 模式</li>
+<li>🔌 <strong>MCP 协议</strong>: 基于 Model Context Protocol 的标准化工具调用</li>
+<li>🌐 <strong>企业级架构</strong>: 基于 Spring Cloud Alibaba 的微服务架构</li>
+</ul>
+<hr />
+<h2 id="google-deepmind-api">🚀 Google DeepMind API 能力清单<a class="headerlink" href="#google-deepmind-api" title="Permanent link">&para;</a></h2>
+<h3 id="1">1. <strong>核心模型</strong><a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<h4 id="gemini-3-pro">Gemini 3 Pro (最新)<a class="headerlink" href="#gemini-3-pro" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>描述</strong>: 最智能的模型，在多模态理解方面全球领先</li>
+<li><strong>特点</strong>: 先进的推理能力</li>
+<li><strong>用途</strong>: 复杂任务、深度分析、多轮对话</li>
+</ul>
+<h4 id="gemini-3-flash">Gemini 3 Flash (最新)<a class="headerlink" href="#gemini-3-flash" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>描述</strong>: 前沿性能，成本仅为大型模型的一小部分</li>
+<li><strong>特点</strong>: 高性价比、快速响应</li>
+<li><strong>用途</strong>: 生产环境、实时应用</li>
+</ul>
+<h4 id="gemini-25-pro-tts">Gemini 2.5 Pro TTS<a class="headerlink" href="#gemini-25-pro-tts" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>描述</strong>: 原生文本转语音能力</li>
+<li><strong>特点</strong>: 高质量语音合成</li>
+<li><strong>用途</strong>: 语音助手、客服系统</li>
+</ul>
+<h4 id="gemini-robotics">Gemini Robotics<a class="headerlink" href="#gemini-robotics" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>描述</strong>: 视觉-语言模型 (VLM)，将 Gemini 的代理能力带入机器人领域</li>
+<li><strong>特点</strong>: 物理世界的高级推理</li>
+<li><strong>用途</strong>: 机器人控制、物联网应用</li>
+</ul>
+<h3 id="2">2. <strong>生成能力</strong><a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
+<h4 id="nano-banana-nano-banana-pro">Nano Banana / Nano Banana Pro<a class="headerlink" href="#nano-banana-nano-banana-pro" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>功能</strong>: 图像生成和编辑</li>
+<li><strong>特点</strong>: 最先进的图像生成模型</li>
+<li><strong>API</strong>: Image Generation API</li>
+</ul>
+<h4 id="veo-31">Veo 3.1<a class="headerlink" href="#veo-31" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>功能</strong>: 视频生成，带原生音频</li>
+<li><strong>特点</strong>: 高质量视频创作</li>
+<li><strong>API</strong>: Video Generation API</li>
+</ul>
+<h3 id="3-api">3. <strong>核心功能 API</strong><a class="headerlink" href="#3-api" title="Permanent link">&para;</a></h3>
+<h4 id="long-context-api"><strong>Long Context API</strong><a class="headerlink" href="#long-context-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>能力: 输入数百万个 tokens
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>用途: 处理长文档、视频、图像理解
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>场景: 文档分析、报告生成
+</code></pre></div>
+<h4 id="function-calling-api"><strong>Function Calling API</strong><a class="headerlink" href="#function-calling-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>能力: 连接外部 API 和工具
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>用途: 构建 Agentic 工作流
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>场景: 工具调用、系统集成
+</code></pre></div>
+<h4 id="structured-outputs-api"><strong>Structured Outputs API</strong><a class="headerlink" href="#structured-outputs-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>能力: 约束响应为 JSON 格式
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>用途: 自动化数据处理
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>场景: 数据提取、结构化输出
+</code></pre></div>
+<h4 id="document-understanding-api"><strong>Document Understanding API</strong><a class="headerlink" href="#document-understanding-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>能力: 处理最多 1000 页 PDF
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>用途: 多模态文档理解
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>场景: 合同分析、法律文档处理
+</code></pre></div>
+<h4 id="live-api-voice-agents"><strong>Live API (Voice Agents)</strong><a class="headerlink" href="#live-api-voice-agents" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>能力: 实时语音应用
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>用途: 构建语音代理
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>场景: 语音助手、实时翻译
+</code></pre></div>
+<h4 id="thinking-api"><strong>Thinking API</strong><a class="headerlink" href="#thinking-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>能力: 思维能力增强推理
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>用途: 复杂任务和代理推理
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>场景: 问题解决、策略规划
+</code></pre></div>
+<h3 id="4">4. <strong>内置工具</strong><a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Google Search</strong>: 搜索集成</li>
+<li><strong>URL Context</strong>: URL 上下文理解</li>
+<li><strong>Google Maps</strong>: 地图集成</li>
+<li><strong>Code Execution</strong>: 代码执行</li>
+<li><strong>Computer Use</strong>: 计算机操作</li>
+</ul>
+<h3 id="5-api">5. <strong>API 访问方式</strong><a class="headerlink" href="#5-api" title="Permanent link">&para;</a></h3>
+<h4 id="rest-api">REST API<a class="headerlink" href="#rest-api" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 基础 URL</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>https://generativelanguage.googleapis.com/v1beta/models
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># 认证方式</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>API<span class="w"> </span>Key:<span class="w"> </span>通过<span class="w"> </span>Google<span class="w"> </span>AI<span class="w"> </span>Studio<span class="w"> </span>管理
+</code></pre></div>
+<h4 id="sdk">SDK 支持<a class="headerlink" href="#sdk" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Java SDK</li>
+<li>Python SDK</li>
+<li>JavaScript SDK</li>
+<li>Go SDK</li>
+<li>C# SDK</li>
+</ul>
+<hr />
+<h2 id="agentic-workflow">🏗️ Agentic Workflow 参考架构<a class="headerlink" href="#agentic-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="spring-ai-alibaba-agent-framework">基于 Spring AI Alibaba Agent Framework<a class="headerlink" href="#spring-ai-alibaba-agent-framework" title="Permanent link">&para;</a></h3>
+<p>根据 GitHub 上成熟的 Spring 开发工作流，我们参考以下架构：</p>
+<h3 id="1_1">1. <strong>工作流类型</strong><a class="headerlink" href="#1_1" title="Permanent link">&para;</a></h3>
+<h4 id="sequential-agent">Sequential Agent (顺序代理)<a class="headerlink" href="#sequential-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@Component</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">SequentialWorkflow</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="c1">// 任务按顺序执行</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="c1">// Task 1 -&gt; Task 2 -&gt; Task 3</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="c1">// 示例: 文档分析 -&gt; 数据提取 -&gt; 报告生成</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="parallel-agent">Parallel Agent (并行代理)<a class="headerlink" href="#parallel-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@Component</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ParallelWorkflow</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="c1">// 任务并行执行</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="c1">// Task 1 ┐</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="c1">// Task 2 ├─&gt; 汇总结果</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="c1">// Task 3 ┘</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="c1">// 示例: 多源数据同时查询</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="routing-agent">Routing Agent (路由代理)<a class="headerlink" href="#routing-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@Component</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RoutingWorkflow</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="c1">// 根据条件路由到不同子代理</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="c1">// 输入 -&gt; 判断 -&gt; Agent A / Agent B / Agent C</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="c1">// 示例: 根据任务复杂度选择不同模型</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="loop-agent">Loop Agent (循环代理)<a class="headerlink" href="#loop-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@Component</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoopWorkflow</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="c1">// 循环执行直到满足条件</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="c1">// 示例: 迭代优化、自我修正</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="supervisor-agent">Supervisor Agent (监督代理)<a class="headerlink" href="#supervisor-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nd">@Component</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">SupervisorWorkflow</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="c1">// 监督和协调多个子代理</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="c1">// 示例: 复杂项目管理</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="2_1">2. <strong>参考开源项目</strong><a class="headerlink" href="#2_1" title="Permanent link">&para;</a></h3>
+<h4 id="spring-ai-alibaba-examples">Spring AI Alibaba Examples<a class="headerlink" href="#spring-ai-alibaba-examples" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>仓库</strong>: <code>alibaba/spring-ai-alibaba</code></li>
+<li><strong>特点</strong>: </li>
+<li>DeepResearch Agent (研究代理)</li>
+<li>DataAgent (NL2SQL)</li>
+<li>JManus (在阿里巴巴内部大量应用)</li>
+<li>Flight Booking Assistant</li>
+</ul>
+<h4 id="spring-ai-official-examples">Spring AI Official Examples<a class="headerlink" href="#spring-ai-official-examples" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>仓库</strong>: <code>spring-projects/spring-ai-examples</code></li>
+<li><strong>特点</strong>:</li>
+<li>Tool Calling</li>
+<li>RAG (Retrieval Augmented Generation)</li>
+<li>Prompt Engineering</li>
+<li>Multi-Model Support</li>
+</ul>
+<h3 id="3">3. <strong>核心组件</strong><a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<h4 id="tool-calling">Tool Calling (工具调用)<a class="headerlink" href="#tool-calling" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nd">@Tool</span><span class="p">(</span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;查询数据库中的人员信息&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="nf">getPersonById</span><span class="p">(</span><span class="nd">@ToolParam</span><span class="p">(</span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;人员ID&quot;</span><span class="p">)</span><span class="w"> </span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">personRepository</span><span class="p">.</span><span class="na">findById</span><span class="p">(</span><span class="n">id</span><span class="p">).</span><span class="na">orElse</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="context-engineering">Context Engineering (上下文工程)<a class="headerlink" href="#context-engineering" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1">// 管理对话上下文</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1">// 提供相关历史信息</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1">// 优化 Prompt</span>
+</code></pre></div>
+<h4 id="human-in-the-loop">Human-in-the-Loop (人机协作)<a class="headerlink" href="#human-in-the-loop" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1">// 在关键决策点请求人工干预</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="c1">// 审批流程</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="c1">// 质量控制</span>
+</code></pre></div>
+<hr />
+<h2 id="_5">🏛️ 整合架构设计<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<h3 id="_6">整体架构图<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>│                        客户端层                                  │
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>│  │   Web    │  │  Mobile  │  │   CLI    │  │   API    │       │
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>                              ▼
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>│                     MCP Client Layer                             │
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>│  ┌──────────────────────────────────────────────────────┐       │
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>│  │  Spring AI ChatClient (统一接口)                      │       │
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>│  ├──────────────────────────────────────────────────────┤       │
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>│  │  - Gemini 3 Pro/Flash   (新增)                       │       │
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>│  │  - DeepSeek             (已有)                       │       │
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>│  │  - 其他模型              (可扩展)                     │       │
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>│  └──────────────────────────────────────────────────────┘       │
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>                              ▼
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>│                  Agentic Workflow Layer                          │
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>│  │Sequential│  │ Parallel │  │ Routing  │  │   Loop   │       │
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>│  │  Agent   │  │  Agent   │  │  Agent   │  │  Agent   │       │
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>│                                                                  │
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a>│  ┌────────────────────────────────────────────────────┐        │
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>│  │         Supervisor Agent (协调器)                   │        │
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>│  └────────────────────────────────────────────────────┘        │
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>                              ▼
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>│                    MCP Router Layer                              │
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>│  ┌──────────────────────────────────────────────────────┐       │
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a>│  │  Nacos Service Registry &amp; Discovery                  │       │
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>│  │  - 服务注册                                            │       │
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a>│  │  - 负载均衡                                            │       │
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a>│  │  - 健康检查                                            │       │
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>│  └──────────────────────────────────────────────────────┘       │
+<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>                              ▼
+<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a>│                    MCP Server Layer                              │
+<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a>│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+<a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a>│  │  Person  │  │ Document │  │  Search  │  │  Code    │       │
+<a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a>│  │  Server  │  │  Server  │  │  Server  │  │  Server  │       │
+<a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a>│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+<a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a>│                                                                  │
+<a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a>│  每个 Server 提供:                                               │
+<a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a>│  - @Tool 方法 (Spring AI)                                       │
+<a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a>│  - SSE 端点                                                      │
+<a id="__codelineno-15-51" name="__codelineno-15-51" href="#__codelineno-15-51"></a>│  - 业务逻辑                                                      │
+<a id="__codelineno-15-52" name="__codelineno-15-52" href="#__codelineno-15-52"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-15-53" name="__codelineno-15-53" href="#__codelineno-15-53"></a>                              ▼
+<a id="__codelineno-15-54" name="__codelineno-15-54" href="#__codelineno-15-54"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-15-55" name="__codelineno-15-55" href="#__codelineno-15-55"></a>│                      数据 &amp; 外部服务层                           │
+<a id="__codelineno-15-56" name="__codelineno-15-56" href="#__codelineno-15-56"></a>│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+<a id="__codelineno-15-57" name="__codelineno-15-57" href="#__codelineno-15-57"></a>│  │  MySQL   │  │  Redis   │  │  Vector  │  │  Google  │       │
+<a id="__codelineno-15-58" name="__codelineno-15-58" href="#__codelineno-15-58"></a>│  │          │  │          │  │   DB     │  │Services  │       │
+<a id="__codelineno-15-59" name="__codelineno-15-59" href="#__codelineno-15-59"></a>│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+<a id="__codelineno-15-60" name="__codelineno-15-60" href="#__codelineno-15-60"></a>└─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="_7">新增模块说明<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<h4 id="1-gemini-integration-module">1. <strong>gemini-integration-module</strong> (新建)<a class="headerlink" href="#1-gemini-integration-module" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>职责: Gemini API 集成
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>功能:
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>  - Gemini 客户端封装
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>  - API 密钥管理
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>  - 请求/响应转换
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>  - 错误处理
+</code></pre></div>
+<h4 id="2-agent-workflow-module">2. <strong>agent-workflow-module</strong> (新建)<a class="headerlink" href="#2-agent-workflow-module" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>职责: Agentic Workflow 实现
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>功能:
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  - Sequential/Parallel/Routing/Loop Agent
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  - Supervisor Agent
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>  - Context Management
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>  - Human-in-the-Loop
+</code></pre></div>
+<h4 id="3-mcp-client-gemini-mcp-client">3. <strong>mcp-client-gemini</strong> (扩展现有 mcp-client)<a class="headerlink" href="#3-mcp-client-gemini-mcp-client" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>职责: Gemini 特定的 MCP 客户端
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>功能:
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>  - Gemini ChatClient 配置
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>  - 多模态输入支持
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>  - Function Calling 集成
+</code></pre></div>
+<h4 id="4-mcp-server-gemini-tools">4. <strong>mcp-server-gemini-tools</strong> (新建)<a class="headerlink" href="#4-mcp-server-gemini-tools" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>职责: Gemini 专用工具服务器
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>功能:
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>  - Document Understanding Tools
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  - Image Generation Tools
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>  - Video Generation Tools (Veo)
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>  - Voice Agent Tools (TTS)
+</code></pre></div>
+<hr />
+<h2 id="_8">📝 实施计划<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h2>
+<h3 id="1-week-1-2">阶段 1: 基础整合 (Week 1-2)<a class="headerlink" href="#1-week-1-2" title="Permanent link">&para;</a></h3>
+<h4 id="11-gemini-api">任务 1.1: Gemini API 集成<a class="headerlink" href="#11-gemini-api" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 创建 <code>gemini-integration-module</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 添加 Gemini Java SDK 依赖</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 GeminiChatClient</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 配置 API Key 管理</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 编写单元测试</li>
+</ul>
+<h4 id="12-mcp-client">任务 1.2: 扩展 MCP Client<a class="headerlink" href="#12-mcp-client" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 在 <code>mcp-client</code> 中添加 Gemini 配置</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现多模型路由逻辑</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 更新 ChatClient 工厂模式</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 测试 Gemini + DeepSeek 双模型</li>
+</ul>
+<h4 id="13">任务 1.3: 文档与配置<a class="headerlink" href="#13" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 更新 README.md</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 添加 Gemini 配置示例</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 创建快速开始指南</li>
+</ul>
+<h3 id="2-agentic-workflow-week-3-4">阶段 2: Agentic Workflow (Week 3-4)<a class="headerlink" href="#2-agentic-workflow-week-3-4" title="Permanent link">&para;</a></h3>
+<h4 id="21-agent">任务 2.1: 基础 Agent 框架<a class="headerlink" href="#21-agent" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 创建 <code>agent-workflow-module</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 Agent 基类和接口</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 SequentialAgent</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 ParallelAgent</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 编写测试用例</li>
+</ul>
+<h4 id="22-agent">任务 2.2: 高级 Agent<a class="headerlink" href="#22-agent" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 RoutingAgent</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 LoopAgent</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 SupervisorAgent</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Context Management</li>
+</ul>
+<h4 id="23-human-in-the-loop">任务 2.3: Human-in-the-Loop<a class="headerlink" href="#23-human-in-the-loop" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 设计审批流程接口</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现回调机制</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 添加 WebSocket 支持</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 构建简单 UI</li>
+</ul>
+<h3 id="3-gemini-week-5-6">阶段 3: Gemini 特色功能 (Week 5-6)<a class="headerlink" href="#3-gemini-week-5-6" title="Permanent link">&para;</a></h3>
+<h4 id="31-document-understanding">任务 3.1: Document Understanding<a class="headerlink" href="#31-document-understanding" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 创建 <code>mcp-server-gemini-tools</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 PDF 处理工具</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Long Context API</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 测试大文档处理</li>
+</ul>
+<h4 id="32">任务 3.2: 多模态能力<a class="headerlink" href="#32" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现图像理解工具</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现视频分析工具</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Nano Banana (图像生成)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Veo 3.1 (视频生成)</li>
+</ul>
+<h4 id="33-voice-agents">任务 3.3: Voice Agents<a class="headerlink" href="#33-voice-agents" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Gemini 2.5 Pro TTS</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 Live API 支持</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 构建语音对话 Demo</li>
+</ul>
+<h3 id="4-week-7-8">阶段 4: 企业级功能 (Week 7-8)<a class="headerlink" href="#4-week-7-8" title="Permanent link">&para;</a></h3>
+<h4 id="41">任务 4.1: 监控与日志<a class="headerlink" href="#41" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 集成 Spring Boot Actuator</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 添加 Prometheus 指标</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现调用链追踪</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 配置告警规则</li>
+</ul>
+<h4 id="42">任务 4.2: 安全与权限<a class="headerlink" href="#42" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> API Key 安全存储 (Vault)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现 RBAC 权限控制</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 添加请求限流</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 审计日志</li>
+</ul>
+<h4 id="43">任务 4.3: 性能优化<a class="headerlink" href="#43" title="Permanent link">&para;</a></h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 实现响应缓存</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 连接池优化</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 异步处理优化</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 压力测试</li>
+</ul>
+<h3 id="5-week-9-10">阶段 5: 示例应用 (Week 9-10)<a class="headerlink" href="#5-week-9-10" title="Permanent link">&para;</a></h3>
+<h4 id="1-deepresearch-agent">示例 1: DeepResearch Agent<a class="headerlink" href="#1-deepresearch-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>功能: 深度研究报告生成
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>流程:
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>  1. 接收研究主题
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>  2. 使用 Gemini 3 Pro 进行主题分析
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  3. 并行执行多个搜索任务
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  4. 汇总和生成报告
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>  5. 人工审核
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>  6. 最终输出
+</code></pre></div>
+<h4 id="2-multi-document-analyzer">示例 2: Multi-Document Analyzer<a class="headerlink" href="#2-multi-document-analyzer" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>功能: 多文档对比分析
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>流程:
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>  1. 上传多个 PDF 文档
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>  2. 使用 Document Understanding API 提取内容
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>  3. 使用 Long Context 进行对比分析
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>  4. 生成结构化报告
+</code></pre></div>
+<h4 id="3-voice-customer-service-agent">示例 3: Voice Customer Service Agent<a class="headerlink" href="#3-voice-customer-service-agent" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>功能: 语音客服代理
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>流程:
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>  1. 语音输入 (Live API)
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>  2. 意图识别 (Gemini 3 Flash)
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>  3. 工具调用 (查询订单、退款等)
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>  4. 语音回复 (TTS)
+</code></pre></div>
+<hr />
+<h2 id="_9">🛠️ 技术栈<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
+<h3 id="_10">后端框架<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Spring Boot</strong>: 3.2+</li>
+<li><strong>Spring AI</strong>: 1.0.0-M4+</li>
+<li><strong>Spring Cloud Alibaba</strong>: 2023.0.x</li>
+<li><strong>Nacos</strong>: 2.3.x</li>
+</ul>
+<h3 id="ai-api">AI 模型 &amp; API<a class="headerlink" href="#ai-api" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Google Gemini API</strong>: </li>
+<li>Gemini 3 Pro</li>
+<li>Gemini 3 Flash</li>
+<li>Gemini 2.5 Pro TTS</li>
+<li>Nano Banana Pro</li>
+<li>Veo 3.1</li>
+<li><strong>DeepSeek</strong>: 现有集成</li>
+</ul>
+<h3 id="_11">数据存储<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>MySQL</strong>: 业务数据</li>
+<li><strong>Redis</strong>: 缓存 &amp; 会话</li>
+<li><strong>Vector Database</strong>: </li>
+<li>Milvus / Pinecone (RAG)</li>
+</ul>
+<h3 id="_12">消息 &amp; 通信<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>SSE</strong>: Server-Sent Events (MCP)</li>
+<li><strong>WebSocket</strong>: 实时通信</li>
+<li><strong>Dubbo</strong>: RPC (现有)</li>
+</ul>
+<h3 id="_13">监控 &amp; 运维<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Prometheus</strong>: 指标采集</li>
+<li><strong>Grafana</strong>: 可视化</li>
+<li><strong>ELK Stack</strong>: 日志分析</li>
+<li><strong>Spring Boot Actuator</strong>: 健康检查</li>
+</ul>
+<h3 id="_14">开发工具<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Maven</strong>: 构建工具</li>
+<li><strong>Git</strong>: 版本控制</li>
+<li><strong>Docker</strong>: 容器化</li>
+<li><strong>Kubernetes</strong>: 编排 (可选)</li>
+</ul>
+<hr />
+<h2 id="_15">📊 项目结构<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>mcp-router-sse-parent/
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>├── pom.xml                                    # 父 POM
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>│
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>├── gemini-integration-module/                 # 【新建】Gemini 集成
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>│   ├── src/main/java/
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>│   │   └── com/example/gemini/
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>│   │       ├── GeminiClientConfig.java
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>│   │       ├── GeminiChatClient.java
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>│   │       ├── GeminiException.java
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>│   │       └── model/                        # 请求/响应模型
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>│   └── pom.xml
+<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>│
+<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>├── agent-workflow-module/                     # 【新建】Agent 工作流
+<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>│   ├── src/main/java/
+<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>│   │   └── com/example/agent/
+<a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>│   │       ├── core/
+<a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>│   │       │   ├── Agent.java               # 基础接口
+<a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>│   │       │   ├── AgentContext.java
+<a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>│   │       │   └── AgentExecutor.java
+<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>│   │       ├── sequential/
+<a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>│   │       │   └── SequentialAgent.java
+<a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a>│   │       ├── parallel/
+<a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>│   │       │   └── ParallelAgent.java
+<a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>│   │       ├── routing/
+<a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>│   │       │   └── RoutingAgent.java
+<a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>│   │       ├── loop/
+<a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a>│   │       │   └── LoopAgent.java
+<a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>│   │       └── supervisor/
+<a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a>│   │           └── SupervisorAgent.java
+<a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a>│   └── pom.xml
+<a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a>│
+<a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a>├── mcp-client/                                # 【扩展】现有客户端
+<a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a>│   ├── src/main/java/
+<a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a>│   │   └── com/example/mcp/client/
+<a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a>│   │       ├── config/
+<a id="__codelineno-23-36" name="__codelineno-23-36" href="#__codelineno-23-36"></a>│   │       │   ├── DeepSeekConfig.java      # 现有
+<a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a>│   │       │   ├── GeminiConfig.java        # 新增
+<a id="__codelineno-23-38" name="__codelineno-23-38" href="#__codelineno-23-38"></a>│   │       │   └── MultiModelConfig.java    # 新增: 多模型路由
+<a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a>│   │       └── ...
+<a id="__codelineno-23-40" name="__codelineno-23-40" href="#__codelineno-23-40"></a>│   └── pom.xml
+<a id="__codelineno-23-41" name="__codelineno-23-41" href="#__codelineno-23-41"></a>│
+<a id="__codelineno-23-42" name="__codelineno-23-42" href="#__codelineno-23-42"></a>├── mcp-server-gemini-tools/                   # 【新建】Gemini 工具服务
+<a id="__codelineno-23-43" name="__codelineno-23-43" href="#__codelineno-23-43"></a>│   ├── src/main/java/
+<a id="__codelineno-23-44" name="__codelineno-23-44" href="#__codelineno-23-44"></a>│   │   └── com/example/mcp/server/gemini/
+<a id="__codelineno-23-45" name="__codelineno-23-45" href="#__codelineno-23-45"></a>│   │       ├── tools/
+<a id="__codelineno-23-46" name="__codelineno-23-46" href="#__codelineno-23-46"></a>│   │       │   ├── DocumentUnderstandingTool.java
+<a id="__codelineno-23-47" name="__codelineno-23-47" href="#__codelineno-23-47"></a>│   │       │   ├── ImageGenerationTool.java
+<a id="__codelineno-23-48" name="__codelineno-23-48" href="#__codelineno-23-48"></a>│   │       │   ├── VideoGenerationTool.java
+<a id="__codelineno-23-49" name="__codelineno-23-49" href="#__codelineno-23-49"></a>│   │       │   └── VoiceAgentTool.java
+<a id="__codelineno-23-50" name="__codelineno-23-50" href="#__codelineno-23-50"></a>│   │       └── ...
+<a id="__codelineno-23-51" name="__codelineno-23-51" href="#__codelineno-23-51"></a>│   └── pom.xml
+<a id="__codelineno-23-52" name="__codelineno-23-52" href="#__codelineno-23-52"></a>│
+<a id="__codelineno-23-53" name="__codelineno-23-53" href="#__codelineno-23-53"></a>├── mcp-server/                                # 现有 Person 服务
+<a id="__codelineno-23-54" name="__codelineno-23-54" href="#__codelineno-23-54"></a>├── mcp-router-v3/                             # 现有路由
+<a id="__codelineno-23-55" name="__codelineno-23-55" href="#__codelineno-23-55"></a>│
+<a id="__codelineno-23-56" name="__codelineno-23-56" href="#__codelineno-23-56"></a>├── examples/                                  # 【新建】示例应用
+<a id="__codelineno-23-57" name="__codelineno-23-57" href="#__codelineno-23-57"></a>│   ├── deep-research-example/
+<a id="__codelineno-23-58" name="__codelineno-23-58" href="#__codelineno-23-58"></a>│   ├── multi-document-analyzer-example/
+<a id="__codelineno-23-59" name="__codelineno-23-59" href="#__codelineno-23-59"></a>│   └── voice-customer-service-example/
+<a id="__codelineno-23-60" name="__codelineno-23-60" href="#__codelineno-23-60"></a>│
+<a id="__codelineno-23-61" name="__codelineno-23-61" href="#__codelineno-23-61"></a>├── docs/                                      # 文档
+<a id="__codelineno-23-62" name="__codelineno-23-62" href="#__codelineno-23-62"></a>│   ├── GOOGLE_DEEPMIND_INTEGRATION_PLAN.md  # 本文档
+<a id="__codelineno-23-63" name="__codelineno-23-63" href="#__codelineno-23-63"></a>│   ├── API_REFERENCE.md                      # API 参考
+<a id="__codelineno-23-64" name="__codelineno-23-64" href="#__codelineno-23-64"></a>│   └── DEVELOPMENT_GUIDE.md                  # 开发指南
+<a id="__codelineno-23-65" name="__codelineno-23-65" href="#__codelineno-23-65"></a>│
+<a id="__codelineno-23-66" name="__codelineno-23-66" href="#__codelineno-23-66"></a>└── README.md                                  # 更新主 README
+</code></pre></div>
+<hr />
+<h2 id="_16">🔐 配置示例<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h2>
+<h3 id="applicationyml-mcp-client-gemini">application.yml (mcp-client-gemini)<a class="headerlink" href="#applicationyml-mcp-client-gemini" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="nt">application</span><span class="p">:</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcp-client-gemini</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="nt">ai</span><span class="p">:</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">    </span><span class="c1"># Gemini 配置</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">    </span><span class="nt">gemini</span><span class="p">:</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">      </span><span class="nt">api-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${GEMINI_API_KEY}</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">      </span><span class="nt">base-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://generativelanguage.googleapis.com/v1beta</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">      </span><span class="nt">chat</span><span class="p">:</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">        </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gemini-3-flash</span><span class="w">  </span><span class="c1"># 或 gemini-3-pro</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">        </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="w">        </span><span class="nt">max-tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>
+<a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="w">    </span><span class="c1"># DeepSeek 配置 (保留现有)</span>
+<a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a><span class="w">    </span><span class="nt">openai</span><span class="p">:</span>
+<a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a><span class="w">      </span><span class="nt">api-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DEEPSEEK_API_KEY}</span>
+<a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a><span class="w">      </span><span class="nt">base-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://api.deepseek.com</span>
+<a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a><span class="w">      </span><span class="nt">chat</span><span class="p">:</span>
+<a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="w">        </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deepseek-chat</span>
+<a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>
+<a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="w">    </span><span class="c1"># MCP 配置</span>
+<a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a><span class="w">    </span><span class="nt">mcp</span><span class="p">:</span>
+<a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a><span class="w">      </span><span class="nt">client</span><span class="p">:</span>
+<a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a><span class="w">        </span><span class="nt">sse</span><span class="p">:</span>
+<a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a><span class="w">          </span><span class="nt">connections</span><span class="p">:</span>
+<a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a><span class="w">            </span><span class="nt">person-mcp-server</span><span class="p">:</span>
+<a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a><span class="w">              </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8060</span>
+<a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a><span class="w">            </span><span class="nt">gemini-tools-server</span><span class="p">:</span>
+<a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a><span class="w">              </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8070</span>
+<a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a>
+<a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a><span class="w">  </span><span class="c1"># Nacos 配置</span>
+<a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a><span class="w">    </span><span class="nt">nacos</span><span class="p">:</span>
+<a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a><span class="w">      </span><span class="nt">discovery</span><span class="p">:</span>
+<a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a><span class="w">        </span><span class="nt">server-addr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost:8848</span>
+<a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a><span class="w">        </span><span class="nt">server-addr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost:8848</span>
+<a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a>
+<a id="__codelineno-24-40" name="__codelineno-24-40" href="#__codelineno-24-40"></a><span class="c1"># Agent 配置</span>
+<a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a><span class="nt">agent</span><span class="p">:</span>
+<a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a><span class="w">  </span><span class="nt">workflow</span><span class="p">:</span>
+<a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a><span class="w">    </span><span class="nt">default-model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gemini-3-flash</span>
+<a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a><span class="w">    </span><span class="nt">routing</span><span class="p">:</span>
+<a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a><span class="w">      </span><span class="c1"># 根据任务复杂度路由</span>
+<a id="__codelineno-24-47" name="__codelineno-24-47" href="#__codelineno-24-47"></a><span class="w">      </span><span class="nt">simple-tasks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gemini-3-flash</span>
+<a id="__codelineno-24-48" name="__codelineno-24-48" href="#__codelineno-24-48"></a><span class="w">      </span><span class="nt">complex-tasks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gemini-3-pro</span>
+<a id="__codelineno-24-49" name="__codelineno-24-49" href="#__codelineno-24-49"></a><span class="w">      </span><span class="nt">research-tasks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gemini-3-pro</span>
+<a id="__codelineno-24-50" name="__codelineno-24-50" href="#__codelineno-24-50"></a><span class="w">    </span><span class="nt">supervisor</span><span class="p">:</span>
+<a id="__codelineno-24-51" name="__codelineno-24-51" href="#__codelineno-24-51"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-24-52" name="__codelineno-24-52" href="#__codelineno-24-52"></a><span class="w">      </span><span class="nt">max-retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</code></pre></div>
+<hr />
+<h2 id="kpi">📈 性能指标 &amp; KPI<a class="headerlink" href="#kpi" title="Permanent link">&para;</a></h2>
+<h3 id="_17">目标指标<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>目标值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API 响应时间 (P95)</td>
+<td>&lt; 2s</td>
+<td>Gemini 3 Flash</td>
+</tr>
+<tr>
+<td>API 响应时间 (P95)</td>
+<td>&lt; 5s</td>
+<td>Gemini 3 Pro</td>
+</tr>
+<tr>
+<td>并发处理能力</td>
+<td>1000 QPS</td>
+<td>单实例</td>
+</tr>
+<tr>
+<td>可用性</td>
+<td>99.9%</td>
+<td>年度</td>
+</tr>
+<tr>
+<td>错误率</td>
+<td>&lt; 0.1%</td>
+<td>月度</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_18">成本优化<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Sequential 简单任务优先使用 Gemini 3 Flash (低成本)</li>
+<li>复杂分析任务使用 Gemini 3 Pro (高准确性)</li>
+<li>实现智能缓存减少重复请求</li>
+<li>批量处理降低调用次数</li>
+</ul>
+<hr />
+<h2 id="_19">🎓 学习资源<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h2>
+<h3 id="_20">官方文档<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://ai.google.dev/gemini-api/docs">Gemini API 文档</a></li>
+<li><a href="https://docs.spring.io/spring-ai/reference/">Spring AI 文档</a></li>
+<li><a href="https://github.com/alibaba/spring-ai-alibaba">Spring AI Alibaba</a></li>
+</ul>
+<h3 id="_21">示例项目<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://github.com/spring-projects/spring-ai-examples">Spring AI Examples</a></li>
+<li><a href="https://github.com/springaialibaba/spring-ai-alibaba-examples">Spring AI Alibaba Examples</a></li>
+</ul>
+<h3 id="_22">视频教程<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://www.youtube.com/@SpringSourceDev">Spring AI YouTube Channel</a></li>
+<li><a href="https://www.youtube.com/googlefordevelopers">Gemini API Tutorials</a></li>
+</ul>
+<hr />
+<h2 id="_23">🤝 贡献指南<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Fork 项目</li>
+<li>创建特性分支 (<code>git checkout -b feature/amazing-feature</code>)</li>
+<li>提交更改 (<code>git commit -m 'Add amazing feature'</code>)</li>
+<li>推送到分支 (<code>git push origin feature/amazing-feature</code>)</li>
+<li>开启 Pull Request</li>
+</ol>
+<hr />
+<h2 id="_24">📞 联系方式<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>项目维护者</strong>: [您的名字]</li>
+<li><strong>Email</strong>: [您的邮箱]</li>
+<li><strong>Issues</strong>: <a href="https://github.com/your-repo/issues">GitHub Issues</a></li>
+</ul>
+<hr />
+<h2 id="_25">📄 许可证<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h2>
+<p>Apache License 2.0</p>
+<hr />
+<h2 id="_26">🗓️ 更新日志<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h2>
+<h3 id="v100-2026-01-28">v1.0.0 (2026-01-28)<a class="headerlink" href="#v100-2026-01-28" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✨ 初始整合计划</li>
+<li>📝 文档完成</li>
+</ul>
+<h3 id="_27">待办事项<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 阶段 1: 基础整合</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 阶段 2: Agentic Workflow</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 阶段 3: Gemini 特色功能</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 阶段 4: 企业级功能</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 阶段 5: 示例应用</li>
+</ul>
+<hr />
+<p><strong>🎯 下一步行动</strong>: 开始执行阶段 1 - 基础整合</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="2026年1月28日 03:13:27 UTC"><span class="timeago" datetime="2026-01-28T03:13:27+00:00" locale="zh"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="2026年1月28日 03:13:27 UTC">2026-01-28</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="2026年1月28日 03:13:27 UTC"><span class="timeago" datetime="2026-01-28T03:13:27+00:00" locale="zh"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="2026年1月28日 03:13:27 UTC">2026-01-28</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/thefirstwind/mcp-router-sse-parent" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../js/timeago.min.js"></script>
+      
+        <script src="../../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>

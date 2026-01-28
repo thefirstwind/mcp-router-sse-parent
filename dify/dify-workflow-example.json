@@ -1,0 +1,208 @@
+{
+  "name": "MCP用户信息查询助手",
+  "description": "基于MCP Router的用户信息查询工作流",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "start",
+      "name": "开始",
+      "config": {
+        "inputs": [
+          {
+            "name": "user_input",
+            "type": "string",
+            "required": true,
+            "label": "用户输入",
+            "description": "用户的查询请求，例如：查询用户 id=5"
+          }
+        ]
+      },
+      "position": {"x": 100, "y": 100}
+    },
+    {
+      "id": "llm_extract",
+      "type": "llm",
+      "name": "参数提取器",
+      "config": {
+        "model": "gpt-4",
+        "temperature": 0.1,
+        "max_tokens": 500,
+        "system_prompt": "你是一个参数提取助手。用户会询问关于用户信息的问题，你需要：\n1. 理解用户意图\n2. 提取出需要调用的工具名称\n3. 提取出工具所需的参数\n\n可用工具：\n- getPersonById: 根据ID查询用户信息，参数: id (整数)\n- getAllPersons: 获取所有用户信息，无参数\n- addPerson: 添加新用户，参数: firstName, lastName, age, nationality, gender\n\n请以JSON格式返回：\n{\n  \"toolName\": \"工具名称\",\n  \"arguments\": { \"参数名\": \"参数值\" }\n}\n\n如果无法识别意图，返回：\n{\n  \"toolName\": \"unknown\",\n  \"arguments\": {},\n  \"error\": \"无法理解用户意图\"\n}",
+        "user_prompt": "用户输入: {{start.user_input}}\n\n请分析用户意图并提取参数。"
+      },
+      "position": {"x": 300, "y": 100},
+      "inputs": {
+        "user_input": "{{start.user_input}}"
+      }
+    },
+    {
+      "id": "code_build_request",
+      "type": "code",
+      "name": "构造MCP请求",
+      "config": {
+        "language": "python3",
+        "code": "import json\nimport uuid\n\ndef main(extraction_result: str) -> dict:\n    \"\"\"\n    构造MCP调用请求\n    \"\"\"\n    try:\n        # 解析LLM提取的结果\n        extracted = json.loads(extraction_result)\n        \n        # 检查是否识别成功\n        if extracted.get('toolName') == 'unknown':\n            return {\n                'success': False,\n                'error_message': extracted.get('error', '无法理解用户意图'),\n                'request_body': None\n            }\n        \n        # 构造MCP调用请求\n        mcp_request = {\n            'id': str(uuid.uuid4()),\n            'method': 'tools/call',\n            'params': {\n                'name': extracted['toolName'],\n                'arguments': extracted.get('arguments', {})\n            }\n        }\n        \n        return {\n            'success': True,\n            'request_body': json.dumps(mcp_request),\n            'tool_name': extracted['toolName'],\n            'arguments': extracted.get('arguments', {})\n        }\n    except Exception as e:\n        return {\n            'success': False,\n            'error_message': f'解析失败: {str(e)}',\n            'request_body': None\n        }",
+        "inputs": [
+          {
+            "name": "extraction_result",
+            "type": "string",
+            "source": "llm_extract.output"
+          }
+        ]
+      },
+      "position": {"x": 500, "y": 100},
+      "inputs": {
+        "extraction_result": "{{llm_extract.output}}"
+      }
+    },
+    {
+      "id": "condition_check",
+      "type": "if-else",
+      "name": "检查是否可执行",
+      "config": {
+        "condition": "{{code_build_request.success}} == true",
+        "true_branch": "http_call_mcp",
+        "false_branch": "llm_error_response"
+      },
+      "position": {"x": 700, "y": 100},
+      "inputs": {
+        "success": "{{code_build_request.success}}"
+      }
+    },
+    {
+      "id": "http_call_mcp",
+      "type": "http",
+      "name": "调用MCP工具",
+      "config": {
+        "method": "POST",
+        "url": "http://localhost:8052/mcp/router/route/mcp-server-v6",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{{code_build_request.request_body}}",
+        "timeout": 30000,
+        "retry": 3
+      },
+      "position": {"x": 900, "y": 50},
+      "inputs": {
+        "body": "{{code_build_request.request_body}}"
+      }
+    },
+    {
+      "id": "llm_format_result",
+      "type": "llm",
+      "name": "结果格式化",
+      "config": {
+        "model": "gpt-4",
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "system_prompt": "你是一个友好的助手。请根据以下查询结果，用自然语言回复用户。\n\n要求：\n1. 用简洁、友好的方式展示信息\n2. 如果是单个用户，展示详细信息\n3. 如果是用户列表，用表格或列表形式展示\n4. 突出重要信息\n\n查询工具: {{code_build_request.tool_name}}\n查询参数: {{code_build_request.arguments}}\n\n原始结果:\n{{http_call_mcp.response.body}}\n\n请用友好的方式告诉用户查询结果。",
+        "user_prompt": "请将上面的结果格式化为友好的回复。"
+      },
+      "position": {"x": 1100, "y": 50},
+      "inputs": {
+        "tool_name": "{{code_build_request.tool_name}}",
+        "arguments": "{{code_build_request.arguments}}",
+        "response": "{{http_call_mcp.response}}"
+      }
+    },
+    {
+      "id": "llm_error_response",
+      "type": "llm",
+      "name": "错误响应",
+      "config": {
+        "model": "gpt-4",
+        "temperature": 0.7,
+        "max_tokens": 500,
+        "system_prompt": "用户的输入无法被正确理解。请友好地告诉用户：\n1. 我们目前支持的功能\n2. 正确的提问方式\n3. 示例问题\n\n支持的功能：\n- 查询用户信息（根据ID）\n- 查看所有用户\n- 添加新用户\n\n示例问题：\n- \"查询用户 id=5\"\n- \"查看所有用户\"\n- \"添加新用户，名字叫张三，25岁，中国人，男性\"\n\n错误信息: {{code_build_request.error_message}}",
+        "user_prompt": "请生成友好的错误提示。"
+      },
+      "position": {"x": 900, "y": 200},
+      "inputs": {
+        "error_message": "{{code_build_request.error_message}}"
+      }
+    },
+    {
+      "id": "end_success",
+      "type": "end",
+      "name": "成功结束",
+      "config": {
+        "output": "{{llm_format_result.output}}"
+      },
+      "position": {"x": 1300, "y": 50},
+      "inputs": {
+        "result": "{{llm_format_result.output}}"
+      }
+    },
+    {
+      "id": "end_error",
+      "type": "end",
+      "name": "错误结束",
+      "config": {
+        "output": "{{llm_error_response.output}}"
+      },
+      "position": {"x": 1100, "y": 200},
+      "inputs": {
+        "result": "{{llm_error_response.output}}"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "start",
+      "target": "llm_extract"
+    },
+    {
+      "source": "llm_extract",
+      "target": "code_build_request"
+    },
+    {
+      "source": "code_build_request",
+      "target": "condition_check"
+    },
+    {
+      "source": "condition_check",
+      "target": "http_call_mcp",
+      "condition": "true"
+    },
+    {
+      "source": "condition_check",
+      "target": "llm_error_response",
+      "condition": "false"
+    },
+    {
+      "source": "http_call_mcp",
+      "target": "llm_format_result"
+    },
+    {
+      "source": "llm_format_result",
+      "target": "end_success"
+    },
+    {
+      "source": "llm_error_response",
+      "target": "end_error"
+    }
+  ],
+  "variables": [
+    {
+      "name": "mcp_server_key",
+      "type": "string",
+      "value": "mcp-server-v6",
+      "description": "MCP服务器标识"
+    },
+    {
+      "name": "mcp_router_url",
+      "type": "string",
+      "value": "http://localhost:8052/mcp/router",
+      "description": "MCP Router基础URL"
+    }
+  ],
+  "metadata": {
+    "author": "MCP Router Team",
+    "created_at": "2025-10-31",
+    "version": "1.0.0",
+    "tags": ["mcp", "user-query", "database"]
+  }
+}
+

@@ -1,0 +1,16 @@
+{
+  "id": "6eff2b4f-8c15-455e-86a0-302901241482",
+  "name": "mcp-router-v3",
+  "protocol": "mcp-sse",
+  "frontProtocol": "mcp-sse",
+  "description": "mcp-router-v3 服务",
+  "enabled": true,
+  "capabilities": ["TOOL"],
+  "latestPublishedVersion": "1.0.1",
+  "versionDetails": [
+    {
+      "version": "1.0.1",
+      "release_date": "2025-07-16T09:46:37Z"
+    }
+  ]
+}

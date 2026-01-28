@@ -1,0 +1,358 @@
+openapi: 3.0.0
+info:
+  title: MCP Router V3 API for Dify
+  version: 1.0.0
+  description: |
+    MCP Router V3 工具调用接口，用于 Dify AI 平台集成。
+    
+    支持功能：
+    - 获取可用工具列表
+    - 调用 MCP 工具执行业务逻辑
+    - 智能路由和负载均衡
+    
+    使用场景：
+    - 用户信息查询
+    - 数据管理操作
+    - 系统信息获取
+
+servers:
+  - url: http://host.docker.internal:8052/mcp/router
+    description: 本地开发环境
+  - url: http://127.host.docker.internal:8052/mcp/router
+    description: 生产环境（请替换为实际域名）
+
+paths:
+  /tools/{serverKey}:
+    get:
+      operationId: getToolsList
+      summary: 获取可用工具列表
+      description: |
+        获取指定 MCP 服务器上所有可用的工具列表。
+        返回的工具包含名称、描述和参数定义。
+      tags:
+        - Tools Discovery
+      parameters:
+        - name: serverKey
+          in: path
+          required: true
+          schema:
+            type: string
+            example: mcp-server-v6
+          description: MCP 服务器标识符
+      responses:
+        '200':
+          description: 成功返回工具列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    description: 工具列表
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: 工具名称
+                          example: getPersonById
+                        description:
+                          type: string
+                          description: 工具描述
+                          example: Get a person by their ID
+                        inputSchema:
+                          type: object
+                          description: 输入参数的 JSON Schema
+                          example:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                description: Person's ID
+                            required: ["id"]
+              example:
+                tools:
+                  - name: getPersonById
+                    description: Get a person by their ID
+                    inputSchema:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: Person's ID
+                      required: ["id"]
+                  - name: getAllPersons
+                    description: Get all persons from the database
+                    inputSchema:
+                      type: object
+                      properties: {}
+        '404':
+          description: 服务器未找到
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Server not found
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /route/{serverKey}:
+    post:
+      operationId: callMcpTool
+      summary: 调用 MCP 工具
+      description: |
+        调用指定 MCP 服务器上的具体工具。
+        
+        工具调用流程：
+        1. 构造 JSON-RPC 2.0 格式的请求
+        2. MCP Router 智能路由到后端服务
+        3. 执行工具逻辑
+        4. 返回执行结果和元数据
+        
+        支持的工具示例：
+        - getPersonById: 根据 ID 查询用户
+        - getAllPersons: 获取所有用户
+        - addPerson: 添加新用户
+      tags:
+        - Tool Execution
+      parameters:
+        - name: serverKey
+          in: path
+          required: true
+          schema:
+            type: string
+            example: mcp-server-v6
+          description: MCP 服务器标识符
+      requestBody:
+        required: true
+        description: MCP 工具调用请求（JSON-RPC 2.0 格式）
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - method
+                - params
+              properties:
+                id:
+                  type: string
+                  description: 请求 ID（可选，建议使用 UUID）
+                  example: "req-12345-abcde"
+                method:
+                  type: string
+                  enum: [tools/call]
+                  description: 固定值 "tools/call"
+                  example: tools/call
+                params:
+                  type: object
+                  required:
+                    - name
+                    - arguments
+                  properties:
+                    name:
+                      type: string
+                      description: 要调用的工具名称
+                      example: getPersonById
+                    arguments:
+                      type: object
+                      description: 工具参数（根据工具的 inputSchema 定义）
+                      additionalProperties: true
+                      example:
+                        id: 5
+            examples:
+              getPersonById:
+                summary: 查询用户 ID=5
+                value:
+                  id: "req-001"
+                  method: "tools/call"
+                  params:
+                    name: "getPersonById"
+                    arguments:
+                      id: 5
+              getAllPersons:
+                summary: 获取所有用户
+                value:
+                  id: "req-002"
+                  method: "tools/call"
+                  params:
+                    name: "getAllPersons"
+                    arguments: {}
+              addPerson:
+                summary: 添加新用户
+                value:
+                  id: "req-003"
+                  method: "tools/call"
+                  params:
+                    name: "addPerson"
+                    arguments:
+                      firstName: "John"
+                      lastName: "Doe"
+                      age: 30
+                      nationality: "American"
+                      gender: "MALE"
+      responses:
+        '200':
+          description: 工具执行成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: 请求 ID（与请求一致）
+                  jsonrpc:
+                    type: string
+                    description: JSON-RPC 版本
+                    example: "2.0"
+                  method:
+                    type: string
+                    description: 方法名
+                    example: "tools/call"
+                  params:
+                    type: object
+                    description: 请求参数（原样返回）
+                  result:
+                    type: object
+                    description: 工具执行结果
+                    additionalProperties: true
+                  error:
+                    type: object
+                    nullable: true
+                    description: 错误信息（如果失败）
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      data:
+                        type: object
+                  metadata:
+                    type: object
+                    description: 路由元数据
+                    properties:
+                      targetServer:
+                        type: string
+                        description: 目标服务器
+                      targetHost:
+                        type: string
+                        description: 目标主机地址
+                      responseTime:
+                        type: integer
+                        description: 响应时间（毫秒）
+                      routingStrategy:
+                        type: string
+                        description: 路由策略
+                      toolName:
+                        type: string
+                        description: 工具名称
+                      routerVersion:
+                        type: string
+                        description: 路由器版本
+              examples:
+                success:
+                  summary: 成功查询用户
+                  value:
+                    id: "req-001"
+                    jsonrpc: "2.0"
+                    method: "tools/call"
+                    params:
+                      name: "getPersonById"
+                      arguments:
+                        id: 5
+                    result:
+                      id: 5
+                      firstName: "Pierre"
+                      lastName: "Dubois"
+                      age: 40
+                      nationality: "French"
+                      gender: "MALE"
+                      found: true
+                    error: null
+                    metadata:
+                      targetServer: "mcp-server-v6"
+                      targetHost: "192.168.0.100:8073"
+                      responseTime: 35
+                      routingStrategy: "intelligent"
+                      toolName: "getPersonById"
+                      routerVersion: "v3"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: -32602
+                      message:
+                        type: string
+                        example: Invalid params
+                      data:
+                        type: object
+        '404':
+          description: 工具未找到
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: -32601
+                      message:
+                        type: string
+                        example: Tool not found
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: -32603
+                      message:
+                        type: string
+                        example: Internal error
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API 密钥认证（可选，用于生产环境）
+
+# 如果启用了认证，取消下面的注释
+# security:
+#   - ApiKeyAuth: []
+
+tags:
+  - name: Tools Discovery
+    description: 工具发现相关接口
+  - name: Tool Execution
+    description: 工具执行相关接口
+
