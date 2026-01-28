@@ -17,6 +17,10 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/ENABLE_GITHUB_PAGES/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/INTEGRATION_SUMMARY/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
@@ -217,6 +221,26 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/FINAL_SUCCESS_REPORT/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/FIX_SUMMARY/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/IP_FIX_README/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250806/MCP_PROJECT_ARCHITECTURE/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250806/SPRING_AI_ALIBABA_MCP_ANALYSIS/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/contributing/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
@@ -241,6 +265,10 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/architecture/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/gemini-plan/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
@@ -253,7 +281,15 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/add-mcp-server/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/integrate-gemini/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/troubleshooting/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
@@ -337,6 +373,10 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/quick-start/getting-started/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/quick-start/quick-start/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
@@ -345,23 +385,7 @@
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
-         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/spring2.7-250805/FINAL_SUCCESS_REPORT/</loc>
-         <lastmod>2026-01-28</lastmod>
-    </url>
-    <url>
-         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/spring2.7-250805/FIX_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
-    </url>
-    <url>
-         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/spring2.7-250805/IP_FIX_README/</loc>
-         <lastmod>2026-01-28</lastmod>
-    </url>
-    <url>
-         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/spring2.7-250806/MCP_PROJECT_ARCHITECTURE/</loc>
-         <lastmod>2026-01-28</lastmod>
-    </url>
-    <url>
-         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/spring2.7-250806/SPRING_AI_ALIBABA_MCP_ANALYSIS/</loc>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/reference/api/</loc>
          <lastmod>2026-01-28</lastmod>
     </url>
     <url>
