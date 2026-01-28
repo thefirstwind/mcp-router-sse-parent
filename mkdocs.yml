@@ -60,8 +60,8 @@ nav:
       - 配置参考: reference/configuration.md
   - 工作流:
       - workflows/index.md
-      - 开发工作流: workflows/development.md
-      - CI/CD流程: workflows/ci-cd.md
+      - GitHub设置: workflows/github-setup.md
+      - 工作流总结: workflows/summary.md
   - 贡献指南:
       - contributing/index.md
       - 代码规范: contributing/code-standards.md
