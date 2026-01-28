@@ -1,0 +1,97 @@
+#!/bin/bash
+# Streamable Protocol Session Management Test
+# 测试 Streamable 协议的 session 会话管理修复
+
+echo "🧪 Testing Streamable Protocol Session Management..."
+echo ""
+
+# 配置
+ROUTER_URL="${ROUTER_URL:-http://localhost:18791}"
+SERVICE_NAME="${SERVICE_NAME:-mcp-server-v6}"
+
+echo "📡 Router URL: $ROUTER_URL"
+echo "🎯 Service Name: $SERVICE_NAME"
+echo ""
+
+# 测试 1: GET /mcp - 验证初始连接和 session 消息
+echo "Test 1: GET /mcp - Verify session initialization"
+echo "================================================"
+echo "curl -N -H \"Accept: application/x-ndjson\" \"$ROUTER_URL/mcp/$SERVICE_NAME\""
+echo ""
+echo "Expected: First line should contain session info with type='session', sessionId, and messageEndpoint"
+echo ""
+echo "Running..."
+timeout 3 curl -N -H "Accept: application/x-ndjson" "$ROUTER_URL/mcp/$SERVICE_NAME" 2>/dev/null | head -n 1
+echo ""
+echo ""
+
+# 测试 2: 检查响应头中的 Mcp-Session-Id
+echo "Test 2: Check Mcp-Session-Id response header"
+echo "============================================="
+echo "curl -I \"$ROUTER_URL/mcp/$SERVICE_NAME\""
+echo ""
+echo "Expected: Response should include 'Mcp-Session-Id' header"
+echo ""
+echo "Running..."
+curl -I "$ROUTER_URL/mcp/$SERVICE_NAME" 2>/dev/null | grep -i "mcp-session-id"
+echo ""
+echo ""
+
+# 测试 3: POST /mcp/message - 验证 sessionId 解析日志
+echo "Test 3: POST /mcp/message - Session ID resolution"
+echo "=================================================="
+echo "Test case 3a: With Mcp-Session-Id header"
+echo ""
+TEST_SESSION_ID="test-session-$(date +%s)"
+echo "curl -X POST -H \"Content-Type: application/json\" \\"
+echo "     -H \"Mcp-Session-Id: $TEST_SESSION_ID\" \\"
+echo "     -d '{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"tools/list\"}' \\"
+echo "     \"$ROUTER_URL/mcp/$SERVICE_NAME/message\""
+echo ""
+echo "Expected: Should log '✅ Resolved sessionId from header'"
+echo ""
+echo "(Check server logs for resolution confirmation)"
+echo ""
+echo ""
+
+echo "Test case 3b: With sessionId query parameter"
+echo ""
+echo "curl -X POST -H \"Content-Type: application/json\" \\"
+echo "     -d '{\"jsonrpc\":\"2.0\",\"id\":\"2\",\"method\":\"tools/list\"}' \\"
+echo "     \"$ROUTER_URL/mcp/$SERVICE_NAME/message?sessionId=$TEST_SESSION_ID\""
+echo ""
+echo "Expected: Should log '✅ Resolved sessionId from query parameter'"
+echo ""
+echo "(Check server logs for resolution confirmation)"
+echo ""
+echo ""
+
+echo "Test case 3c: Without sessionId"
+echo ""
+echo "curl -X POST -H \"Content-Type: application/json\" \\"
+echo "     -d '{\"jsonrpc\":\"2.0\",\"id\":\"3\",\"method\":\"tools/list\"}' \\"
+echo "     \"$ROUTER_URL/mcp/$SERVICE_NAME/message\""
+echo ""
+echo "Expected: Should log '⚠️ No sessionId found' warning and auto-generate sessionId"
+echo ""
+echo "(Check server logs for warning message)"
+echo ""
+echo ""
+
+# 使用说明
+echo "📝 Usage Instructions:"
+echo "====================="
+echo "1. Make sure mcp-router-v3 is running on port 18791"
+echo "2. Run this script: ./test_streamable_session.sh"
+echo "3. Check the router logs for detailed session resolution logging"
+echo "4. Verify that the first NDJSON message contains session information"
+echo ""
+echo "🔍 Log Analysis:"
+echo "================"
+echo "Look for these log patterns in mcp-router-v3 logs:"
+echo "  - '✅ Resolved sessionId from header' - sessionId from request header"
+echo "  - '✅ Resolved sessionId from query parameter' - sessionId from query param"
+echo "  - '⚠️ No sessionId found' - missing sessionId (auto-generated)"
+echo "  - '📡 Streamable request' - streamable connection initiated"
+echo ""
+echo "✅ Test script completed!"
