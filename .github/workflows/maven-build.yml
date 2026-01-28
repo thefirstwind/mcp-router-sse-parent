@@ -23,14 +23,24 @@ jobs:
     
     - name: Build spring-ai-alibaba dependencies
       run: |
-        echo "Building spring-ai-alibaba..."
+        echo "=== Building spring-ai-alibaba ==="
         cd spring-ai-alibaba
-        mvn clean install -DskipTests -T 4
-        echo "✓ spring-ai-alibaba build completed"
+        echo "Version in pom.xml:"
+        grep -A 1 "<revision>" pom.xml || true
+        echo ""
+        echo "Building all modules..."
+        mvn clean install -DskipTests -T 4 2>&1 | tee ../spring-ai-build.log
+        echo ""
+        echo "=== Checking installed artifacts ==="
+        ls -la ~/.m2/repository/com/alibaba/cloud/ai/ || echo "No artifacts found"
+        find ~/.m2/repository/com/alibaba/cloud/ai -name "*mcp*" -type d | head -5 || true
         cd ..
+        echo "=== spring-ai-alibaba build completed ==="
     
     - name: Build main project
-      run: mvn -B clean install -DskipTests -T 4
+      run: |
+        echo "=== Building main project ==="
+        mvn -B clean install -DskipTests -T 4
       continue-on-error: true
     
     - name: Run Tests
