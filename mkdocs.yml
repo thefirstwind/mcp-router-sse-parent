@@ -41,8 +41,8 @@ nav:
   - 首页: index.md
   - 快速开始:
       - 项目概览: quick-start/overview.md
-      - 5分钟上手: quick-start/quick-start.md
-      - 开发环境: quick-start/setup.md
+      - 5分钟上手: quick-start/getting-started.md
+      - 原快速开始: quick-start/quick-start.md
   - 教程:
       - tutorials/index.md
   - 操作指南:
@@ -50,10 +50,12 @@ nav:
       - 添加MCP Server: how-to-guides/add-mcp-server.md
       - 添加AI Agent: how-to-guides/add-agent.md
       - Gemini整合: how-to-guides/integrate-gemini.md
+      - 故障排除: how-to-guides/troubleshooting.md
   - 说明文档:
       - explanations/index.md
       - 架构设计: explanations/architecture.md
       - 工作流对比: explanations/workflow-comparison.md
+      - Gemini计划: explanations/gemini-plan.md
   - 参考文档:
       - reference/index.md
       - API参考: reference/api.md
