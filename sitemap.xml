@@ -2,406 +2,434 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/AUTO_DOCS_SETUP_COMPLETE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/DOCS_ENHANCEMENT_COMPLETE/</loc>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/DOCUMENTATION_MANAGEMENT/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/DOC_MANAGEMENT_SETUP_COMPLETE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/ENABLE_GITHUB_PAGES/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/INTEGRATION_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/MCP_STANDARD_PROTOCOL_TESTS/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/MCP_STANDARD_PROTOCOL_TEST_FIX_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/NEXT_STEPS/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/_meta/QUICK_REFERENCE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/_meta/templates/how-to/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/_meta/templates/tutorial/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/adr/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/adr/001-streamable-session-dual-transmission/</loc>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/MCP_REFACTORING_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO01/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO02/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO03/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO03_result/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO04_result/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO05/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO06/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO07/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO08/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO08_result/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO09/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO11/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO12/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO13/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO14/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO14_result/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO15/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/TODO/TODO15_result/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/DIFY_INTEGRATION_GUIDE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/MCP_BRIDGE_API_REFERENCE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/MCP_BRIDGE_CONFIG_MANUAL/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/MCP_BRIDGE_PERFORMANCE_GUIDE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/MCP_BRIDGE_TROUBLESHOOTING_GUIDE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/MCP_ROUTER_V3_DOCUMENTATION_OUTLINE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/TODO10/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/TODO16/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/TODO17/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-250812/TODO18/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/CONSOLIDATION_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/DOCS_INDEX/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/MYBATIS_WARNING_FIX_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/NACOS_HEALTHY_STATUS_FIX/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/OPTIMIZATION_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/PERSISTENCE_DESIGN_PLAN/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/PERSISTENCE_DESIGN_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/PERSISTENCE_GUIDE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/PERSISTENCE_IMPLEMENTATION_CHECKLIST/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/PERSISTENCE_README/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/QUICK_START_GUIDE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/RESTART_VERIFICATION_REPORT/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/docs-251111/START_HERE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/FINAL_SUCCESS_REPORT/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/FIX_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250805/IP_FIX_README/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250806/MCP_PROJECT_ARCHITECTURE/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/archived/spring2.7-250806/SPRING_AI_ALIBABA_MCP_ANALYSIS/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/contributing/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/dify/DIFY_INTEGRATION_DESIGN/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/dify/DIFY_INTEGRATION_SUMMARY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/dify/DIFY_QUICK_START/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/dify/README_DIFY/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/architecture/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/gemini-plan/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/explanations/workflow-comparison/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/features/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/features/streamable-session-management/</loc>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/add-mcp-server/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/integrate-gemini/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/how-to-guides/troubleshooting/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/dataIdAnlysis/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/dataIdAnlysisDetail/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/dataIdBody/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/design01/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/get_config_example/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/mcp_nacos_analysis/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-alibaba-mcp/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code-anlysis-p1/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code-anlysis-p2/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code-anlysis-p3/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code-anlysis-p4/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code-anlysis/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api-code/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-api/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos-register-json/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacosRegist/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/nacos_register_flow/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/testCase/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/uuid/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/nacos/%E9%A1%B9%E7%9B%AE%E6%94%B9%E8%BF%9B%E6%84%8F%E8%A7%81/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/quick-start/getting-started/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/quick-start/quick-start/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/reference/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/reference/api/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/reference/best-practices-traceability/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://thefirstwind.github.io/mcp-router-sse-parent/traceability/streamable-session/</loc>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/tutorials/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/workflows/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/workflows/github-setup/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
     <url>
          <loc>https://thefirstwind.github.io/mcp-router-sse-parent/workflows/summary/</loc>
-         <lastmod>2026-01-28</lastmod>
+         <lastmod>2026-01-29</lastmod>
     </url>
 </urlset>
