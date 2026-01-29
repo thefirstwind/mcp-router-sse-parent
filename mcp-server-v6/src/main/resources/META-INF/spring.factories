@@ -1,0 +1,5 @@
+# MCP Server V6 自动配置
+# 在 Spring 容器初始化之前执行配置清理
+
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  com.nacos.mcp.server.v6.config.McpServerPreStartupCleaner

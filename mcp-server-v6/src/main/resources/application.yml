@@ -16,7 +16,7 @@ spring:
     mcp:
       server:
         name: ${spring.application.name}
-        version: 1.0.1
+        version: 1.0.2  # 升级版本号以解决工具定义变更后的兼容性问题
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides time information tools and resources"
         sse-message-endpoint: /mcp/message
@@ -49,6 +49,21 @@ logging:
     com.alibaba.cloud.ai.mcp: DEBUG
     io.modelcontextprotocol: DEBUG
     root: INFO
+
+# MCP Server 自定义配置
+mcp:
+  server:
+    config:
+      # 是否在启动前清理旧配置
+      # 开发环境：建议设置为 true，方便快速迭代
+      # 生产环境：建议设置为 false，使用版本号升级策略
+      clean-on-startup: ${MCP_CLEAN_ON_STARTUP:false}
+      
+      # 是否只清理不兼容的配置
+      # true: 检查后只删除不兼容的配置（推荐）
+      #false: 每次启动都删除旧配置
+      clean-only-incompatible: true
+
 # Management
 management:
   endpoints:
