@@ -60,7 +60,11 @@ public class McpRouterServerConfig {
             "Mcp-Session-Id",
             "mcp-session-id",
             "X-Mcp-Session-Id",
-            "x-mcp-session-id"
+            "x-mcp-session-id",
+            "Session-Id",
+            "session-id",
+            "X-Session-Id",
+            "x-session-id"
     );
 
     private final McpRouterService routerService;
@@ -235,10 +239,10 @@ public class McpRouterServerConfig {
                             sseTransportProvider.cleanupTimeoutSessions()
                                     .then(ServerResponse.ok().bodyValue("Timeout sessions cleaned up successfully"))
                     )
-                    .GET(SSE_BASE_PATH + "/{serviceName}", this::handleSseWithServiceName)
+                    .GET(SSE_BASE_PATH + "/{serviceName:^(?!message$|connect$|broadcast$|cleanup$|admin$|session$|sessions$).*}", this::handleSseWithServiceName)
                     .GET(SSE_BASE_PATH, this::handleSseWithQueryParam)
-                    .GET(STREAMABLE_BASE_PATH + "/{serviceName}", this::handleStreamableWithServiceName)
-                    .POST(STREAMABLE_BASE_PATH + "/{serviceName}", this::handleMcpMessageWithPath)
+                    .GET(STREAMABLE_BASE_PATH + "/{serviceName:^(?!message$).*}", this::handleStreamableWithServiceName)
+                    .POST(STREAMABLE_BASE_PATH + "/{serviceName:^(?!message$).*}", this::handleMcpMessageWithPath)
                     .GET(STREAMABLE_BASE_PATH, this::handleStreamableWithQueryParam)
                     .POST(STREAMABLE_BASE_PATH, this::handleMcpMessage)
                     .build();

@@ -69,8 +69,8 @@ public class McpRouterService {
     public Mono<McpMessage> routeRequest(String serviceName, McpMessage message, Duration timeout, Map<String, String> headers) {
         // 记录 sessionId 信息用于调试
         String resolvedSessionId = resolveSessionId(message, headers);
-        log.info("🔄 Starting intelligent routing for service: {}, method: {}, resolvedSessionId: {}", 
-                serviceName, message.getMethod(), resolvedSessionId != null ? resolvedSessionId : "null");
+        log.info("🔄 Starting intelligent routing for service: {}, method: {}, timeout: {}ms, resolvedSessionId: {}", 
+                serviceName, message.getMethod(), timeout.toMillis(), resolvedSessionId != null ? resolvedSessionId : "null");
         
         // 创建路由日志对象（记录开始时间）
         String requestId = UUID.randomUUID().toString();
@@ -383,7 +383,7 @@ public class McpRouterService {
                         setErrorResponseBody(routingLog, error);
                         publishRoutingLog(routingLog);
                     })
-                    .timeout(Duration.ofSeconds(Math.min(5, (int) timeout.toSeconds())))
+                    .timeout(timeout) // 移除5秒限制，使用完整的超时时间
                     .onErrorResume(err -> {
                         log.error("❌ Smart routing failed: {}", err.getMessage());
                         return createErrorResponse(message, -1, "Smart routing failed: " + err.getMessage());

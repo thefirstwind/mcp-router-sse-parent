@@ -1,6 +1,10 @@
 
 # 项目开发规范与约定 (Project Rules)
 
+## 0. 交互语言 (Language Preference)
+- **强制要求**: 所有回复、注释、文档说明必须使用**中文**。
+
+## 1. 核心技术栈 (Technology Stack)
 ## 1. 核心技术栈 (Technology Stack)
 - **Java 版本**: 17
 - **基础框架**: Spring Boot 3.4.0

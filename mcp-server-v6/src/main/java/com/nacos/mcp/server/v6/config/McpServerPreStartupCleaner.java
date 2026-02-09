@@ -26,8 +26,8 @@ public class McpServerPreStartupCleaner implements EnvironmentPostProcessor, Ord
 
     @Override
     public int getOrder() {
-        // 尽早执行
-        return Ordered.HIGHEST_PRECEDENCE + 10;
+        // 在配置文件加载之后执行，确保能读取到 application.yml 中的配置
+        return Ordered.LOWEST_PRECEDENCE;
     }
 
     @Override
@@ -39,6 +39,7 @@ public class McpServerPreStartupCleaner implements EnvironmentPostProcessor, Ord
             return;
         }
 
+        System.out.println("🔥🔥🔥 McpServerPreStartupCleaner is running! Clean config enabled: " + cleanOnStartup);
         log.info("🧹 Starting MCP server config cleanup (pre-startup)...");
 
         // 获取配置

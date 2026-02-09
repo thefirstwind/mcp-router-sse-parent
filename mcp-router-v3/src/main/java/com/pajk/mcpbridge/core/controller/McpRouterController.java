@@ -249,7 +249,12 @@ public class McpRouterController {
         String sessionId = request.getQueryParams().getFirst("sessionId");
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = headers.getOrDefault("sessionId",
-                    headers.getOrDefault("Session-Id", headers.getOrDefault("X-Session-Id", null)));
+                    headers.getOrDefault("Session-Id", 
+                        headers.getOrDefault("X-Session-Id", 
+                            headers.getOrDefault("Mcp-Session-Id",
+                                headers.getOrDefault("mcp-session-id",
+                                    headers.getOrDefault("X-Mcp-Session-Id",
+                                        headers.getOrDefault("x-mcp-session-id", null)))))));
         }
         if (sessionId != null && !sessionId.isEmpty()) {
             message.setSessionId(sessionId);
