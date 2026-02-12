@@ -1,0 +1,214 @@
+{
+  "jsonrpc": "2.0",
+  "id": "2",
+  "result": {
+    "content": [
+      {
+        "type": "json",
+        "data": [
+          {
+            "salesCount": 2000,
+            "rating": 4.6,
+            "description": "小米旗舰手机",
+            "updateTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982080000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "createTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982078000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "price": 3999.0,
+            "imageUrl": "/images/mi13.jpg",
+            "name": "小米13",
+            "id": 4,
+            "stock": 80,
+            "category": "手机数码",
+            "class": "com.pajk.provider3.model.Product",
+            "brand": "小米",
+            "status": "ACTIVE"
+          },
+          {
+            "salesCount": 1500,
+            "rating": 4.8,
+            "description": "最新款iPhone手机",
+            "updateTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982049000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "createTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982041000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "price": 7999.0,
+            "imageUrl": "/images/iphone15.jpg",
+            "name": "iPhone 15",
+            "id": 1,
+            "stock": 100,
+            "category": "手机数码",
+            "class": "com.pajk.provider3.model.Product",
+            "brand": "Apple",
+            "status": "ACTIVE"
+          },
+          {
+            "salesCount": 800,
+            "rating": 4.7,
+            "description": "苹果无线耳机",
+            "updateTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982063000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "createTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982060000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "price": 1999.0,
+            "imageUrl": "/images/airpods.jpg",
+            "name": "AirPods Pro",
+            "id": 2,
+            "stock": 50,
+            "category": "手机数码",
+            "class": "com.pajk.provider3.model.Product",
+            "brand": "Apple",
+            "status": "ACTIVE"
+          },
+          {
+            "salesCount": 300,
+            "rating": 4.9,
+            "description": "苹果笔记本电脑",
+            "updateTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982072000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "createTime": {
+              "dayOfWeek": "THURSDAY",
+              "hour": 0,
+              "month": "FEBRUARY",
+              "year": 2026,
+              "dayOfMonth": 12,
+              "dayOfYear": 43,
+              "monthValue": 2,
+              "nano": 982069000,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO",
+                "class": "java.time.chrono.IsoChronology"
+              },
+              "class": "java.time.LocalDateTime",
+              "minute": 49,
+              "second": 8
+            },
+            "price": 15999.0,
+            "imageUrl": "/images/macbook.jpg",
+            "name": "MacBook Pro",
+            "id": 3,
+            "stock": 20,
+            "category": "电脑办公",
+            "class": "com.pajk.provider3.model.Product",
+            "brand": "Apple",
+            "status": "ACTIVE"
+          }
+        ]
+      }
+    ],
+    "isError": false
+  }
+}

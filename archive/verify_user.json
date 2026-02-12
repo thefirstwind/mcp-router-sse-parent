@@ -1,0 +1,59 @@
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": {
+    "content": [
+      {
+        "type": "json",
+        "data": {
+          "realName": "Alice Wang",
+          "gender": "F",
+          "phone": "13800138001",
+          "createTime": {
+            "dayOfWeek": "THURSDAY",
+            "hour": 0,
+            "month": "FEBRUARY",
+            "year": 2026,
+            "dayOfMonth": 12,
+            "dayOfYear": 43,
+            "monthValue": 2,
+            "nano": 978864000,
+            "chronology": {
+              "calendarType": "iso8601",
+              "id": "ISO",
+              "class": "java.time.chrono.IsoChronology"
+            },
+            "class": "java.time.LocalDateTime",
+            "minute": 49,
+            "second": 8
+          },
+          "updateTime": {
+            "dayOfWeek": "THURSDAY",
+            "hour": 0,
+            "month": "FEBRUARY",
+            "year": 2026,
+            "dayOfMonth": 12,
+            "dayOfYear": 43,
+            "monthValue": 2,
+            "nano": 978900000,
+            "chronology": {
+              "calendarType": "iso8601",
+              "id": "ISO",
+              "class": "java.time.chrono.IsoChronology"
+            },
+            "class": "java.time.LocalDateTime",
+            "minute": 49,
+            "second": 8
+          },
+          "id": 1,
+          "class": "com.pajk.provider3.model.User",
+          "age": 25,
+          "email": "alice@example.com",
+          "status": "ACTIVE",
+          "username": "alice"
+        }
+      }
+    ],
+    "isError": false
+  }
+}

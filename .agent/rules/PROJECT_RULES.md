@@ -70,3 +70,13 @@
 - **持久层**: `com.pajk.mcpmetainfo.persistence`
   - `mapper/`: Mybatis 接口
   - `entity/`: 数据库实体
+
+## 5. Git 源管理 (Git Sources Management)
+- **强制注意**: 项目由三个独立的 Git 仓库组成，每次操作必须注意当前所在的工作目录和 Git 上下文：
+  1. **mcp-router-sse-parent**: 顶级父项目，负责全局协调与路由。
+  2. **zk-mcp-parent**: 泛化调用与协议适配层（Adapter），核心逻辑所在地。
+  3. **demo-provider3**: 独立的演示服务提供者模块。
+- **操作要求**: 提交代码前，请务必确认所在路径，严禁将不同源的代码混淆提交。
+
+## 6. Git 提交规范
+请参阅 [.agent/rules/COMMIT_RULES.md](.agent/rules/COMMIT_RULES.md) 获取详细的提交规范。

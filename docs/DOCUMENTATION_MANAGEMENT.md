@@ -125,6 +125,9 @@ mcp-router-sse-parent/
 │   │   ├── architecture.md       # 架构说明
 │   │   ├── workflow-comparison.md # 工作流对比
 │   │   ├── design-decisions.md   # 设计决策
+│   │   ├── bug-fixes/            # 🐛 Bug修复归档
+│   │   │   ├── README.md         # Bug修复索引
+│   │   │   └── REQ-*.md          # 具体Bug修复文档
 │   │   └── why-spring-ai.md      # 为什么用Spring AI
 │   │
 │   ├── 04-reference/              # 📋 参考文档（信息导向）

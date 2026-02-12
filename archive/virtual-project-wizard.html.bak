@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>虚拟项目创建向导</title>
+    <style>
+        :root {
+            --bg: #f6f8fc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: rgba(15, 23, 42, 0.10);
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            --shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.06);
+
+            --primary: #4f46e5;
+            --primary-2: #7c3aed;
+            --primary-hover: #4338ca;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --info: #0891b2;
+
+            --radius: 14px;
+            --radius-sm: 10px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: radial-gradient(900px 400px at 10% 0%, rgba(79, 70, 229, 0.15), transparent 60%),
+                radial-gradient(900px 400px at 90% 10%, rgba(124, 58, 237, 0.12), transparent 55%),
+                var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 22px 18px 28px;
+        }
+
+        .header {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: white;
+            padding: 26px 26px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .header:before {
+            content: "";
+            position: absolute;
+            inset: -30% -20%;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.35), transparent 55%),
+                radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.25), transparent 55%);
+            filter: blur(20px);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        .header h1 {
+            position: relative;
+            font-size: 22px;
+            letter-spacing: 0.2px;
+        }
+
+        .header-subtitle {
+            position: relative;
+            margin-top: 6px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 步骤导航 */
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 60%;
+            width: 80%;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .step.completed:not(:last-child)::after {
+            background: var(--success);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.08);
+            border: 2px solid var(--border);
+            font-weight: 900;
+            font-size: 14px;
+            color: var(--muted);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border-color: var(--primary);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .step.completed .step-number::before {
+            content: "✓";
+        }
+
+        .step-label {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .step.active .step-label {
+            color: var(--primary);
+            font-weight: 900;
+        }
+
+        .step.completed .step-label {
+            color: var(--success);
+        }
+
+        /* 内容区域 */
+        .wizard-content {
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            color: rgba(15, 23, 42, 0.88);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 800;
+            color: rgba(15, 23, 42, 0.72);
+            font-size: 14px;
+        }
+
+        .form-group .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--text);
+            outline: none;
+            transition: box-shadow 0.15s ease, border-color 0.15s ease;
+            font-family: inherit;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: rgba(79, 70, 229, 0.55);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 22px rgba(15, 23, 42, 0.12);
+        }
+
+        .btn:active {
+            transform: translateY(0px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(15, 23, 42, 0.08);
+            border-color: rgba(15, 23, 42, 0.12);
+            color: var(--text);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #22c55e);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+
+            .wizard-actions {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 0;
+                margin-bottom: 24px;
+                padding-top: 20px;
+                border-top: 1px solid var(--border);
+            }
+
+            /* Step 6 Styles */
+            .edit-tool-name,
+            .edit-tool-desc,
+            .edit-tool-schema {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                font-size: 14px;
+                margin-top: 4px;
+            }
+
+            .selection-item {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+
+            .selection-item:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+
+            .alert {
+                padding: 12px 14px;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                border: 1px solid var(--border);
+                font-weight: 700;
+                font-size: 14px;
+            }
+
+            .alert-info {
+                background: rgba(6, 182, 212, 0.10);
+                color: #155e75;
+            }
+
+            .alert-success {
+                background: rgba(34, 197, 94, 0.12);
+                color: #166534;
+            }
+
+            .alert-error {
+                background: rgba(239, 68, 68, 0.10);
+                color: #991b1b;
+            }
+
+            .loading {
+                text-align: center;
+                padding: 40px;
+                color: var(--muted);
+                font-weight: 800;
+            }
+
+            /* 选择列表 */
+            .selection-list {
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .selection-item {
+                padding: 12px 16px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                cursor: pointer;
+                transition: background 0.15s ease;
+            }
+
+            .selection-item:hover {
+                background: rgba(79, 70, 229, 0.06);
+            }
+
+            .selection-item:last-child {
+                border-bottom: none;
+            }
+
+            .selection-item input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
+            .selection-item-content {
+                flex: 1;
+            }
+
+            .selection-item-title {
+                font-weight: 800;
+                color: var(--text);
+                font-size: 14px;
+            }
+
+            .selection-item-desc {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 4px;
+            }
+
+            /* 代码展示 */
+            .code-block {
+                background: rgba(15, 23, 42, 0.95);
+                color: #e2e8f0;
+                padding: 16px;
+                border-radius: 12px;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 13px;
+                overflow-x: auto;
+                margin: 12px 0;
+            }
+
+            /* 进度条 */
+            .progress-container {
+                margin: 20px 0;
+                padding: 16px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: rgba(15, 23, 42, 0.02);
+            }
+
+            .progress-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                font-size: 14px;
+                font-weight: 800;
+            }
+
+            .progress-stage {
+                color: var(--primary);
+            }
+
+            .progress-percentage {
+                color: var(--success);
+            }
+
+            .progress-bar-track {
+                height: 10px;
+                background: rgba(15, 23, 42, 0.08);
+                border-radius: 999px;
+                overflow: hidden;
+            }
+
+            .progress-bar-fill {
+                height: 100%;
+                width: 0%;
+                background: linear-gradient(90deg, var(--primary), var(--primary-2));
+                border-radius: 999px;
+                transition: width 0.3s ease;
+            }
+
+            .progress-stats {
+                display: flex;
+                gap: 20px;
+                margin-top: 12px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+
+            .progress-stat {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .progress-stat-label {
+                font-weight: 700;
+            }
+
+            .progress-stat-value {
+                font-weight: 900;
+                color: var(--text);
+            }
+
+            /* 日志控制台 */
+            .log-console {
+                margin-top: 16px;
+                padding: 14px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: rgba(15, 23, 42, 0.95);
+                color: #e2e8f0;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .log-entry {
+                padding: 4px 0;
+                line-height: 1.6;
+            }
+
+            .log-entry:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            @media (max-width: 860px) {
+                .wizard-steps {
+                    flex-wrap: wrap;
+                }
+
+                .step:not(:last-child)::after {
+                    display: none;
+                }
+            }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>虚拟项目创建向导</h1>
+            <div class="header-subtitle">智能化创建和管理 MCP 虚拟项目</div>
+        </div>
+
+        <!-- 步骤导航 -->
+        <div class="wizard-steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">POM 依赖</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">解析接口</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Git 信息</div>
+            </div>
+            <div class="step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">选择接口</div>
+            </div>
+            <div class="step" data-step="5">
+                <div class="step-number">5</div>
+                <div class="step-label">元数据补全</div>
+            </div>
+            <div class="step" data-step="6">
+                <div class="step-number">6</div>
+                <div class="step-label">人工审核</div>
+            </div>
+            <div class="step" data-step="7">
+                <div class="step-number">7</div>
+                <div class="step-label">提交审批</div>
+            </div>
+        </div>
+
+        <!-- 向导内容 -->
+        <div class="wizard-content">
+            <!-- 步骤 1: POM 依赖 -->
+            <div id="step-1" class="step-panel active">
+                <h2 class="panel-title">步骤 1: 配置 POM 依赖</h2>
+                <div class="alert alert-info">
+                    请提供项目的 POM 依赖信息，系统将自动解析并查找接口定义。
+                </div>
+
+                <div class="form-group">
+                    <label>虚拟项目名称 *</label>
+                    <input type="text" id="project-name" placeholder="例如: demo-project3" required>
+                    <div class="hint">项目的唯一标识，用于生成 MCP 服务名称</div>
+                </div>
+
+                <div class="form-group">
+                    <label>项目描述</label>
+                    <textarea id="project-desc" placeholder="简要描述这个虚拟项目的用途..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>POM 依赖配置 *</label>
+                    <textarea id="pom-content" placeholder="粘贴 pom.xml 中的 <dependencies> 部分..." rows="10"></textarea>
+                    <div class="hint">支持完整的 pom.xml 或仅 dependencies 部分</div>
+                </div>
+
+                <div id="step1-alert"></div>
+            </div>
+
+            <!-- 步骤 2: 解析接口 -->
+            <div id="step-2" class="step-panel">
+                <h2 class="panel-title">步骤 2: 解析 JAR 包接口</h2>
+                <div class="alert alert-info">
+                    正在从 Maven 仓库解析依赖并提取接口信息...
+                </div>
+
+                <!-- 进度显示 -->
+                <div id="parse-progress" class="progress-container" style="display: none;">
+                    <div class="progress-header">
+                        <span class="progress-stage" id="progress-stage">初始化...</span>
+                        <span class="progress-percentage" id="progress-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progress-bar"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">已解析:</span>
+                            <span class="progress-stat-value" id="parsed-count">0</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">已下载:</span>
+                            <span class="progress-stat-value" id="downloaded-count">0</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="progress-stat-label">接口数:</span>
+                            <span class="progress-stat-value" id="extracted-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日志控制台 -->
+                <div id="parse-logs" class="log-console" style="display: none;"></div>
+
+                <div id="step2-result" style="display: none;">
+                    <div class="alert alert-success">
+                        🎉 成功解析 <strong><span id="jar-count">0</span></strong> 个依赖包，
+                        发现 <strong><span id="interface-count">0</span></strong> 个 Dubbo 接口
+                    </div>
+                    <div id="parsed-interfaces"></div>
+                </div>
+                <div id="step2-alert"></div>
+            </div>
+
+            <!-- 步骤 3: Git 信息 -->
+            <div id="step-3" class="step-panel">
+                <h2 class="panel-title">步骤 3: 关联 Git 项目</h2>
+                <div class="alert alert-info">
+                    关联 Git 仓库可以自动提取更丰富的接口文档和注释信息。
+                </div>
+
+                <div class="form-group">
+                    <label>Git 仓库地址</label>
+                    <input type="url" id="git-url" placeholder="https://github.com/your-org/your-project.git">
+                    <div class="hint">支持 GitHub、GitLab、Gitee 等平台</div>
+                </div>
+
+                <div class="form-group">
+                    <label>分支/标签 (可选)</label>
+                    <input type="text" id="git-branch" placeholder="main" value="main">
+                </div>
+
+                <div class="form-group">
+                    <label>访问令牌 (私有仓库需要)</label>
+                    <input type="text" id="git-token" placeholder="ghp_xxxxxxxxxxxx">
+                    <div class="hint">用于访问私有仓库的 Personal Access Token</div>
+                </div>
+
+                <button class="btn btn-primary" id="test-git-connection">测试连接</button>
+                <div id="step3-alert" style="margin-top: 16px;"></div>
+            </div>
+
+            <!-- 步骤 4: 选择接口 -->
+            <div id="step-4" class="step-panel">
+                <h2 class="panel-title">步骤 4: 选择需要的接口和方法</h2>
+                <div class="alert alert-info">
+                    从解析结果中选择需要包含在虚拟项目中的接口和方法。
+                </div>
+                <div id="interface-selection" class="selection-list">
+                    <!-- 动态生成接口选择列表 -->
+                </div>
+                <div id="step4-alert"></div>
+            </div>
+
+            <!-- 步骤 5: 元数据补全 -->
+            <div id="step-5" class="step-panel">
+                <h2 class="panel-title">步骤 5: AI 智能补全元数据</h2>
+                <div class="alert alert-info">
+                    结合 Git 源码信息，使用 AI 自动补全方法描述、参数说明和返回值说明。
+                </div>
+                <div id="step5-loading" class="loading" style="display: none;">AI 智能分析中...</div>
+                <div id="enriched-metadata">
+                    <!-- 显示补全后的元数据 -->
+                </div>
+                <div id="step5-alert"></div>
+            </div>
+
+            <!-- 步骤 6: 人工审核 -->
+            <div id="step-6" class="step-panel">
+                <h2 class="panel-title">步骤 6: 人工审核和微调</h2>
+                <div class="alert alert-info">
+                    您可以在此修正 AI 自动补全的内容，或手动添加更多细节。
+                </div>
+                <div id="manual-edit-area">
+                    <!-- 项目描述编辑 -->
+                    <div class="form-group">
+                        <label>项目描述</label>
+                        <textarea id="edit-project-desc" rows="3"></textarea>
+                        <div class="hint">您可以完善项目描述，这将作为 MCP Server 的提示词上下文。</div>
+                    </div>
+
+                    <h3 style="margin: 20px 0 12px 0; font-weight: 800;">工具列表 (Tools)</h3>
+                    <div id="tools-edit-list"></div>
+                </div>
+                <div id="step6-alert"></div>
+            </div>
+
+            <!-- 步骤 7: 提交审批 -->
+            <div id="step-7" class="step-panel">
+                <h2 class="panel-title">步骤 7: 提交审批</h2>
+                <div class="alert alert-info">
+                    确认所有信息无误后，提交给管理员审批。审批通过后即可上线使用。
+                </div>
+
+                <div class="form-group">
+                    <label>审批备注</label>
+                    <textarea id="approval-notes" placeholder="向管理员说明创建此虚拟项目的原因..." rows="4"></textarea>
+                </div>
+
+                <div id="project-summary">
+                    <h3 style="margin-bottom: 12px; font-weight: 900;">项目摘要</h3>
+                    <div id="summary-content" class="code-block">
+                        <!-- 显示项目配置摘要 -->
+                    </div>
+                </div>
+
+                <div id="step7-alert"></div>
+            </div>
+
+            <!-- 导航按钮 -->
+            <div class="wizard-actions">
+                <button class="btn btn-secondary" id="btn-prev" disabled>上一步</button>
+                <div>
+                    <button class="btn btn-secondary" id="btn-save-draft" style="margin-right: 10px;">保存草稿</button>
+                    <button class="btn btn-primary" id="btn-next">下一步</button>
+                    <button class="btn btn-success" id="btn-submit" style="display: none;">提交审批</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 当前步骤
+        let currentStep = 1;
+        const totalSteps = 7;
+
+        // 项目数据
+        const projectData = {
+            name: '',
+            description: '',
+            pomContent: '',
+            gitUrl: '',
+            gitBranch: 'main',
+            gitToken: '',
+            parsedInterfaces: [],
+            selectedInterfaces: [],
+            enrichedMetadata: {},
+            approvalNotes: ''
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            initEventListeners();
+            updateStepUI();
+        });
+
+        function initEventListeners() {
+            // 导航按钮
+            document.getElementById('btn-prev').addEventListener('click', previousStep);
+            document.getElementById('btn-next').addEventListener('click', nextStep);
+            document.getElementById('btn-submit').addEventListener('click', submitProject);
+            document.getElementById('btn-save-draft').addEventListener('click', saveDraft);
+
+            // 步骤特定按钮
+            document.getElementById('test-git-connection').addEventListener('click', testGitConnection);
+        }
+
+        function updateStepUI() {
+            // 更新步骤指示器
+            document.querySelectorAll('.step').forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.toggle('active', stepNum === currentStep);
+                step.classList.toggle('completed', stepNum < currentStep);
+            });
+
+            // 更新面板显示
+            document.querySelectorAll('.step-panel').forEach((panel, index) => {
+                panel.classList.toggle('active', index + 1 === currentStep);
+            });
+
+            // 更新按钮状态
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').style.display = currentStep === totalSteps ? 'none' : 'inline-block';
+            document.getElementById('btn-submit').style.display = currentStep === totalSteps ? 'inline-block' : 'none';
+
+            // 步骤特定渲染逻辑
+            if (currentStep === 4) {
+                renderStep4();
+            } else if (currentStep === 5) {
+                // 进入步骤5时，如果没有生成过，自动触发
+                if (!projectData.enrichedMetadata || Object.keys(projectData.enrichedMetadata).length === 0) {
+                    processStep5();
+                } else {
+                    renderStep5Results(projectData.enrichedMetadata);
+                }
+            } else if (currentStep === 6) {
+                renderStep6();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepUI();
+            }
+        }
+
+        async function nextStep() {
+            // 验证当前步骤
+            if (!await validateCurrentStep()) {
+                return;
+            }
+
+            // 执行步骤特定逻辑
+            if (currentStep === 1) {
+                await processStep1();
+            } else if (currentStep === 2) {
+                await processStep2();
+            } else if (currentStep === 4) {
+                await processStep4();
+            } else if (currentStep === 5) {
+                // Step 5 只是展示，数据已经在 projectData.enrichedMetadata 中
+                // 点击下一步时，不需要额外处理，直接进入 Step 6
+            } else if (currentStep === 6) {
+                if (!validateStep6()) return;
+            } else if (currentStep === 5) {
+                await processStep5();
+            }
+
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateStepUI();
+            }
+        }
+
+        async function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    const name = document.getElementById('project-name').value.trim();
+                    const pom = document.getElementById('pom-content').value.trim();
+                    if (!name || !pom) {
+                        showAlert('step1-alert', '请填写项目名称和 POM 依赖', 'error');
+                        return false;
+                    }
+                    projectData.name = name;
+                    projectData.description = document.getElementById('project-desc').value.trim();
+                    projectData.pomContent = pom;
+                    return true;
+
+                case 3:
+                    projectData.gitUrl = document.getElementById('git-url').value.trim();
+                    projectData.gitBranch = document.getElementById('git-branch').value.trim() || 'main';
+                    projectData.gitToken = document.getElementById('git-token').value.trim();
+                    return true;
+
+                case 4:
+                    if (projectData.selectedInterfaces.length === 0) {
+                        showAlert('step4-alert', '请至少选择一个接口', 'error');
+                        return false;
+                    }
+                    return true;
+
+                default:
+                    return true;
+            }
+        }
+
+        function renderStep6() {
+            const container = document.getElementById('tools-edit-list');
+            container.innerHTML = '';
+
+            // 1. 填充项目描述
+            const descInput = document.getElementById('edit-project-desc');
+            descInput.value = projectData.enrichedMetadata.suggestedDescription || '';
+            descInput.onchange = (e) => {
+                projectData.enrichedMetadata.suggestedDescription = e.target.value;
+            };
+
+            // 2. 渲染 Tools 编辑列表
+            const tools = projectData.enrichedMetadata.tools || [];
+
+            if (tools.length === 0) {
+                container.innerHTML = '<div class="alert alert-warning">没有生成任何工具。请返回上一步检查。</div>';
+                return;
+            }
+
+            tools.forEach((tool, index) => {
+                const container = document.getElementById('manual-review');
+                container.innerHTML = '';
+
+                if (!projectData.enrichedMetadata || !projectData.enrichedMetadata.tools) {
+                    container.innerHTML = '<div class="alert alert-warning">暂无工具数据，请先完成 AI 解析步骤。</div>';
+                    return;
+                }
+
+                // 1. 项目基本信息编辑区
+                const basicInfoSection = document.createElement('div');
+                basicInfoSection.style.marginBottom = '24px';
+                basicInfoSection.innerHTML = `
+                <h4 style="margin-bottom: 16px;">项目基本信息确认</h4>
+                <div class="form-group">
+                    <label>项目名称 (Project Name)</label>
+                    <input type="text" id="final-project-name" class="form-control" value="${projectData.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label>项目描述 (Description)</label>
+                    <textarea id="final-project-desc" class="form-control" rows="3">${projectData.enrichedMetadata.suggestedDescription || projectData.description || ''}</textarea>
+                </div>
+                <hr>
+                <h4 style="margin-bottom: 16px;">Tool 列表确认 (${projectData.enrichedMetadata.tools.length})</h4>
+            `;
+                container.appendChild(basicInfoSection);
+
+                // 2. Tool 列表编辑区
+                const toolsList = document.createElement('div');
+                projectData.enrichedMetadata.tools.forEach((tool, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'card edit-tool-card';
+                    card.style.marginBottom = '16px';
+
+                    card.innerHTML = `
+                    <div class="card-header" style="background: #f8f9fa;">
+                        <strong>Tool ${idx + 1}: ${tool.interfaceName}.${tool.methodName}</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Tool Name (唯一标识)</label>
+                            <input type="text" class="form-control tool-name-input" data-idx="${idx}" value="${tool.toolName}">
+                        </div>
+                        <div class="form-group">
+                            <label>Description (用于 AI 理解)</label>
+                            <textarea class="form-control tool-desc-input" data-idx="${idx}" rows="2">${tool.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Input Schema (JSON)</label>
+                            <textarea class="form-control tool-schema-input" data-idx="${idx}" rows="6" style="font-family: monospace; font-size: 12px;">${tool.inputSchema}</textarea>
+                        </div>
+                    </div>
+                `;
+                    toolsList.appendChild(card);
+                });
+                container.appendChild(toolsList);
+
+                // 绑定事件：实时更新 projectData
+                toolsList.querySelectorAll('.tool-name-input').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const idx = parseInt(e.target.dataset.idx);
+                        if (e.target.value.trim()) {
+                            projectData.enrichedMetadata.tools[idx].toolName = e.target.value.trim();
+                        }
+                    });
+                });
+
+                toolsList.querySelectorAll('.tool-desc-input').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const idx = parseInt(e.target.dataset.idx);
+                        projectData.enrichedMetadata.tools[idx].description = e.target.value.trim();
+                    });
+                });
+
+                toolsList.querySelectorAll('.tool-schema-input').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const idx = parseInt(e.target.dataset.idx);
+                        try {
+                            // 尝试格式化 JSON
+                            const json = JSON.parse(e.target.value);
+                            const formatted = JSON.stringify(json, null, 2);
+                            e.target.value = formatted;
+                            projectData.enrichedMetadata.tools[idx].inputSchema = formatted;
+                        } catch (err) {
+                            alert('JSON 格式错误: ' + err.message);
+                            // 不更新数据，让用户修正
+                        }
+                    });
+                });
+            }
+
+        function validateStep6() {
+                    const alertBox = document.getElementById('step6-alert');
+                    alertBox.innerHTML = '';
+                    alertBox.className = '';
+
+                    // 1. 验证 JSON Schema 格式
+                    const tools = projectData.enrichedMetadata.tools || [];
+                    for (let i = 0; i < tools.length; i++) {
+                        try {
+                            JSON.parse(tools[i].inputSchema);
+                        } catch (e) {
+                            alertBox.innerHTML = `Tool #${i + 1} (${tools[i].toolName}) 的 Input Schema 不是有效的 JSON 格式。`;
+                            alertBox.className = 'alert alert-error';
+                            return false;
+                        }
+
+                        if (!tools[i].toolName || tools[i].toolName.trim() === '') {
+                            alertBox.innerHTML = `Tool #${i + 1} 的名称不能为空。`;
+                            alertBox.className = 'alert alert-error';
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+        async function processStep1() {
+                    // 步骤1完成后，自动触发步骤2的解析
+                    console.log('步骤1数据已保存', projectData);
+
+                    // 进入步骤2时自动开始解析
+                    setTimeout(() => {
+                        if (currentStep === 2) {
+                            startPomParsing();
+                        }
+                    }, 100);
+                }
+
+        async function processStep2() {
+                    // 步骤2不需要额外处理，解析已在 processStep1 中触发
+                }
+
+        /**
+         * 开始 POM 解析（使用 SSE 接收进度）
+         */
+        async function startPomParsing() {
+                    const sessionId = 'session_' + Date.now();
+
+                    // 显示进度UI
+                    document.getElementById('parse-progress').style.display = 'block';
+                    document.getElementById('parse-logs').style.display = 'block';
+
+                    // 建立 SSE 连接
+                    const eventSource = new EventSource(`/api/wizard/parse-pom/progress/${sessionId}`);
+
+                    eventSource.addEventListener('progress', function (event) {
+                        const progress = JSON.parse(event.data);
+                        updateProgress(progress);
+
+                        // 如果完成或出错，关闭连接
+                        if (progress.completed || progress.hasError) {
+                            eventSource.close();
+
+                            if (progress.hasError) {
+                                showAlert('step2-alert', `解析失败: ${progress.errorMessage}`, 'error');
+                            } else if (progress.result) {
+                                displayParseResult(progress.result);
+                            }
+                        }
+                    });
+
+                    eventSource.onerror = function (error) {
+                        console.error('SSE 连接错误:', error);
+                        eventSource.close();
+                        showAlert('step2-alert', 'SSE 连接失败，请刷新页面重试', 'error');
+                    };
+
+                    // 发起解析请求
+                    try {
+                        const response = await fetch('/api/wizard/parse-pom', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                projectName: projectData.name,
+                                pomContent: projectData.pomContent,
+                                sessionId: sessionId
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (!result.success) {
+                            eventSource.close();
+                            showAlert('step2-alert', result.message || '启动解析失败', 'error');
+                        }
+                    } catch (error) {
+                        eventSource.close();
+                        console.error('启动解析失败:', error);
+                        showAlert('step2-alert', '启动解析失败: ' + error.message, 'error');
+                    }
+                }
+
+        /**
+         * 更新进度显示
+         */
+        function updateProgress(progress) {
+                    // 更新进度条
+                    const percentage = progress.progressPercentage || 0;
+                    document.getElementById('progress-bar').style.width = percentage + '%';
+                    document.getElementById('progress-percentage').textContent = percentage + '%';
+                    document.getElementById('progress-stage').textContent = progress.stageDescription || '';
+
+                    // 更新统计数据
+                    document.getElementById('parsed-count').textContent = progress.parsedDependencies || 0;
+                    document.getElementById('downloaded-count').textContent = progress.downloadedJars || 0;
+                    document.getElementById('extracted-count').textContent = progress.extractedInterfaces || 0;
+
+                    // 追加日志
+                    if (progress.logs && progress.logs.length > 0) {
+                        const logConsole = document.getElementById('parse-logs');
+                        progress.logs.forEach(log => {
+                            const logEntry = document.createElement('div');
+                            logEntry.className = 'log-entry';
+                            logEntry.textContent = log;
+                            logConsole.appendChild(logEntry);
+                        });
+
+                        // 滚动到底部
+                        logConsole.scrollTop = logConsole.scrollHeight;
+                    }
+                }
+
+        /**
+         * 显示解析结果
+         */
+        function displayParseResult(result) {
+                    if (!result.success) {
+                        return;
+                    }
+
+                    // 保存到项目数据
+                    projectData.parsedInterfaces = result.interfaces || [];
+
+                    // 更新UI
+                    document.getElementById('jar-count').textContent = result.jarCount || 0;
+                    document.getElementById('interface-count').textContent = result.interfaceCount || 0;
+                    document.getElementById('step2-result').style.display = 'block';
+
+                    // 显示接口列表
+                    const interfacesContainer = document.getElementById('parsed-interfaces');
+                    if (result.interfaces && result.interfaces.length > 0) {
+                        interfacesContainer.innerHTML = '<h4 style="margin-top: 16px; font-weight: 900;">发现的接口:</h4>';
+                        result.interfaces.forEach(iface => {
+                            const item = document.createElement('div');
+                            item.style.cssText = 'padding: 8px; margin: 6px 0; background: rgba(79, 70, 229, 0.06); border-radius: 8px;';
+                            item.innerHTML = `
+                        <div style="font-weight: 800; color: var(--primary);">${iface.interfaceName}</div>
+                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                            来自: ${iface.jarName} | 方法数: ${iface.methods ? iface.methods.length : 0}
+                        </div>
+                    `;
+                            interfacesContainer.appendChild(item);
+                        });
+                    }
+                }
+
+        /**
+         * 渲染步骤4：接口选择
+         */
+        function renderStep4() {
+                    const container = document.getElementById('interface-selection');
+                    container.innerHTML = '';
+
+                    if (!projectData.parsedInterfaces || projectData.parsedInterfaces.length === 0) {
+                        async function renderStep4() {
+                            const container = document.getElementById('interface-selection');
+                            container.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">正在从 ZooKeeper 检查服务节点状态...</div></div>';
+
+                            // 1. 获取接口列表Status
+                            const ifaceNames = projectData.parsedInterfaces.map(i => i.interfaceName);
+                            if (ifaceNames.length === 0) {
+                                container.innerHTML = '<div class="alert alert-warning">未发现接口定义。</div>';
+                                return;
+                            }
+
+                            let providerStatus = {};
+                            try {
+                                const response = await fetch('/api/wizard/check-providers', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ interfaces: ifaceNames })
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error('API Request Failed');
+                                }
+                                providerStatus = await response.json();
+                            } catch (error) {
+                                console.error('检查服务状态失败:', error);
+                                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        无法连接服务器检查节点状态 (ZooKeeper)。<br>
+                        请检查后端服务是否正常启动。<br>
+                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="renderStep4()">🔄 重试</button>
+                    </div>`;
+                                return;
+                            }
+
+                            container.innerHTML = '';
+
+                            // 添加刷新按钮
+                            const toolbar = document.createElement('div');
+                            toolbar.style.marginBottom = '16px';
+                            toolbar.style.display = 'flex';
+                            toolbar.style.justifyContent = 'space-between';
+                            toolbar.style.alignItems = 'center';
+                            toolbar.innerHTML = `
+                <span class="text-muted">请选择要在虚拟项目中包含的接口（仅显示在线服务）：</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="renderStep4()">🔄 刷新服务状态</button>
+            `;
+                            container.appendChild(toolbar);
+
+                            let anyOnline = false;
+
+                            // 初始化选中状态（如果不重置的话）
+                            // projectData.selectedInterfaces.length check?
+                            if (!projectData.selectedInterfaces || projectData.selectedInterfaces.length === 0) {
+                                projectData.selectedInterfaces = JSON.parse(JSON.stringify(projectData.parsedInterfaces));
+                                projectData.selectedInterfaces.forEach(i => {
+                                    if (i.methods) i.methods.forEach(m => m.selected = false);
+                                });
+                            }
+
+                            projectData.parsedInterfaces.forEach((iface, index) => {
+                                const status = providerStatus[iface.interfaceName] || { online: false, count: 0 };
+                                const isOnline = status.online;
+                                const nodeCount = status.count;
+
+                                if (isOnline) anyOnline = true;
+
+                                // 查找该接口在 projectData 中的当前状态
+                                let currentIfaceData = projectData.selectedInterfaces.find(i => i.interfaceName === iface.interfaceName);
+                                if (!currentIfaceData) {
+                                    currentIfaceData = {
+                                        interfaceName: iface.interfaceName,
+                                        methods: iface.methods.map(m => ({
+                                            methodName: m.methodName,
+                                            selected: false
+                                        }))
+                                    };
+                                    projectData.selectedInterfaces.push(currentIfaceData);
+                                }
+
+                                const allSelected = currentIfaceData.methods.every(m => m.selected);
+                                const someSelected = currentIfaceData.methods.some(m => m.selected);
+
+                                const card = document.createElement('div');
+                                card.className = 'card mb-3';
+                                card.style.borderLeft = isOnline ? '4px solid var(--success)' : '4px solid #ccc';
+                                card.style.opacity = isOnline ? '1' : '0.6';
+
+                                const header = document.createElement('div');
+                                header.className = 'card-header';
+                                header.style.cursor = 'pointer';
+                                header.style.display = 'flex';
+                                header.style.justifyContent = 'space-between';
+                                header.style.alignItems = 'center';
+                                header.style.background = isOnline ? '#f8f9fa' : '#eee';
+
+                                const statusBadge = isOnline ?
+                                    `<span class="badge badge-success ml-2">在线 (${nodeCount})</span>` :
+                                    `<span class="badge badge-secondary ml-2">离线</span>`;
+
+                                const disabledAttr = isOnline ? '' : 'disabled';
+                                const textColor = isOnline ? '' : 'color: #666;';
+
+                                // Interface Header
+                                header.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" class="iface-select-all" data-iface="${iface.interfaceName}" 
+                               ${allSelected ? 'checked' : ''} ${disabledAttr}>
+                        <div>
+                            <strong class="iface-title" style="${textColor}">${iface.simpleClassName}</strong>
+                            ${statusBadge}
+                            <div style="font-size: 12px; color: #666;">${iface.interfaceName}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-primary badge-pill">${iface.methods ? iface.methods.length : 0} 方法</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                `;
+
+                                const body = document.createElement('div');
+                                body.className = 'card-body';
+                                body.style.display = 'none'; // 默认折叠
+
+                                if (iface.methods && iface.methods.length > 0) {
+                                    const methodList = document.createElement('div');
+                                    methodList.className = 'method-list';
+
+                                    iface.methods.forEach(method => {
+                                        const methodRow = document.createElement('div');
+                                        methodRow.className = 'method-row';
+                                        methodRow.style.padding = '4px 0';
+
+                                        const mData = currentIfaceData.methods.find(m => m.methodName === method.methodName);
+                                        const isSelected = mData ? mData.selected : false;
+
+                                        methodRow.innerHTML = `
+                            <div class="custom-control custom-checkbox ml-4">
+                                <input type="checkbox" class="custom-control-input method-select" 
+                                       id="${iface.simpleClassName}-${method.methodName}-${index}"
+                                       ${isSelected ? 'checked' : ''} ${disabledAttr}>
+                                <label class="custom-control-label" for="${iface.simpleClassName}-${method.methodName}-${index}" style="${textColor}; cursor: pointer;">
+                                    <span style="font-weight: 500;">${method.methodName}</span>
+                                    <span style="color: #666; font-size: 0.9em;">(${method.parameters.map(p => p.typeSimpleName).join(', ')})</span>
+                                </label>
+                            </div>
+                        `;
+
+                                        // 绑定方法选中事件
+                                        if (isOnline) {
+                                            const checkbox = methodRow.querySelector('input');
+                                            checkbox.addEventListener('change', (e) => {
+                                                toggleMethodSelection(iface.interfaceName, method.methodName, e.target.checked);
+                                                updateSelectAllState(iface.interfaceName, header.querySelector('.iface-select-all'));
+                                            });
+                                        }
+
+                                        methodList.appendChild(methodRow);
+                                    });
+                                    body.appendChild(methodList);
+                                } else {
+                                    body.innerHTML = '<div class="text-muted p-2">无公开方法</div>';
+                                }
+
+                                // Header Click Event (Collapse)
+                                header.addEventListener('click', (e) => {
+                                    if (e.target.type === 'checkbox' || e.target.classList.contains('custom-control-label')) return;
+                                    const isHidden = body.style.display === 'none';
+                                    body.style.display = isHidden ? 'block' : 'none';
+                                    header.querySelector('.collapse-icon').textContent = isHidden ? '▲' : '▼';
+                                });
+
+                                // Select All Event
+                                if (isOnline) {
+                                    const selectAllCb = header.querySelector('.iface-select-all');
+                                    selectAllCb.addEventListener('change', (e) => {
+                                        e.stopPropagation();
+                                        const checked = e.target.checked;
+                                        toggleInterfaceSelection(iface.interfaceName, checked);
+                                        body.querySelectorAll('.method-select').forEach(cb => cb.checked = checked);
+                                    });
+
+                                    selectAllCb.addEventListener('click', (e) => e.stopPropagation());
+                                }
+
+                                if (someSelected) {
+                                    body.style.display = 'block';
+                                    header.querySelector('.collapse-icon').textContent = '▲';
+                                }
+
+                                card.appendChild(header);
+                                card.appendChild(body);
+                                container.appendChild(card);
+
+                                // Initialize indeterminate state
+                                const checkboxEl = header.querySelector('.iface-select-all');
+                                if (isOnline) {
+                                    checkboxEl.indeterminate = someSelected && !allSelected;
+                                }
+                            });
+
+                            if (!anyOnline) {
+                                const alertDiv = document.createElement('div');
+                                alertDiv.className = 'alert alert-danger mt-3';
+                                alertDiv.innerHTML = '⚠️ <strong>未发现任何在线的服务节点！</strong><br>请检查 ZooKeeper 服务注册状态，或启动相应的 Provider 服务。无法继续创建虚拟项目。';
+                                container.prepend(alertDiv);
+                            }
+                        }
+
+                        function updateSelectAllState(interfaceName, selectAllCheckbox) {
+                            const iface = projectData.selectedInterfaces.find(i => i.interfaceName === interfaceName);
+                            if (iface && iface.methods) {
+                                const allSelected = iface.methods.every(m => m.selected);
+                                const someSelected = iface.methods.some(m => m.selected);
+                                selectAllCheckbox.checked = allSelected;
+                                selectAllCheckbox.indeterminate = someSelected && !allSelected;
+                            }
+                        }
+
+                        function toggleMethodSelection(interfaceName, methodName, checked) {
+                            const iface = projectData.selectedInterfaces.find(i => i.interfaceName === interfaceName);
+                            if (iface && iface.methods) {
+                                const method = iface.methods.find(m => m.methodName === methodName);
+                                if (method) {
+                                    method.selected = checked;
+                                }
+                            }
+                        }
+
+                        function toggleInterfaceSelection(interfaceName, checked) {
+                            const iface = projectData.selectedInterfaces.find(i => i.interfaceName === interfaceName);
+                            if (iface && iface.methods) {
+                                iface.methods.forEach(m => m.selected = checked);
+                            }
+                        }
+
+                        async function processStep4() {
+                            // 验证至少选择了一个方法
+                            let count = 0;
+                            projectData.selectedInterfaces.forEach(i => {
+                                if (i.methods) count += i.methods.filter(m => m.selected).length;
+                            });
+                            console.log(`共选择了 ${count} 个方法`);
+                            // Step validation handled in validateCurrentStep
+                        }
+
+                        /**
+                         * 执行步骤5：AI 元数据补全
+                         */
+                        async function processStep5() {
+                            const loading = document.getElementById('step5-loading');
+                            const resultDiv = document.getElementById('enriched-metadata');
+                            const alertDiv = document.getElementById('step5-alert');
+
+                            loading.style.display = 'block';
+                            resultDiv.innerHTML = '';
+                            alertDiv.innerHTML = '';
+
+                            try {
+                                // 过滤只包含选中的接口和方法
+                                const filteredInterfaces = projectData.selectedInterfaces
+                                    .map(iface => {
+                                        // 复制接口信息
+                                        const newIface = JSON.parse(JSON.stringify(iface));
+                                        // 过滤未选中的方法
+                                        if (newIface.methods) {
+                                            newIface.methods = newIface.methods.filter(m => m.selected);
+                                        }
+                                        return newIface;
+                                    })
+                                    .filter(iface => iface.methods && iface.methods.length > 0); // 只保留由选中方法的接口
+
+                                if (filteredInterfaces.length === 0) {
+                                    throw new Error("请至少选择一个方法进行分析");
+                                }
+
+                                const requestPayload = {
+                                    projectName: projectData.name,
+                                    originalDescription: projectData.description,
+                                    gitMetadata: projectData.gitMetadata,
+                                    selectedInterfaces: filteredInterfaces
+                                };
+
+                                const response = await fetch('/api/wizard/enrich-metadata', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(requestPayload)
+                                });
+
+                                if (!response.ok) throw new Error('API request failed');
+
+                                const enrichedData = await response.json();
+                                projectData.enrichedMetadata = enrichedData;
+
+                                renderStep5Results(enrichedData);
+
+                                // 自动填充描述
+                                if (enrichedData.suggestedDescription) {
+                                    showAlert('step5-alert', '✅ AI 分析完成！已自动生成项目描述和工具定义。', 'success');
+                                    // 如果当前描述为空，或者用户同意，可以更新 Step 1 的描述
+                                    // 这里我们在 Step 5 界面展示，后续 Step 6 还可以编辑
+                                    projectData.description = enrichedData.suggestedDescription;
+                                    // TODO: 更新 UI 上的描述显示（如果 Step 5 有显示的话）
+                                }
+
+                            } catch (error) {
+                                console.error('AI 补全失败:', error);
+                                showAlert('step5-alert', 'AI 分析失败: ' + error.message, 'error');
+                                resultDiv.innerHTML = '<div class="alert alert-danger">无法完成 AI 分析，请尝试重试或跳过。</div>';
+                            } finally {
+                                loading.style.display = 'none';
+                            }
+                        }
+
+                        function renderStep5Results(data) {
+                            const container = document.getElementById('enriched-metadata');
+
+                            let html = `
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header"><strong>项目建议描述</strong></div>
+                    <div class="card-body">
+                        <textarea class="form-control" style="width: 100%; height: 80px;">${data.suggestedDescription || ''}</textarea>
+                    </div>
+                </div>
+                
+                <h3>生成的 MCP Tool 定义 (${data.tools ? data.tools.length : 0})</h3>
+            `;
+
+                            if (data.tools && data.tools.length > 0) {
+                                data.tools.forEach(tool => {
+                                    html += `
+                        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
+                            <div class="card-body">
+                                <h5 style="margin: 0 0 8px 0; color: var(--primary);">${tool.toolName}</h5>
+                                <div style="font-size: 13px; color: #555; margin-bottom: 8px;">${tool.description}</div>
+                                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${tool.inputSchema}</div>
+                            </div>
+                        </div>
+                    `;
+                                });
+                            } else {
+                                html += '<div class="alert alert-warning">未生成任何 Tool 定义，请检查是否选择了方法。</div>';
+                            }
+
+                            html += `<div style="text-align: center; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="processStep5()">🔄 重新生成</button>
+                     </div>`;
+
+                            container.innerHTML = html;
+                        }
+
+                        async function submitProject() {
+                            if (!projectData.enrichedMetadata || !projectData.enrichedMetadata.tools) {
+                                alert('没有可提交的数据，请先完成前置步骤。');
+                                return;
+                            }
+
+                            // 获取 Step 6 中可能修改的项目名称和描述
+                            const finalNameInput = document.getElementById('final-project-name');
+                            const finalDescInput = document.getElementById('final-project-desc');
+
+                            const finalProjectName = finalNameInput ? finalNameInput.value.trim() : projectData.name;
+                            const finalDescription = finalDescInput ? finalDescInput.value.trim() : (projectData.enrichedMetadata.suggestedDescription || projectData.description);
+
+                            if (!finalProjectName) {
+                                alert('项目名称不能为空！');
+                                return;
+                            }
+
+                            const submitBtn = document.getElementById('btn-submit');
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = '提交中...';
+
+                            const payload = {
+                                projectName: finalProjectName,
+                                description: finalDescription,
+                                tools: projectData.enrichedMetadata.tools,
+                                gitUrl: projectData.gitMetadata ? projectData.gitMetadata.gitUrl : (document.getElementById('git-url') ? document.getElementById('git-url').value : null),
+                                branch: projectData.gitMetadata ? projectData.gitMetadata.branch : (document.getElementById('git-branch') ? document.getElementById('git-branch').value : null)
+                            };
+
+                            // 补充 Owner 信息 (如果有)
+                            if (projectData.gitMetadata && projectData.gitMetadata.owner) {
+                                payload.owner = projectData.gitMetadata.owner;
+                            }
+
+                            try {
+                                const response = await fetch('/api/wizard/submit', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+
+                                const result = await response.json();
+
+                                if (response.ok && result.success) {
+                                    let msg = '✅ 项目提交成功！\n';
+                                    if (result.path) {
+                                        msg += `配置文件已保存至: ${result.path}\n`;
+                                    }
+                                    msg += '您可以关闭向导或继续创建新项目。';
+                                    alert(msg);
+
+                                    // 可选：重置或者是跳转
+                                    // location.reload(); 
+                                } else {
+                                    throw new Error(result.message || '未知错误');
+                                }
+                            } catch (error) {
+                                console.error('提交失败:', error);
+                                alert('❌ 提交失败: ' + error.message);
+                            } finally {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = '提交审批';
+                            }
+                        }
+
+                        async function saveDraft() {
+                            // TODO: 保存草稿到本地存储或后端
+                            console.log('保存草稿', projectData);
+                            alert('草稿已保存！');
+                        }
+
+                        async function testGitConnection() {
+                            const url = document.getElementById('git-url').value.trim();
+                            const branch = document.getElementById('git-branch').value.trim();
+                            const token = document.getElementById('git-token').value.trim();
+
+                            if (!url) {
+                                showAlert('step3-alert', '请先输入 Git 仓库地址', 'error');
+                                return;
+                            }
+
+                            const btn = document.getElementById('test-git-connection');
+                            const originalText = btn.textContent;
+                            btn.textContent = '正在分析...';
+                            btn.disabled = true;
+
+                            try {
+                                showAlert('step3-alert', '正在连接 Git 仓库并分析元数据...', 'info');
+
+                                const response = await fetch('/api/wizard/git-meta', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ gitUrl: url, branch: branch, token: token })
+                                });
+
+                                const metadata = await response.json();
+
+                                if (metadata.success) {
+                                    console.log('Git 元数据提取成功:', metadata);
+                                    projectData.gitMetadata = metadata;
+
+                                    // 构建展示信息
+                                    let msg = `✅ <strong>Git 分析成功！</strong><br>`;
+                                    if (metadata.applicationName) msg += `应用名: ${metadata.applicationName}<br>`;
+                                    if (metadata.owner) msg += `负责人: ${metadata.owner}<br>`;
+                                    if (metadata.dubboPort) msg += `Dubbo端口: ${metadata.dubboPort}<br>`;
+
+                                    showAlert('step3-alert', msg, 'success');
+
+                                    // --- 一致性校验与合并策略 ---
+                                    const currentName = document.getElementById('project-name').value.trim();
+                                    const gitAppName = metadata.applicationName;
+
+                                    if (gitAppName && gitAppName !== currentName) {
+                                        // 如果当前名称为空，直接填充
+                                        if (!currentName) {
+                                            document.getElementById('project-name').value = gitAppName;
+                                            projectData.name = gitAppName;
+                                            showAlert('step3-alert', msg + `<br>✨ 已自动填充项目名称为: <strong>${gitAppName}</strong>`, 'success');
+                                        } else {
+                                            // 如果不一致，询问用户
+                                            if (confirm(`⚠️ 检测到 Git 项目配置的应用名为 "${gitAppName}"，与当前输入的 "${currentName}" 不一致。\n\n是否使用 Git 项目名称覆盖当前设置？`)) {
+                                                document.getElementById('project-name').value = gitAppName;
+                                                projectData.name = gitAppName;
+                                                console.log('用户选择覆盖项目名称');
+                                            } else {
+                                                console.log('用户选择保留原项目名称');
+                                            }
+                                        }
+                                    }
+
+                                    // 自动填充描述（如果当前为空）
+                                    const currentDesc = document.getElementById('project-desc').value.trim();
+                                    if (metadata.description && !currentDesc) {
+                                        document.getElementById('project-desc').value = metadata.description;
+                                        projectData.description = metadata.description;
+                                    }
+
+                                } else {
+                                    console.error('Git 分析失败:', metadata.errorMessage);
+                                    showAlert('step3-alert', `⚠️ Git 分析未完成: ${metadata.errorMessage}`, 'warning');
+                                }
+
+                            } catch (error) {
+                                console.error('API 调用失败:', error);
+                                showAlert('step3-alert', '网络请求失败: ' + error.message, 'error');
+                            } finally {
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                            }
+                        }
+
+                        function showAlert(containerId, message, type = 'info') {
+                            const container = document.getElementById(containerId);
+                            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+                            setTimeout(() => {
+                                container.innerHTML = '';
+                            }, 5000);
+                        }
+    </script>
+</body>
+
+</html>

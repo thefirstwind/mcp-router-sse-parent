@@ -50,14 +50,15 @@ start_project() {
     
     cd "$BASE_DIR/$path"
     
-    # 检查是否已经在运行
-    if lsof -ti:$port > /dev/null 2>&1; then
+    # 检查是否已经在运行 (仅检查监听状态)
+    if lsof -nP -i:$port | grep -q LISTEN; then
         echo -e "${YELLOW}  ⚠️  端口 $port 已被占用，跳过启动${NC}"
         return 0
     fi
     
     # 启动项目
-    nohup mvn spring-boot:run > "$LOG_DIR/${name}.log" 2>&1 &
+    # 强制设置 IP 为 127.0.0.1 避免 Mac 上 IP 解析问题
+    nohup mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Ddubbo.network.interface.preferred=lo0 -Ddubbo.published.ip=127.0.0.1" > "$LOG_DIR/${name}.log" 2>&1 &
     local pid=$!
     
     echo "$pid" > "$LOG_DIR/${name}.pid"

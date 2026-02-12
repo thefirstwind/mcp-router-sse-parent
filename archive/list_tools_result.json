@@ -1,0 +1,344 @@
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": {
+    "tools": [
+      {
+        "interfaceName": "com.pajk.provider3.service.UserService",
+        "methodName": "getUserById",
+        "toolName": "com.pajk.provider3.service.UserService.getUserById",
+        "description": "查询 User By Id (UserService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "description": "参数: userId (类型: Long). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "userId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.UserService.getUserById"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.UserService",
+        "methodName": "getAllUsers",
+        "toolName": "com.pajk.provider3.service.UserService.getAllUsers",
+        "description": "查询 All Users (UserService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "name": "com.pajk.provider3.service.UserService.getAllUsers"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.UserService",
+        "methodName": "createUser",
+        "toolName": "com.pajk.provider3.service.UserService.createUser",
+        "description": "创建 User (UserService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "string",
+              "description": "参数: user (类型: User)"
+            }
+          },
+          "required": [
+            "user"
+          ]
+        },
+        "name": "com.pajk.provider3.service.UserService.createUser"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.UserService",
+        "methodName": "updateUser",
+        "toolName": "com.pajk.provider3.service.UserService.updateUser",
+        "description": "更新 User (UserService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "string",
+              "description": "参数: user (类型: User)"
+            }
+          },
+          "required": [
+            "user"
+          ]
+        },
+        "name": "com.pajk.provider3.service.UserService.updateUser"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.UserService",
+        "methodName": "deleteUser",
+        "toolName": "com.pajk.provider3.service.UserService.deleteUser",
+        "description": "删除 User (UserService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "description": "参数: userId (类型: Long). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "userId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.UserService.deleteUser"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "getOrderById",
+        "toolName": "com.pajk.provider3.service.OrderService.getOrderById",
+        "description": "查询 Order By Id (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "description": "参数: orderId (类型: String). 通常是唯一标识符 ID。"
+            },
+            "status": {
+              "type": "string",
+              "description": "参数: status (类型: String)"
+            }
+          },
+          "required": [
+            "orderId",
+            "status"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.getOrderById"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "getOrdersByUserId",
+        "toolName": "com.pajk.provider3.service.OrderService.getOrdersByUserId",
+        "description": "查询 Orders By User Id (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "description": "参数: userId (类型: Long). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "userId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.getOrdersByUserId"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "createOrder",
+        "toolName": "com.pajk.provider3.service.OrderService.createOrder",
+        "description": "创建 Order (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "order": {
+              "type": "string",
+              "description": "参数: order (类型: Order)"
+            }
+          },
+          "required": [
+            "order"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.createOrder"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "updateOrderStatus",
+        "toolName": "com.pajk.provider3.service.OrderService.updateOrderStatus",
+        "description": "更新 Order Status (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "description": "参数: orderId (类型: String). 通常是唯一标识符 ID。"
+            },
+            "status": {
+              "type": "string",
+              "description": "参数: status (类型: String)"
+            }
+          },
+          "required": [
+            "orderId",
+            "status"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.updateOrderStatus"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "cancelOrder",
+        "toolName": "com.pajk.provider3.service.OrderService.cancelOrder",
+        "description": "Cancel Order (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "description": "参数: orderId (类型: String). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "orderId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.cancelOrder"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.OrderService",
+        "methodName": "calculateOrderTotal",
+        "toolName": "com.pajk.provider3.service.OrderService.calculateOrderTotal",
+        "description": "Calculate Order Total (OrderService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "description": "参数: orderId (类型: String). 通常是唯一标识符 ID。"
+            },
+            "num": {
+              "type": "integer",
+              "description": "参数: num (类型: Integer)"
+            }
+          },
+          "required": [
+            "orderId",
+            "num"
+          ]
+        },
+        "name": "com.pajk.provider3.service.OrderService.calculateOrderTotal"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "getProductById",
+        "toolName": "com.pajk.provider3.service.ProductService.getProductById",
+        "description": "查询 Product By Id (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "integer",
+              "description": "参数: productId (类型: Long). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "productId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.getProductById"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "getProductsByCategory",
+        "toolName": "com.pajk.provider3.service.ProductService.getProductsByCategory",
+        "description": "查询 Products By Category (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "description": "参数: category (类型: String)"
+            }
+          },
+          "required": [
+            "category"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.getProductsByCategory"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "searchProducts",
+        "toolName": "com.pajk.provider3.service.ProductService.searchProducts",
+        "description": "查询 Products (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "keyword": {
+              "type": "string",
+              "description": "参数: keyword (类型: String)"
+            }
+          },
+          "required": [
+            "keyword"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.searchProducts"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "getPopularProducts",
+        "toolName": "com.pajk.provider3.service.ProductService.getPopularProducts",
+        "description": "查询 Popular Products (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "参数: limit (类型: int)"
+            }
+          },
+          "required": [
+            "limit"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.getPopularProducts"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "updateStock",
+        "toolName": "com.pajk.provider3.service.ProductService.updateStock",
+        "description": "更新 Stock (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "integer",
+              "description": "参数: productId (类型: Long). 通常是唯一标识符 ID。"
+            },
+            "stock": {
+              "type": "integer",
+              "description": "参数: stock (类型: int)"
+            }
+          },
+          "required": [
+            "productId",
+            "stock"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.updateStock"
+      },
+      {
+        "interfaceName": "com.pajk.provider3.service.ProductService",
+        "methodName": "getProductPrice",
+        "toolName": "com.pajk.provider3.service.ProductService.getProductPrice",
+        "description": "查询 Product Price (ProductService)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "integer",
+              "description": "参数: productId (类型: Long). 通常是唯一标识符 ID。"
+            }
+          },
+          "required": [
+            "productId"
+          ]
+        },
+        "name": "com.pajk.provider3.service.ProductService.getProductPrice"
+      }
+    ]
+  }
+}

@@ -1,0 +1,126 @@
+name: Traceability Check
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - '.github/workflows/**'
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日运行
+  workflow_dispatch:
+
+jobs:
+  traceability-check:
+    name: 检查追溯完整性
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Check traceability completeness
+        id: check_traceability
+        run: |
+          chmod +x scripts/maintenance/check-traceability.sh
+          ./scripts/maintenance/check-traceability.sh > traceability_report.txt 2>&1 || true
+          cat traceability_report.txt
+        continue-on-error: true
+      
+      - name: Check documentation links
+        id: check_links
+        run: |
+          python3 scripts/maintenance/check-doc-references.py > doc_links_report.txt 2>&1 || true
+          cat doc_links_report.txt
+        continue-on-error: true
+      
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traceability-reports
+          path: |
+            traceability_report.txt
+            doc_links_report.txt
+          retention-days: 30
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let traceReport = 'Traceability report not available';
+            let linkReport = 'Link check report not available';
+            
+            try {
+              traceReport = fs.readFileSync('traceability_report.txt', 'utf8');
+            } catch (err) {
+              console.log('Could not read traceability report');
+            }
+            
+            try {
+              linkReport = fs.readFileSync('doc_links_report.txt', 'utf8');
+            } catch (err) {
+              console.log('Could not read link check report');
+            }
+            
+            const output = `## 📊 追溯性检查报告
+            
+            ### 🔗 追溯完整性检查
+            
+            <details>
+            <summary>点击查看详细报告</summary>
+            
+            \`\`\`
+            ${traceReport}
+            \`\`\`
+            
+            </details>
+            
+            ### 📄 文档链接检查
+            
+            <details>
+            <summary>点击查看详细报告</summary>
+            
+            \`\`\`
+            ${linkReport}
+            \`\`\`
+            
+            </details>
+            
+            ---
+            
+            💡 **提示**: 
+            - 确保每个需求（REQ-XXX）都有完整的追溯链
+            - 修复所有损坏的文档链接
+            - 查看 [追溯体系文档](../DOCUMENTATION_TRACEABILITY_SYSTEM.md) 了解更多
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+      
+      - name: Check if reports indicate failures
+        run: |
+          if grep -q "不完整追溯" traceability_report.txt || grep -q "发现.*损坏的链接" doc_links_report.txt; then
+            echo "⚠️ 检查发现问题，但不阻塞PR"
+            echo "请查看上传的报告并修复问题"
+            exit 0
+          else
+            echo "✅ 所有检查通过"
+            exit 0
+          fi

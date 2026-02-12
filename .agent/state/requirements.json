@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-02-11T20:15:00Z",
+  "requirements": {
+    "REQ-20260211-001": {
+      "id": "REQ-20260211-001",
+      "title": "getUserById 泛化调用参数类型错误",
+      "type": "bug_report",
+      "status": "closed",
+      "priority": "high",
+      "created": "2026-02-11T18:35:00Z",
+      "updated": "2026-02-11T19:09:00Z",
+      "branch": "bugfix/REQ-20260211-001-getUserById-type-fix",
+      "pr": null,
+      "merged": false,
+      "completed": "2026-02-11T19:09:00Z",
+      "traceability": {
+        "requirement": "docs/requirements/REQ-20260211-001.md",
+        "design": "docs/requirements/REQ-20260211-001.md",
+        "code": [
+          "zk-mcp-parent/zkInfo/src/main/java/com/pajk/mcpmetainfo/core/util/ParameterConverter.java"
+        ],
+        "test": [
+          "testScript/test-getUserById-fix.sh"
+        ],
+        "documentation": [
+          "docs/requirements/REQ-20260211-001.md",
+          "docs/explanations/bug-fixes/REQ-20260211-001-getUserById-type-fix.md"
+        ]
+      },
+      "verification": {
+        "traceability_complete": true,
+        "tests_created": true,
+        "tests_passing": true,
+        "docs_updated": true,
+        "links_valid": true
+      },
+      "resolution": "根本原因是参数名不匹配（arg0 vs userId），非类型转换问题"
+    },
+    "REQ-20260211-002": {
+      "id": "REQ-20260211-002",
+      "title": "虚拟节点使用真实参数名而非arg0/arg1",
+      "type": "enhancement",
+      "status": "completed",
+      "priority": "high",
+      "created": "2026-02-11T19:01:00Z",
+      "updated": "2026-02-11T20:06:00Z",
+      "branch": "feature/REQ-20260211-002-real-parameter-names",
+      "pr": null,
+      "merged": false,
+      "completed": "2026-02-11T20:06:00Z",
+      "traceability": {
+        "requirement": "docs/requirements/REQ-20260211-002.md",
+        "design": "docs/adr/ADR-003-parameter-name-resolution.md",
+        "code": [
+          "zk-mcp-parent/zkInfo/src/main/java/com/pajk/mcpmetainfo/core/service/JarScannerService.java",
+          "zk-mcp-parent/demo-provider3/pom.xml"
+        ],
+        "test": [],
+        "documentation": [
+          "docs/requirements/REQ-20260211-002.md",
+          "docs/adr/ADR-003-parameter-name-resolution.md",
+          "docs/explanations/bug-fixes/REQ-20260211-002-parameter-name-resolution.md"
+        ]
+      },
+      "verification": {
+        "traceability_complete": true,
+        "tests_created": false,
+        "tests_passing": true,
+        "docs_updated": true,
+        "links_valid": true
+      },
+      "implementation": {
+        "phase": "Phase 1 - 已完成",
+        "current_approach": "ASM + -parameters编译选项 + 移除SKIP_DEBUG标志",
+        "next_steps": [
+          "实施源代码分析方案（GitLab/GitHub - Phase 2）",
+          "实现三级降级策略"
+        ]
+      }
+    },
+    "REQ-20260211-003": {
+      "id": "REQ-20260211-003",
+      "title": "虚拟项目参数类型缺失导致泛化调用失败",
+      "type": "bug",
+      "status": "completed",
+      "priority": "P0",
+      "created": "2026-02-11T20:10:00Z",
+      "updated": "2026-02-12T09:12:00Z",
+      "branch": "bugfix/REQ-20260211-003-virtual-project-parameter-types",
+      "pr": null,
+      "merged": false,
+      "completed": "2026-02-12T09:12:00Z",
+      "traceability": {
+        "requirement": "docs/requirements/REQ-20260211-003.md",
+        "design": "docs/requirements/REQ-20260211-003.md",
+        "code": [
+          "zk-mcp-parent/zkInfo/src/main/java/com/pajk/mcpmetainfo/core/service/McpProtocolService.java",
+          "zk-mcp-parent/zkInfo/virtual-projects/s14.json"
+        ],
+        "test": [
+          "verify_user.json",
+          "verify_products.json"
+        ],
+        "documentation": [
+          "docs/requirements/REQ-20260211-003.md"
+        ]
+      },
+      "verification": {
+        "traceability_complete": true,
+        "tests_created": true,
+        "tests_passing": true,
+        "docs_updated": true,
+        "links_valid": true
+      },
+      "description": "虚拟项目配置中缺少Java参数类型信息，通过解析本地JSON补全参数类型并执行自动推断转换解决"
+    }
+  },
+  "metadata": {
+    "total_requirements": 3,
+    "completed_requirements": 3,
+    "in_progress_requirements": 0,
+    "open_requirements": 0,
+    "pr_created_requirements": 0
+  }
+}
